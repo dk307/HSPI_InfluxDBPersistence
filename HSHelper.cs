@@ -59,6 +59,20 @@ namespace Hspi
             return name;
         }
 
+        //public string GetDeviceVSP(int deviceRefId, double value)
+        //{
+        //    string deviceString = HS.DeviceString(deviceRefId);
+        //    if (Operators.CompareString(deviceString, "", false) == 0)
+        //    {
+        //        deviceString = HS.DeviceVSP_GetStatus(deviceRefId, value, ePairStatusControl.Status);
+        //    }
+        //    if (Operators.CompareString(deviceString, "", false) == 0)
+        //    {
+        //        deviceString = value.ToString();
+        //    }
+        //    return deviceString;
+        //}
+
         private void LoadSettings()
         {
             location2Enabled = Convert.ToBoolean(HS.GetINISetting("Settings", "bUseLocation2", Convert.ToString(false), ""));

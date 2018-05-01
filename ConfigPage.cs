@@ -12,6 +12,7 @@ using System.Web;
 
 namespace Hspi
 {
+    using System.Globalization;
     using static System.FormattableString;
 
     /// <summary>
@@ -348,11 +349,11 @@ namespace Hspi
         private string BuildAddNewWebPageBody([AllowNull]DevicePersistenceData data)
         {
             HSHelper hsHelper = new HSHelper(HS);
-            NameValueCollection PersistanceNameCollection = new NameValueCollection();
+            NameValueCollection persistanceNameCollection = new NameValueCollection();
 
             foreach (var device in hsHelper.GetDevices())
             {
-                PersistanceNameCollection.Add(device.Value, device.Key.ToString());
+                persistanceNameCollection.Add(device.Key.ToString(CultureInfo.InvariantCulture), device.Value);
             }
 
             int deviceRefId = data != null ? data.DeviceRefId : -1;
@@ -379,7 +380,7 @@ namespace Hspi
             stb.Append(@"<table class='full_width_table'");
             stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{FormDropDown(DeviceRefId, PersistanceNameCollection, deviceRefId, 250, string.Empty)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId, 250, string.Empty)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>{HtmlTextBox(MeasurementId, measurement)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Field:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldId, field)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell' colspan=2><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags)}</td></tr>"));
@@ -439,7 +440,7 @@ namespace Hspi
                 for (var i = 0; i < options.Count; i++)
                 {
                     var sel = i == selected;
-                    dropdown.AddItem(options.GetKey(i), options.Get(i), sel);
+                    dropdown.AddItem(options.Get(i), options.GetKey(i), sel);
                 }
             }
 

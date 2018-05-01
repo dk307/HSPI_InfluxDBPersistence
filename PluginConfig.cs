@@ -30,7 +30,7 @@ namespace Hspi
         public IReadOnlyDictionary<string, string> Tags { get; }
     }
 
-    internal class InfluxDBLoginInformation
+    internal class InfluxDBLoginInformation : IEquatable<InfluxDBLoginInformation>
     {
         public InfluxDBLoginInformation(System.Uri dBUri, [AllowNull]string user, [AllowNull]string password, string db)
         {
@@ -44,6 +44,14 @@ namespace Hspi
         public System.Uri DBUri { get; }
         public string Password { get; }
         public string User { get; }
+
+        public bool Equals(InfluxDBLoginInformation other)
+        {
+            return this.DBUri == other.DBUri &&
+                this.DB == other.DB &&
+                this.User == other.User &&
+                this.Password == this.Password;
+        }
     }
 
     /// <summary>

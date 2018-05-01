@@ -287,7 +287,7 @@ namespace Hspi
             HS?.WriteLogEx(Name, Invariant($"Warning:{message}"), "#D58000");
         }
 
-        private void DisconnectHspiConnection()
+        protected virtual void DisconnectHspiConnection()
         {
             Trace.WriteLine("Disconnecting Hspi Connection");
             cancellationTokenSource.Cancel();
