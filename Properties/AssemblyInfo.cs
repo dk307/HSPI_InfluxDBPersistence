@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly: AssemblyTitle("HSPI WU Weather PlugIn")]
-[assembly: AssemblyDescription("HomeSeer Weather Underground PlugIn")]
+[assembly: AssemblyTitle("HSPI Influx DB Persistence")]
+[assembly: AssemblyDescription("HomeSeer Influx DB Persistence")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("HSPI WU Weather PlugIn")]
-[assembly: AssemblyCopyright("Copyright ©  2017")]
+[assembly: AssemblyProduct("HSPI Influx DB Persistence")]
+[assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -24,7 +24,7 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 
-[assembly: Guid("21c7d215-0365-46a8-b7fe-2e194aa3b7a9")]
+[assembly: Guid("C70C39A2-F787-40F9-83EB-431E15128E9D")]
 
 // Version information for an assembly consists of the following four values:
 //

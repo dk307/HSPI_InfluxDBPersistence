@@ -121,6 +121,10 @@ namespace Hspi
                     pluginConfig.Dispose();
                 }
 
+                if (collectionShutdownToken != null)
+                {
+                    collectionShutdownToken.Dispose();
+                }
                 disposedValue = true;
             }
 

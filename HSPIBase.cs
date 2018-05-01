@@ -39,16 +39,14 @@ namespace Hspi
             this.supportConfigDeviceAll = supportConfigDeviceAll;
         }
 
+        public override bool Connected => HsClient.CommunicationState == CommunicationStates.Connected;
         public override bool HasTriggers => false;
         public override string Name => name;
         public override int TriggerCount => 0;
-        public override bool Connected => HsClient.CommunicationState == CommunicationStates.Connected;
-
         protected IAppCallbackAPI Callback { get; private set; }
         protected IScsServiceClient<IAppCallbackAPI> CallbackClient { get; private set; }
-        protected IScsServiceClient<IHSApplication> HsClient { get; private set; }
         protected IHSApplication HS { get; private set; }
-
+        protected IScsServiceClient<IHSApplication> HsClient { get; private set; }
         protected CancellationToken ShutdownCancellationToken => cancellationTokenSource.Token;
 
         public override int AccessLevel() => accessLevel;
@@ -69,6 +67,11 @@ namespace Hspi
         public override int Capabilities() => capabilities;
 
         public override string ConfigDevice(int deviceId, [AllowNull]string user, int userRights, bool newDevice) => string.Empty;
+
+        public override Enums.ConfigDevicePostReturn ConfigDevicePost(int deviceId,
+            [AllowNull]string data,
+            [AllowNull]string user,
+            int userRights) => Enums.ConfigDevicePostReturn.DoneAndCancel;
 
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "apiVersion")]
         public void Connect(string serverAddress, int serverPort)
@@ -117,17 +120,6 @@ namespace Hspi
             Trace.WriteLine(Invariant($"Connected to {serverAddress}"));
         }
 
-        private void HsClient_Disconnected(object sender, EventArgs e)
-        {
-            Trace.WriteLine(Invariant($"Disconnected from HS3"));
-            DisconnectHspiConnection();
-        }
-
-        public void WaitforShutDownOrDisconnect()
-        {
-            this.shutdownWaitEvent.WaitOne();
-        }
-
         public void Dispose()
         {
             DisconnectHspiConnection();
@@ -164,6 +156,26 @@ namespace Hspi
         {
             var s = new IPlugInAPI.strInterfaceStatus { intStatus = IPlugInAPI.enumInterfaceStatus.OK };
             return s;
+        }
+
+        public virtual void LogDebug(string message)
+        {
+            HS?.WriteLog(Name, Invariant($"Debug:{message}"));
+        }
+
+        public void LogError(string message)
+        {
+            HS?.WriteLogEx(Name, Invariant($"Error:{message}"), "#FF0000");
+        }
+
+        public void LogInfo(string message)
+        {
+            HS?.WriteLog(Name, message);
+        }
+
+        public void LogWarning(string message)
+        {
+            HS?.WriteLogEx(Name, Invariant($"Warning:{message}"), "#D58000");
         }
 
         public override string PagePut([AllowNull]string data) => string.Empty;
@@ -236,55 +248,9 @@ namespace Hspi
 
         public override bool TriggerTrue(IPlugInAPI.strTrigActInfo actionInfo) => false;
 
-        public override Enums.ConfigDevicePostReturn ConfigDevicePost(int deviceId,
-            [AllowNull]string data,
-            [AllowNull]string user,
-            int userRights) => Enums.ConfigDevicePostReturn.DoneAndCancel;
-
-        protected virtual void Dispose(bool disposing)
+        public void WaitforShutDownOrDisconnect()
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    if (HsClient != null)
-                    {
-                        HsClient.Disconnected -= HsClient_Disconnected;
-                        HsClient.Dispose();
-                    }
-                    hsTraceListener?.Dispose();
-                    CallbackClient?.Dispose();
-                    cancellationTokenSource.Dispose();
-                    shutdownWaitEvent.Dispose();
-                }
-                disposedValue = true;
-            }
-        }
-
-        protected override bool GetHasTriggers() => false;
-
-        protected override bool GetHscomPort() => hsComPort;
-
-        protected override int GetTriggerCount() => 0;
-
-        public virtual void LogDebug(string message)
-        {
-            HS?.WriteLog(Name, Invariant($"Debug:{message}"));
-        }
-
-        public void LogError(string message)
-        {
-            HS?.WriteLogEx(Name, Invariant($"Error:{message}"), "#FF0000");
-        }
-
-        public void LogInfo(string message)
-        {
-            HS?.WriteLog(Name, message);
-        }
-
-        public void LogWarning(string message)
-        {
-            HS?.WriteLogEx(Name, Invariant($"Warning:{message}"), "#D58000");
+            this.shutdownWaitEvent.WaitOne();
         }
 
         protected virtual void DisconnectHspiConnection()
@@ -320,19 +286,53 @@ namespace Hspi
             Trace.WriteLine("Disconnected Hspi Connection");
         }
 
-        private HSTraceListener hsTraceListener;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (HsClient != null)
+                    {
+                        HsClient.Disconnected -= HsClient_Disconnected;
+                        HsClient.Dispose();
+                    }
+                    if (hsTraceListener != null)
+                    {
+                        hsTraceListener.Dispose();
+                    }
+                    CallbackClient?.Dispose();
+                    cancellationTokenSource.Dispose();
+                    shutdownWaitEvent.Dispose();
+                }
+                disposedValue = true;
+            }
+        }
+
+        protected override bool GetHasTriggers() => false;
+
+        protected override bool GetHscomPort() => hsComPort;
+
+        protected override int GetTriggerCount() => 0;
+
+        private void HsClient_Disconnected(object sender, EventArgs e)
+        {
+            Trace.WriteLine(Invariant($"Disconnected from HS3"));
+            DisconnectHspiConnection();
+        }
         private readonly int accessLevel;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private readonly EventWaitHandle shutdownWaitEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
         private readonly int capabilities;
         private readonly bool hsComPort;
         private readonly string instanceFriendlyName;
         private readonly string name;
+        private readonly EventWaitHandle shutdownWaitEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
         private readonly bool supportConfigDevice;
         private readonly bool supportConfigDeviceAll;
         private readonly bool supportMutipleInstances;
         private readonly bool supportsAddDevice;
         private readonly bool supportsMultipleInstancesSingleEXE;
         private bool disposedValue = false;
+        private HSTraceListener hsTraceListener;
     }
 }
