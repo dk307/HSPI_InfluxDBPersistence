@@ -1,14 +1,19 @@
 ﻿using Hspi.Exceptions;
 using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
-using InfluxData.Net.InfluxDb.ClientSubModules;
 using InfluxData.Net.InfluxDb.Models;
+using Nito.AsyncEx;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Hspi
 {
+    using static System.FormattableString;
+
     internal class InfluxDBMeasurementsCollector
     {
         public InfluxDBMeasurementsCollector(InfluxDBLoginInformation loginInformation)
@@ -18,8 +23,6 @@ namespace Hspi
                                                 loginInformation.User,
                                                 loginInformation.Password,
                                                 InfluxDbVersion.v_1_3);
-
-            batchWriter = influxDBClient.Serie.CreateBatchWriter(loginInformation.DB, precision: "s");
         }
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
@@ -30,7 +33,7 @@ namespace Hspi
             return peristenceDataMap.ContainsKey(deviceRefId);
         }
 
-        public bool Record(RecordData data)
+        public async Task<bool> Record(RecordData data)
         {
             Interlocked.MemoryBarrier();
             if (peristenceDataMap == null)
@@ -59,7 +62,8 @@ namespace Hspi
                         Fields = new Dictionary<string, object>() { { value.Field, data.Data } },
                         Tags = tags,
                     };
-                    batchWriter.AddPoint(point);
+
+                    await queue.EnqueueAsync(point).ConfigureAwait(false);
                 }
             }
 
@@ -69,10 +73,11 @@ namespace Hspi
         public void Start(IEnumerable<DevicePersistenceData> persistenceData,
                           CancellationToken cancellationToken)
         {
+            this.cancellationToken = cancellationToken;
             UpdatePeristenceData(persistenceData);
 
-            batchWriter.Start(1000, continueOnError: true);
-            cancellationToken.Register(() => { batchWriter.Stop(); });
+            Task.Factory.StartNew(SendPoints, cancellationToken,
+                        TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
         }
 
         public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)
@@ -92,14 +97,26 @@ namespace Hspi
                                  map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>));     //atomic swap
         }
 
-        public void Stop()
+        private async Task SendPoints()
         {
-            batchWriter?.Stop();
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var point = await queue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await influxDBClient.Client.WriteAsync(point, loginInformation.DB, precision: "s").ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(Invariant($"Failed to update {influxDBClient.Database} with {ExceptionHelper.GetFullMessage(ex)}"));
+                }
+            }
         }
 
+        private readonly static AsyncProducerConsumerQueue<Point> queue = new AsyncProducerConsumerQueue<Point>();
         private readonly InfluxDbClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
-        private IBatchWriter batchWriter;
+        private CancellationToken cancellationToken;
         private IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
     }
 }

@@ -44,7 +44,7 @@ namespace Hspi
                 if ((eventType == Enums.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
                 {
                     int deviceRefId = Convert.ToInt32(parameters[4]);
-                    RecordDeviceValue(deviceRefId);
+                    RecordDeviceValue(deviceRefId).Wait(ShutdownCancellationToken);
                 }
             }
             catch (Exception ex)
@@ -127,7 +127,7 @@ namespace Hspi
             base.Dispose(disposing);
         }
 
-        private static void RecordDeviceValue(InfluxDBMeasurementsCollector collector, IHSApplication HS, DeviceClass device)
+        private static async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector, IHSApplication HS, DeviceClass device)
         {
             if (device != null)
             {
@@ -143,7 +143,7 @@ namespace Hspi
                                                        device.get_Location2(HS),
                                                        device.get_Last_Change(HS));
 
-                collector.Record(recordData);
+                await collector.Record(recordData).ConfigureAwait(false);
             }
         }
 
@@ -158,17 +158,17 @@ namespace Hspi
             StartCollector();
         }
 
-        private void RecordDeviceValue(int deviceRefId)
+        private async Task RecordDeviceValue(int deviceRefId)
         {
             var collector = DbCollector;
             if ((collector != null) && collector.IsTracked(deviceRefId))
             {
                 DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
-                RecordDeviceValue(collector, HS, device);
+                await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
             }
         }
 
-        private void RecordTrackedDevices()
+        private async Task RecordTrackedDevices()
         {
             var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
             var collector = DbCollector;
@@ -179,7 +179,7 @@ namespace Hspi
                 {
                     if ((collector != null) && collector.IsTracked(device.get_Ref(HS)))
                     {
-                        RecordDeviceValue(collector, HS, device);
+                        await RecordDeviceValue(collector, HS, device); // keep in same thread
                     }
                 }
                 ShutdownCancellationToken.ThrowIfCancellationRequested();
@@ -211,9 +211,11 @@ namespace Hspi
 
                 if (recreate)
                 {
-                    dbCollector?.Stop();
+                    collectionShutdownToken?.Cancel();
+                    collectionShutdownToken = new CancellationTokenSource();
                     dbCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation);
-                    dbCollector.Start(pluginConfig.DevicePersistenceData.Values, ShutdownCancellationToken);
+                    dbCollector.Start(pluginConfig.DevicePersistenceData.Values,
+                                      CancellationTokenSource.CreateLinkedTokenSource(collectionShutdownToken.Token, ShutdownCancellationToken).Token);
                 }
                 else
                 {
@@ -224,6 +226,7 @@ namespace Hspi
             }
         }
 
+        private CancellationTokenSource collectionShutdownToken;
         private object collectorLock = new object();
         private ConfigPage configPage;
         private InfluxDBMeasurementsCollector dbCollector;
