@@ -1,7 +1,7 @@
 ﻿using HomeSeerAPI;
-using NullGuard;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,50 +9,7 @@ using System.Threading;
 
 namespace Hspi
 {
-    using System.Diagnostics;
     using static System.FormattableString;
-
-    internal class DevicePersistenceData
-    {
-        public DevicePersistenceData(string id, int deviceRefId, string measurement, string field, [AllowNull]IReadOnlyDictionary<string, string> tags)
-        {
-            Id = id;
-            DeviceRefId = deviceRefId;
-            Measurement = measurement;
-            Field = field;
-            Tags = tags;
-        }
-
-        public int DeviceRefId { get; }
-        public string Id { get; }
-        public string Measurement { get; }
-        public string Field { get; }
-        public IReadOnlyDictionary<string, string> Tags { get; }
-    }
-
-    internal class InfluxDBLoginInformation : IEquatable<InfluxDBLoginInformation>
-    {
-        public InfluxDBLoginInformation(System.Uri dBUri, [AllowNull]string user, [AllowNull]string password, string db)
-        {
-            DBUri = dBUri;
-            User = user;
-            Password = password;
-            DB = db;
-        }
-
-        public string DB { get; }
-        public System.Uri DBUri { get; }
-        public string Password { get; }
-        public string User { get; }
-
-        public bool Equals(InfluxDBLoginInformation other)
-        {
-            return this.DBUri == other.DBUri &&
-                this.DB == other.DB &&
-                this.User == other.User &&
-                this.Password == this.Password;
-        }
-    }
 
     /// <summary>
     /// Class to store PlugIn Configuration
@@ -95,6 +52,9 @@ namespace Hspi
 
                 string measurement = GetValue(MeasurementKey, string.Empty, persistenceId);
                 string field = GetValue(FieldKey, string.Empty, persistenceId);
+                string fieldString = GetValue(FieldStringKey, string.Empty, persistenceId);
+                string maxValidValueString = GetValue(MaxValidValueKey, string.Empty, persistenceId);
+                string minValidValueString = GetValue(MinValidValueKey, string.Empty, persistenceId);
 
                 var tagString = GetValue(TagsKey, string.Empty, persistenceId);
 
@@ -108,8 +68,21 @@ namespace Hspi
                     Trace.TraceWarning(Invariant($"Failed to load tags for {deviceRefIdString} with {ex.GetFullMessage()}"));
                 }
 
-                this.devicePersistenceData.Add(persistenceId,
-                                               new Hspi.DevicePersistenceData(persistenceId, deviceRefId, measurement, field, tags));
+                double? maxValidValue = null;
+                double? minValidValue = null; 
+
+                if (double.TryParse(maxValidValueString, out var value))
+                {
+                    maxValidValue = value;
+                }
+
+                if (double.TryParse(minValidValueString, out value))
+                {
+                    minValidValue = value;
+                }
+
+                var data = new Hspi.DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                this.devicePersistenceData.Add(persistenceId, data);
             }
 
             debugLogging = GetValue(DebugLoggingKey, false);
@@ -210,9 +183,12 @@ namespace Hspi
 
                 SetValue(DeviceRefIdKey, device.DeviceRefId, device.Id);
                 SetValue(MeasurementKey, device.Measurement, device.Id);
-                SetValue(FieldKey, device.Field, device.Id);
+                SetValue(FieldKey, device.Field ?? string.Empty, device.Id);
+                SetValue(FieldStringKey, device.FieldString ?? string.Empty, device.Id);
                 SetValue(TagsKey, ObjectSerialize.SerializeToString(device.Tags) ?? string.Empty, device.Id);
                 SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
+                SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
+                SetValue(MinValidValueKey, device.MinValidValue, device.Id);
             }
             finally
             {
@@ -284,6 +260,11 @@ namespace Hspi
             HS.SaveINISetting(section, key, stringValue, FileName);
         }
 
+        private void SetValue<T>(string key, Nullable<T> value, string section = DefaultSection) where T : struct
+        {
+            string stringValue = value.HasValue ? System.Convert.ToString(value.Value, CultureInfo.InvariantCulture) : string.Empty;
+            HS.SaveINISetting(section, key, stringValue, FileName);
+        }
         private void SetValue<T>(string key, T value, ref T oldValue)
         {
             SetValue<T>(key, value, ref oldValue, DefaultSection);
@@ -330,6 +311,9 @@ namespace Hspi
         private const string DeviceRefIdKey = "DeviceRefId";
         private const string MeasurementKey = "Measurement";
         private const string FieldKey = "Field";
+        private const string FieldStringKey = "FieldString";
+        private const string MaxValidValueKey = "MaxValidValue";
+        private const string MinValidValueKey = "MinValidValue";
         private const string TagsKey = "Tags";
         private string PersistenceIdsKey = "PersistenceIds";
         private char PersistenceIdsSeparator = ',';

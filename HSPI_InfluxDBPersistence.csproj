@@ -152,12 +152,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigPage.cs" />
+    <Compile Include="DevicePersistenceData.cs" />
     <Compile Include="EnumHelper.cs" />
     <Compile Include="ExceptionHelper.cs" />
     <Compile Include="HSHelper.cs" />
     <Compile Include="HSPI.cs" />
     <Compile Include="HSTraceListener.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="InfluxDBLoginInformation.cs" />
     <Compile Include="InfluxDBMeasurementsCollector.cs" />
     <Compile Include="ObjectSerialize.cs" />
     <Compile Include="PlugIn.cs" />

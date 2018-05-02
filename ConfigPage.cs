@@ -22,8 +22,6 @@ namespace Hspi
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal class ConfigPage : PageBuilderAndMenu.clsPageBuilder
     {
-        protected const string IdPrefix = "id_";
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigPage" /> class.
         /// </summary>
@@ -169,19 +167,20 @@ namespace Hspi
                 string measurement = parts[MeasurementId];
                 if (string.IsNullOrWhiteSpace(measurement))
                 {
-                    results.AppendLine("Measurement is not Valid.<br>");
+                    results.AppendLine("Measurement is not valid.<br>");
                 }
 
                 string field = parts[FieldId];
-                if (string.IsNullOrWhiteSpace(field))
+                string fieldString = parts[FieldStringId];
+                if (string.IsNullOrWhiteSpace(field) && string.IsNullOrWhiteSpace(fieldString))
                 {
-                    results.AppendLine("Field is not Valid.<br>");
+                    results.AppendLine("Both Field and FieldString are not valid. One of them need to valid.<br>");
                 }
 
                 string deviceId = parts[DeviceRefId];
                 if (!int.TryParse(deviceId, out int deviceRefId))
                 {
-                    results.AppendLine("Device is not Valid.<br>");
+                    results.AppendLine("Device is not valid.<br>");
                 }
 
                 string tagsString = parts[TagsId];
@@ -207,6 +206,49 @@ namespace Hspi
                     }
                 }
 
+                string maxValidValueString = parts[MaxValidValueId];
+                string minValidValueString = parts[MinValidValueId];
+
+                double? maxValidValue = null;
+                double? minValidValue = null;
+
+                if (!string.IsNullOrEmpty(maxValidValueString))
+                {
+                    if (double.TryParse(parts[MaxValidValueId], out var value))
+                    {
+                        maxValidValue = value;
+                    }
+                    else
+                    {
+                        results.AppendLine("Max valid value is not valid.<br>");
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(minValidValueString))
+                {
+                    if (double.TryParse(parts[MinValidValueId], out var value))
+                    {
+                        minValidValue = value;
+                    }
+                    else
+                    {
+                        results.AppendLine("Min valid value is not valid.<br>");
+                    }
+                }
+
+                if (maxValidValue.HasValue && minValidValue.HasValue)
+                {
+                    if ((maxValidValue.Value - minValidValue.Value) <= 0)
+                    {
+                        results.AppendLine("Max and Min valid values are not valid.<br>");
+                    }
+                }
+
+                if ((maxValidValue.HasValue || minValidValue.HasValue) && string.IsNullOrWhiteSpace(field))
+                {
+                    results.AppendLine("Max and Min valid values don't mean anything without field to store them.<br>");
+                }
+
                 if (results.Length > 0)
                 {
                     this.divToUpdate.Add(SaveErrorDivId, results.ToString());
@@ -220,7 +262,8 @@ namespace Hspi
                         persistenceId = System.Guid.NewGuid().ToString();
                     }
 
-                    this.pluginConfig.AddDevicePersistenceData(new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, tags));
+                    var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                    this.pluginConfig.AddDevicePersistenceData(persistenceData);
                     this.pluginConfig.FireConfigChanged();
                     this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
                 }
@@ -233,6 +276,234 @@ namespace Hspi
             }
 
             return base.postBackProc(Name, data, user, userRights);
+        }
+
+        protected static string HtmlTextBox(string name, string defaultText, int size = 25, string type = "text", bool @readonly = false)
+        {
+            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{defaultText}\' {(@readonly ? "readonly" : string.Empty)}>");
+        }
+
+        protected static string TextArea(string name, string defaultText, int rows = 6, int cols = 35, bool @readonly = false)
+        {
+            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' col=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText}</textarea>");
+        }
+
+        protected string FormButton(string name, string label, string toolTip)
+        {
+            var button = new clsJQuery.jqButton(name, label, PageName, true)
+            {
+                id = NameToIdWithPrefix(name),
+                toolTip = toolTip,
+            };
+            button.toolTip = toolTip;
+            button.enabled = true;
+
+            return button.Build();
+        }
+
+        protected string FormCheckBox(string name, string label, bool @checked, bool autoPostBack = false)
+        {
+            var cb = new clsJQuery.jqCheckBox(name, label, PageName, true, true)
+            {
+                id = NameToIdWithPrefix(name),
+                @checked = @checked,
+                autoPostBack = autoPostBack,
+            };
+            return cb.Build();
+        }
+
+        protected string FormDropDown(string name, NameValueCollection options, int selected, int width, string tooltip, bool autoPostBack = true)
+        {
+            var dropdown = new clsJQuery.jqDropList(name, PageName, false)
+            {
+                selectedItemIndex = -1,
+                id = NameToIdWithPrefix(name),
+                autoPostBack = autoPostBack,
+                toolTip = tooltip,
+                style = Invariant($"width: {width}px;"),
+                enabled = true
+            };
+
+            if (options != null)
+            {
+                for (var i = 0; i < options.Count; i++)
+                {
+                    var sel = i == selected;
+                    dropdown.AddItem(options.Get(i), options.GetKey(i), sel);
+                }
+            }
+
+            return dropdown.Build();
+        }
+
+        protected string FormPageButton(string name, string label)
+        {
+            var b = new clsJQuery.jqButton(name, label, PageName, true)
+            {
+                id = NameToIdWithPrefix(name),
+            };
+
+            return b.Build();
+        }
+
+        protected string PageTypeButton(string name, string label, string type, string persistenceId = null)
+        {
+            var b = new clsJQuery.jqButton(name, label, PageName, false)
+            {
+                id = NameToIdWithPrefix(name),
+                url = Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{PersistenceId}={HttpUtility.UrlEncode(persistenceId ?? string.Empty)}"),
+            };
+
+            return b.Build();
+        }
+
+        private static string NameToId(string name)
+        {
+            return name.Replace(' ', '_');
+        }
+
+        private static string NameToIdWithPrefix(string name)
+        {
+            return Invariant($"{ IdPrefix}{NameToId(name)}");
+        }
+
+        private string BuildAddNewWebPageBody([AllowNull]DevicePersistenceData data)
+        {
+            HSHelper hsHelper = new HSHelper(HS);
+            NameValueCollection persistanceNameCollection = new NameValueCollection();
+
+            foreach (var device in hsHelper.GetDevices())
+            {
+                persistanceNameCollection.Add(device.Key.ToString(CultureInfo.InvariantCulture), device.Value);
+            }
+
+            int deviceRefId = data != null ? data.DeviceRefId : -1;
+            string measurement = data != null ? data.Measurement : string.Empty;
+            string field = data?.Field ?? string.Empty;
+            string fieldString = data?.FieldString ?? string.Empty;
+            string maxValidValue = data?.MaxValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+            string minValidValue = data?.MinValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+            string tags = string.Empty;
+            string id = data != null ? data.Id : string.Empty;
+            string buttonLabel = data != null ? "Save" : "Add";
+            string header = data != null ? "Edit Persistence" : "Add New DB Persistence";
+
+            if (data != null && data.Tags != null)
+            {
+                foreach (var tag in data.Tags)
+                {
+                    tags += Invariant($"{tag.Key}={tag.Value}{Environment.NewLine}");
+                }
+            }
+
+            StringBuilder stb = new StringBuilder();
+
+            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmDeviceChange", "IdChange", "Post"));
+
+            stb.Append(@"<div>");
+            stb.Append(@"<table class='full_width_table'");
+            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
+            stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId, 250, string.Empty, false)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>{HtmlTextBox(MeasurementId, measurement)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Field for value:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldId, field)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Max valid value:</td><td class='tablecell' colspan=2>{HtmlTextBox(MaxValidValueId, maxValidValue)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Min valid value:</td><td class='tablecell' colspan=2>{HtmlTextBox(MinValidValueId, minValidValue)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Field for string value:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldStringId, fieldString)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell' colspan=2><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags)}</td></tr>"));
+
+            stb.Append(Invariant($"<tr><td colspan=3>{HtmlTextBox(PersistenceId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
+            stb.Append(Invariant($"<tr><td colspan=3>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
+
+            if (data != null)
+            {
+                stb.Append(FormPageButton(DeletePersistenceSave, "Delete"));
+            }
+
+            stb.Append(FormPageButton(EditPersistenceCancel, "Cancel"));
+            stb.Append(Invariant($"</td><td></td></tr>"));
+            stb.Append("<tr height='5'><td colspan=3></td></tr>");
+            stb.Append(@" </table>");
+            stb.Append(@"</div>");
+            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
+
+            return stb.ToString();
+        }
+
+        private string BuildDBSettingTab()
+        {
+            var dbConfig = pluginConfig.DBLoginInformation;
+
+            StringBuilder stb = new StringBuilder();
+            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmSettings", "IdSettings", "Post"));
+
+            stb.Append(@"<br>");
+            stb.Append(@"<div>");
+            stb.Append(@"<table class='full_width_table'");
+            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:75%'></td></tr>");
+            stb.Append(Invariant($"<tr><td class='tablecell'>Url:</td><td class='tablecell' style='width: 50px'>{HtmlTextBox(DBUriKey, dbConfig.DBUri != null ? dbConfig.DBUri.ToString() : string.Empty, type: "url")}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>User:</td><td class='tablecell'>{HtmlTextBox(UserKey, dbConfig.User)} </td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Password:</td><td class='tablecell'>{HtmlTextBox(PasswordKey, dbConfig.Password)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Database:</td><td colspan=2 class='tablecell'>{HtmlTextBox(DBKey, dbConfig.DB)}</ td ></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Debug Logging Enabled:</td><td class='tablecell'>{FormCheckBox(DebugLoggingId, string.Empty, this.pluginConfig.DebugLogging)}</td ></tr>"));
+            stb.Append(Invariant($"<tr><td colspan=2><div id='{ErrorDivId}' style='color:Red'></div></td></tr>"));
+            stb.Append(Invariant($"<tr><td colspan=2>{FormButton(SettingSaveButtonName, "Save", "Save Settings")}</td></tr>"));
+            stb.Append("<tr height='5'><td colspan=2></td></tr>");
+            stb.Append(@" </table>");
+            stb.Append(@"</div>");
+            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
+
+            return stb.ToString();
+        }
+
+        private string BuildPersistenceTab()
+        {
+            HSHelper hsHelper = new HSHelper(HS);
+            StringBuilder stb = new StringBuilder();
+
+            stb.Append(@"<div>");
+            stb.Append(@"<table class='full_width_table'");
+            stb.Append("<tr height='5'><td colspan=7></td></tr>");
+            stb.Append(@"<tr>" +
+                        "<td class='tablecolumn'>Device</td>" +
+                        "<td class='tablecolumn'>Measurement</td>" +
+                        "<td class='tablecolumn'>Field for value</td>" +
+                        "<td class='tablecolumn'>Range for value</td>" +
+                        "<td class='tablecolumn'>Field for device string</td>" +
+                        "<td class='tablecolumn'>Tags</td>" +
+                        "<td class='tablecolumn'></td></tr>");
+
+            foreach (var device in pluginConfig.DevicePersistenceData)
+            {
+                stb.Append(@"<tr>");
+                string name = hsHelper.GetName(device.Value.DeviceRefId) ?? Invariant($"Unknown(RefId:{device.Value.DeviceRefId})");
+                stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.Value.DeviceRefId}&edit=1'>{name}</a></td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Value.Measurement}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Value.Field ?? string.Empty}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Value.MaxValidValue ?? double.PositiveInfinity} to {device.Value.MinValidValue ?? double.NegativeInfinity}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Value.FieldString ?? string.Empty}</td>"));
+                stb.Append(@"<td class='tablecell'>");
+                if (device.Value.Tags != null)
+                {
+                    foreach (var item in device.Value.Tags)
+                    {
+                        stb.Append(Invariant($"{item.Key}={item.Value}<br>"));
+                    }
+                }
+                stb.Append("</td>");
+                stb.Append(Invariant($"<td class='tablecell'>{PageTypeButton(Invariant($"Edit{device.Key}"), "Edit", EditDevicePageType, persistenceId: device.Key)}</ td ></ tr > "));
+            }
+
+            stb.Append(Invariant($"<tr><td colspan=7>{PageTypeButton("Add New Device", AddNewName, EditDevicePageType)}</td><td></td></tr>"));
+            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmSettings", "Id", "Post"));
+            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
+
+            stb.Append(Invariant($"<tr><td colspan=7></td></tr>"));
+            stb.Append(@"<tr height='5'><td colspan=7></td></tr>");
+            stb.Append(@" </table>");
+            stb.Append(@"</div>");
+
+            return stb.ToString();
         }
 
         /// <summary>
@@ -274,244 +545,30 @@ namespace Hspi
             return stb.ToString();
         }
 
-        private string BuildDBSettingTab()
-        {
-            var dbConfig = pluginConfig.DBLoginInformation;
-
-            StringBuilder stb = new StringBuilder();
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmSettings", "IdSettings", "Post"));
-
-            stb.Append(@"<br>");
-            stb.Append(@"<div>");
-            stb.Append(@"<table class='full_width_table'");
-            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:75%'></td></tr>");
-            stb.Append(Invariant($"<tr><td class='tablecell'>Url:</td><td class='tablecell' style='width: 50px'>{HtmlTextBox(DBUriKey, dbConfig.DBUri != null ? dbConfig.DBUri.ToString() : string.Empty, type: "url")}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>User:</td><td class='tablecell'>{HtmlTextBox(UserKey, dbConfig.User)} </td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Password:</td><td class='tablecell'>{HtmlTextBox(PasswordKey, dbConfig.Password)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Database:</td><td colspan=2 class='tablecell'>{HtmlTextBox(DBKey, dbConfig.DB)}</ td ></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Debug Logging Enabled:</td><td class='tablecell'>{FormCheckBox(DebugLoggingId, string.Empty, this.pluginConfig.DebugLogging)}</td ></tr>"));
-            stb.Append(Invariant($"<tr><td colspan=2><div id='{ErrorDivId}' style='color:Red'></div></td></tr>"));
-            stb.Append(Invariant($"<tr><td colspan=2>{FormButton(SettingSaveButtonName, "Save", "Save Settings")}</td></tr>"));
-            stb.Append("<tr height='5'><td colspan=2></td></tr>");
-            stb.Append(@" </table>");
-            stb.Append(@"</div>");
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
-
-            return stb.ToString();
-        }
-
-        private string BuildPersistenceTab()
-        {
-            HSHelper hsHelper = new HSHelper(HS);
-            StringBuilder stb = new StringBuilder();
-
-            stb.Append(@"<div>");
-            stb.Append(@"<table class='full_width_table'");
-            stb.Append("<tr height='5'><td colspan=4></td></tr>");
-            stb.Append(@"<tr>" +
-                        "<td class='tablecolumn'>Device</td>" +
-                        "<td class='tablecolumn'>Measurement</td>" +
-                        "<td class='tablecolumn'>Field</td>" +
-                        "<td class='tablecolumn'>Tags</td>" +
-                        "<td class='tablecolumn'></td></tr>");
-
-            foreach (var device in pluginConfig.DevicePersistenceData)
-            {
-                stb.Append(@"<tr>");
-                string name = hsHelper.GetName(device.Value.DeviceRefId) ?? Invariant($"Unknown(RefId:{device.Value.DeviceRefId})");
-                stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.Value.DeviceRefId}&edit=1'>{name}</a></td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Value.Measurement}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Value.Field}</td>"));
-                stb.Append(@"<td class='tablecell'>");
-                if (device.Value.Tags != null)
-                {
-                    foreach (var item in device.Value.Tags)
-                    {
-                        stb.Append(Invariant($"{item.Key}={item.Value}<br>"));
-                    }
-                }
-                stb.Append("</td>");
-                stb.Append(Invariant($"<td class='tablecell'>{PageTypeButton(Invariant($"Edit{device.Key}"), "Edit", EditDevicePageType, persistenceId: device.Key)}</ td ></ tr > "));
-            }
-
-            stb.Append(Invariant($"<tr><td colspan=5>{PageTypeButton("Add New Device", AddNewName, EditDevicePageType)}</td><td></td></tr>"));
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmSettings", "Id", "Post"));
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
-
-            stb.Append(Invariant($"<tr><td colspan=5></td></tr>"));
-            stb.Append(@"<tr height='5'><td colspan=5></td></tr>");
-            stb.Append(@" </table>");
-            stb.Append(@"</div>");
-
-            return stb.ToString();
-        }
-
-        private string BuildAddNewWebPageBody([AllowNull]DevicePersistenceData data)
-        {
-            HSHelper hsHelper = new HSHelper(HS);
-            NameValueCollection persistanceNameCollection = new NameValueCollection();
-
-            foreach (var device in hsHelper.GetDevices())
-            {
-                persistanceNameCollection.Add(device.Key.ToString(CultureInfo.InvariantCulture), device.Value);
-            }
-
-            int deviceRefId = data != null ? data.DeviceRefId : -1;
-            string measurement = data != null ? data.Measurement : string.Empty;
-            string field = data != null ? data.Field : string.Empty;
-            string tags = string.Empty;
-            string id = data != null ? data.Id : string.Empty;
-            string buttonLabel = data != null ? "Save" : "Add";
-            string header = data != null ? "Edit Persistence" : "Add New DB Persistence";
-
-            if (data != null && data.Tags != null)
-            {
-                foreach (var tag in data.Tags)
-                {
-                    tags += Invariant($"{tag.Key}={tag.Value}{Environment.NewLine}");
-                }
-            }
-
-            StringBuilder stb = new StringBuilder();
-
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmDeviceChange", "IdChange", "Post"));
-
-            stb.Append(@"<div>");
-            stb.Append(@"<table class='full_width_table'");
-            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
-            stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId, 250, string.Empty)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>{HtmlTextBox(MeasurementId, measurement)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Field:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldId, field)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell' colspan=2><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags)}</td></tr>"));
-
-            stb.Append(Invariant($"<tr><td colspan=3>{HtmlTextBox(PersistenceId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
-            stb.Append(Invariant($"<tr><td colspan=3>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
-
-            if (data != null)
-            {
-                stb.Append(FormPageButton(DeletePersistenceSave, "Delete"));
-            }
-
-            stb.Append(FormPageButton(EditPersistenceCancel, "Cancel"));
-            stb.Append(Invariant($"</td><td></td></tr>"));
-            stb.Append("<tr height='5'><td colspan=3></td></tr>");
-            stb.Append(@" </table>");
-            stb.Append(@"</div>");
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
-
-            return stb.ToString();
-        }
-
-        private static string NameToId(string name)
-        {
-            return name.Replace(' ', '_');
-        }
-
-        private static string NameToIdWithPrefix(string name)
-        {
-            return Invariant($"{ IdPrefix}{NameToId(name)}");
-        }
-
-        protected static string HtmlTextBox(string name, string defaultText, int size = 25, string type = "text", bool @readonly = false)
-        {
-            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{defaultText}\' {(@readonly ? "readonly" : string.Empty)}>");
-        }
-
-        protected static string TextArea(string name, string defaultText, int rows = 6, int cols = 35, bool @readonly = false)
-        {
-            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' col=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText}</textarea>");
-        }
-
-        protected string FormDropDown(string name, NameValueCollection options, int selected, int width, string tooltip)
-        {
-            var dropdown = new clsJQuery.jqDropList(name, PageName, false)
-            {
-                selectedItemIndex = -1,
-                id = NameToIdWithPrefix(name),
-                autoPostBack = false,
-                toolTip = tooltip,
-                style = Invariant($"width: {width}px;"),
-                enabled = true
-            };
-
-            if (options != null)
-            {
-                for (var i = 0; i < options.Count; i++)
-                {
-                    var sel = i == selected;
-                    dropdown.AddItem(options.Get(i), options.GetKey(i), sel);
-                }
-            }
-
-            return dropdown.Build();
-        }
-
-        protected string FormButton(string name, string label, string toolTip)
-        {
-            var button = new clsJQuery.jqButton(name, label, PageName, true)
-            {
-                id = NameToIdWithPrefix(name),
-                toolTip = toolTip,
-            };
-            button.toolTip = toolTip;
-            button.enabled = true;
-
-            return button.Build();
-        }
-
-        protected string FormCheckBox(string name, string label, bool @checked, bool autoPostBack = false)
-        {
-            var cb = new clsJQuery.jqCheckBox(name, label, PageName, true, true)
-            {
-                id = NameToIdWithPrefix(name),
-                @checked = @checked,
-                autoPostBack = autoPostBack,
-            };
-            return cb.Build();
-        }
-
-        protected string PageTypeButton(string name, string label, string type, string persistenceId = null)
-        {
-            var b = new clsJQuery.jqButton(name, label, PageName, false)
-            {
-                id = NameToIdWithPrefix(name),
-                url = Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{PersistenceId}={HttpUtility.UrlEncode(persistenceId ?? string.Empty)}"),
-            };
-
-            return b.Build();
-        }
-
-        protected string FormPageButton(string name, string label)
-        {
-            var b = new clsJQuery.jqButton(name, label, PageName, true)
-            {
-                id = NameToIdWithPrefix(name),
-            };
-
-            return b.Build();
-        }
-
-        private const string SettingSaveButtonName = "SettingSave";
-        private const string DebugLoggingId = "DebugLoggingId";
-        private const string DBUriKey = "DBUriId";
-        private const string PasswordKey = "PasswordId";
-        private const string PageTypeId = "type";
+        protected const string IdPrefix = "id_";
         private const string AddNewName = "Add New";
+        private const string DBKey = "DBId";
+        private const string DBUriKey = "DBUriId";
+        private const string DebugLoggingId = "DebugLoggingId";
+        private const string DeletePersistenceSave = "DeleteP";
+        private const string DeviceRefId = "DeviceRefId";
+        private const string EditDevicePageType = "edit";
         private const string EditPersistenceCancel = "CancelP";
         private const string EditPersistenceSave = "SaveP";
-        private const string DeletePersistenceSave = "DeleteP";
-        private const string PersistenceId = "PersistenceId";
-        private const string EditDevicePageType = "edit";
         private const string ErrorDivId = "message_id";
-        private const string ImageDivId = "image_id";
-        private const string UserKey = "UserId";
-        private const string DBKey = "DBId";
-        private const string DeviceRefId = "DeviceRefId";
-        private const string MeasurementId = "MeasurementId";
         private const string FieldId = "FieldId";
-        private const string TagsId = "TagsId";
+        private const string FieldStringId = "FieldStringId";
+        private const string ImageDivId = "image_id";
+        private const string MaxValidValueId = "MaxValidValueId";
+        private const string MeasurementId = "MeasurementId";
+        private const string MinValidValueId = "MinValidValueId";
+        private const string PageTypeId = "type";
+        private const string PasswordKey = "PasswordId";
+        private const string PersistenceId = "PersistenceId";
         private const string SaveErrorDivId = "SaveErrorDivId";
+        private const string SettingSaveButtonName = "SettingSave";
+        private const string TagsId = "TagsId";
+        private const string UserKey = "UserId";
         private static readonly string pageName = Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
         private readonly IHSApplication HS;
         private readonly PluginConfig pluginConfig;

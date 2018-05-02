@@ -136,12 +136,14 @@ namespace Hspi
             if (device != null)
             {
                 int deviceRefId = device.get_Ref(HS);
-                double value = device.get_devValue(HS);
+                double deviceValue = device.get_devValue(HS);
+                string deviceString = device.get_devString(HS);
                 Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId}"));
 
                 //string deviceVSP = GetDeviceVSP(num, num2);
                 RecordData recordData = new RecordData(deviceRefId,
-                                                       value,
+                                                       deviceValue,
+                                                       deviceString,
                                                        device.get_Name(HS),
                                                        device.get_Location(HS),
                                                        device.get_Location2(HS),

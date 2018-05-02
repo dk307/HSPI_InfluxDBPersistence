@@ -4,10 +4,11 @@ namespace Hspi
 {
     internal class RecordData
     {
-        public RecordData(int deviceRefId, double data, string name, string location1, string location2, DateTime timeStamp)
+        public RecordData(int deviceRefId, double deviceValue, string deviceString, string name, string location1, string location2, DateTime timeStamp)
         {
             this.DeviceRefId = deviceRefId;
-            this.Data = data;
+            this.DeviceValue = deviceValue;
+            this.DeviceString = deviceString;
             this.Name = name;
             this.Location1 = location1;
             this.Location2 = location2;
@@ -15,7 +16,8 @@ namespace Hspi
         }
 
         public int DeviceRefId { get; }
-        public double Data { get; }
+        public double DeviceValue { get; }
+        public string DeviceString { get; }
         public string Name { get; }
         public string Location1 { get; }
         public string Location2 { get; }

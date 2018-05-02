@@ -44,6 +44,33 @@ namespace Hspi
             {
                 foreach (var value in peristenceData)
                 {
+                    var fields = new Dictionary<string, object>();
+
+                    if (!string.IsNullOrWhiteSpace(value.Field))
+                    {
+                        double deviceValue = data.DeviceValue;
+
+                        if (IsValidRange(value, deviceValue))
+                        {
+                            fields.Add(value.Field, data.DeviceValue);
+                        }
+                        else
+                        {
+                            Trace.TraceInformation(Invariant($"Not Recording Value for {data.Name} as there is no it does not have valid ranged value at {deviceValue}"));
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(value.FieldString))
+                    {
+                        fields.Add(value.FieldString, data.DeviceString);
+                    }
+
+                    if (fields.Count == 0)
+                    {
+                        Trace.TraceInformation(Invariant($"Not Recording Value for {data.Name} as there is no valid value to record."));
+                        continue;
+                    }
+
                     var tags = new Dictionary<string, object>()
                     {
                         {"name", data.Name },
@@ -59,7 +86,7 @@ namespace Hspi
                     var point = new Point()
                     {
                         Name = value.Measurement,
-                        Fields = new Dictionary<string, object>() { { value.Field, data.Data } },
+                        Fields = fields,
                         Tags = tags,
                     };
 
@@ -95,6 +122,13 @@ namespace Hspi
 
             Interlocked.Exchange(ref peristenceDataMap,
                                  map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>));     //atomic swap
+        }
+
+        private static bool IsValidRange(DevicePersistenceData value, double deviceValue)
+        {
+            double maxValidValue = value.MaxValidValue ?? double.MaxValue;
+            double minValidValue = value.MinValidValue ?? double.MinValue;
+            return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
 
         private async Task SendPoints()
