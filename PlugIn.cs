@@ -176,21 +176,24 @@ namespace Hspi
 
         private async Task RecordTrackedDevices()
         {
-            var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
             var collector = DbCollector;
-            do
+            if (collector != null)
             {
-                DeviceClass device = deviceEnumerator.GetNext();
-                if (device != null)
+                var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
+                do
                 {
-                    if ((collector != null) && collector.IsTracked(device.get_Ref(HS)))
+                    DeviceClass device = deviceEnumerator.GetNext();
+                    if (device != null)
                     {
-                        await RecordDeviceValue(collector, HS, device); // keep in same thread
+                        if (collector.IsTracked(device.get_Ref(HS)))
+                        {
+                            await RecordDeviceValue(collector, HS, device); // keep in same thread
+                        }
                     }
+                    ShutdownCancellationToken.ThrowIfCancellationRequested();
                 }
-                ShutdownCancellationToken.ThrowIfCancellationRequested();
+                while (!deviceEnumerator.Finished);
             }
-            while (!deviceEnumerator.Finished);
         }
 
         private void RegisterConfigPage()
@@ -219,9 +222,12 @@ namespace Hspi
                 {
                     collectionShutdownToken?.Cancel();
                     collectionShutdownToken = new CancellationTokenSource();
-                    dbCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation);
-                    dbCollector.Start(pluginConfig.DevicePersistenceData.Values,
-                                      CancellationTokenSource.CreateLinkedTokenSource(collectionShutdownToken.Token, ShutdownCancellationToken).Token);
+                    if (pluginConfig.DBLoginInformation.IsValid)
+                    {
+                        dbCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation);
+                        dbCollector.Start(pluginConfig.DevicePersistenceData.Values,
+                                          CancellationTokenSource.CreateLinkedTokenSource(collectionShutdownToken.Token, ShutdownCancellationToken).Token);
+                    }
                 }
                 else
                 {

@@ -5,7 +5,7 @@ namespace Hspi
 {
     internal class InfluxDBLoginInformation : IEquatable<InfluxDBLoginInformation>
     {
-        public InfluxDBLoginInformation(System.Uri dBUri, [AllowNull]string user, [AllowNull]string password, string db)
+        public InfluxDBLoginInformation([AllowNull]System.Uri dBUri, [AllowNull]string user, [AllowNull]string password, [AllowNull]string db)
         {
             DBUri = dBUri;
             User = user;
@@ -17,6 +17,15 @@ namespace Hspi
         public System.Uri DBUri { get; }
         public string Password { get; }
         public string User { get; }
+
+        public bool IsValid
+        {
+            get
+            {
+                return !string.IsNullOrWhiteSpace(DB) &&
+                       (DBUri != null);
+            }
+        }
 
         public bool Equals(InfluxDBLoginInformation other)
         {

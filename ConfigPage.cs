@@ -160,22 +160,10 @@ namespace Hspi
             {
                 this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
             }
-            else if (form == NameToIdWithPrefix(EditPersistenceSave))
+            else if ((form == NameToIdWithPrefix(EditPersistenceSave)) ||
+                     (form == NameToIdWithPrefix(FillDefaultValuesButtonName)))
             {
                 StringBuilder results = new StringBuilder();
-
-                string measurement = parts[MeasurementId];
-                if (string.IsNullOrWhiteSpace(measurement))
-                {
-                    results.AppendLine("Measurement is not valid.<br>");
-                }
-
-                string field = parts[FieldId];
-                string fieldString = parts[FieldStringId];
-                if (string.IsNullOrWhiteSpace(field) && string.IsNullOrWhiteSpace(fieldString))
-                {
-                    results.AppendLine("Both Field and FieldString are not valid. One of them need to valid.<br>");
-                }
 
                 string deviceId = parts[DeviceRefId];
                 if (!int.TryParse(deviceId, out int deviceRefId))
@@ -183,89 +171,122 @@ namespace Hspi
                     results.AppendLine("Device is not valid.<br>");
                 }
 
-                string tagsString = parts[TagsId];
-                var tagsList = tagsString.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
-
-                var tags = new Dictionary<string, string>();
-                foreach (var tagString in tagsList)
+                if (form == NameToIdWithPrefix(FillDefaultValuesButtonName))
                 {
-                    if (string.IsNullOrWhiteSpace(tagString))
+                    if (results.Length == 0)
                     {
-                        continue;
+                        HSHelper hSHelper = new HSHelper(HS);
+
+                        hSHelper.Fill(deviceRefId, out var typeString, out var maxValidValue, out var minValidValue);
+
+                        divToUpdate.Add(MeasurementDivId, HtmlTextBox(MeasurementId, typeString ?? string.Empty));
+                        if (!string.IsNullOrEmpty(typeString))
+                        {
+                            divToUpdate.Add(FieldDivId, HtmlTextBox(FieldId, PluginConfig.DefaultFieldValueString));
+                            divToUpdate.Add(MaxValidValueDivId, HtmlTextBox(MaxValidValueId, maxValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+                            divToUpdate.Add(MinValidValueDivId, HtmlTextBox(MinValidValueId, minValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+                        }
                     }
-
-                    var pair = tagString.Split('=');
-
-                    if (pair.Length != 2)
-                    {
-                        results.AppendLine(Invariant($"Unknown tag type: {tagString}. Format tagType= value<br>"));
-                    }
-                    else
-                    {
-                        tags.Add(pair[0], pair[1]);
-                    }
-                }
-
-                string maxValidValueString = parts[MaxValidValueId];
-                string minValidValueString = parts[MinValidValueId];
-
-                double? maxValidValue = null;
-                double? minValidValue = null;
-
-                if (!string.IsNullOrEmpty(maxValidValueString))
-                {
-                    if (double.TryParse(parts[MaxValidValueId], out var value))
-                    {
-                        maxValidValue = value;
-                    }
-                    else
-                    {
-                        results.AppendLine("Max valid value is not valid.<br>");
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(minValidValueString))
-                {
-                    if (double.TryParse(parts[MinValidValueId], out var value))
-                    {
-                        minValidValue = value;
-                    }
-                    else
-                    {
-                        results.AppendLine("Min valid value is not valid.<br>");
-                    }
-                }
-
-                if (maxValidValue.HasValue && minValidValue.HasValue)
-                {
-                    if ((maxValidValue.Value - minValidValue.Value) <= 0)
-                    {
-                        results.AppendLine("Max and Min valid values are not valid.<br>");
-                    }
-                }
-
-                if ((maxValidValue.HasValue || minValidValue.HasValue) && string.IsNullOrWhiteSpace(field))
-                {
-                    results.AppendLine("Max and Min valid values don't mean anything without field to store them.<br>");
-                }
-
-                if (results.Length > 0)
-                {
-                    this.divToUpdate.Add(SaveErrorDivId, results.ToString());
                 }
                 else
                 {
-                    string persistenceId = parts[PersistenceId];
-
-                    if (string.IsNullOrWhiteSpace(persistenceId))
+                    string measurement = parts[MeasurementId];
+                    if (string.IsNullOrWhiteSpace(measurement))
                     {
-                        persistenceId = System.Guid.NewGuid().ToString();
+                        results.AppendLine("Measurement is not valid.<br>");
                     }
 
-                    var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
-                    this.pluginConfig.AddDevicePersistenceData(persistenceData);
-                    this.pluginConfig.FireConfigChanged();
-                    this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
+                    string field = parts[FieldId];
+                    string fieldString = parts[FieldStringId];
+                    if (string.IsNullOrWhiteSpace(field) && string.IsNullOrWhiteSpace(fieldString))
+                    {
+                        results.AppendLine("Both Field and FieldString are not valid. One of them need to valid.<br>");
+                    }
+
+                    string tagsString = parts[TagsId];
+                    var tagsList = tagsString.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+
+                    var tags = new Dictionary<string, string>();
+                    foreach (var tagString in tagsList)
+                    {
+                        if (string.IsNullOrWhiteSpace(tagString))
+                        {
+                            continue;
+                        }
+
+                        var pair = tagString.Split('=');
+
+                        if (pair.Length != 2)
+                        {
+                            results.AppendLine(Invariant($"Unknown tag type: {tagString}. Format tagType= value<br>"));
+                        }
+                        else
+                        {
+                            tags.Add(pair[0], pair[1]);
+                        }
+                    }
+
+                    string maxValidValueString = parts[MaxValidValueId];
+                    string minValidValueString = parts[MinValidValueId];
+
+                    double? maxValidValue = null;
+                    double? minValidValue = null;
+
+                    if (!string.IsNullOrEmpty(maxValidValueString))
+                    {
+                        if (double.TryParse(parts[MaxValidValueId], out var value))
+                        {
+                            maxValidValue = value;
+                        }
+                        else
+                        {
+                            results.AppendLine("Max valid value is not valid.<br>");
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(minValidValueString))
+                    {
+                        if (double.TryParse(parts[MinValidValueId], out var value))
+                        {
+                            minValidValue = value;
+                        }
+                        else
+                        {
+                            results.AppendLine("Min valid value is not valid.<br>");
+                        }
+                    }
+
+                    if (maxValidValue.HasValue && minValidValue.HasValue)
+                    {
+                        if ((maxValidValue.Value - minValidValue.Value) <= 0)
+                        {
+                            results.AppendLine("Max and Min valid values are not valid.<br>");
+                        }
+                    }
+
+                    if ((maxValidValue.HasValue || minValidValue.HasValue) && string.IsNullOrWhiteSpace(field))
+                    {
+                        results.AppendLine("Max and Min valid values don't mean anything without field to store them.<br>");
+                    }
+
+                    if (results.Length > 0)
+                    {
+                        this.divToUpdate.Add(SaveErrorDivId, results.ToString());
+                    }
+                    else
+                    {
+                        string persistenceId = parts[PersistenceId];
+
+                        if (string.IsNullOrWhiteSpace(persistenceId))
+                        {
+                            persistenceId = System.Guid.NewGuid().ToString();
+                        }
+
+                        var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                        this.pluginConfig.AddDevicePersistenceData(persistenceData);
+                        this.pluginConfig.FireConfigChanged();
+                        this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
+                    }
                 }
             }
             else if (form == NameToIdWithPrefix(DeletePersistenceSave))
@@ -378,6 +399,7 @@ namespace Hspi
             }
 
             int deviceRefId = data != null ? data.DeviceRefId : -1;
+
             string measurement = data != null ? data.Measurement : string.Empty;
             string field = data?.Field ?? string.Empty;
             string fieldString = data?.FieldString ?? string.Empty;
@@ -404,14 +426,38 @@ namespace Hspi
             stb.Append(@"<table class='full_width_table'");
             stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId, 250, string.Empty, false)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>{HtmlTextBox(MeasurementId, measurement)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Field for value:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldId, field)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Max valid value:</td><td class='tablecell' colspan=2>{HtmlTextBox(MaxValidValueId, maxValidValue)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Min valid value:</td><td class='tablecell' colspan=2>{HtmlTextBox(MinValidValueId, minValidValue)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>"));
+            stb.Append(FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId, 250, string.Empty, false));
+            stb.Append(Invariant($"&nbsp;"));
+            stb.Append(FormButton(FillDefaultValuesButtonName, "Fill Default Values", "Fill default values"));
+            stb.Append(Invariant($"</ td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>"));
+            stb.Append(DivStart(MeasurementDivId, string.Empty));
+            stb.Append(HtmlTextBox(MeasurementId, measurement));
+            stb.Append(DivEnd());
+            stb.Append("</td></tr>");
+            stb.Append(Invariant($"<tr><td class='tablecell'>Field for value:</td><td class='tablecell' colspan=2>"));
+            stb.Append(DivStart(FieldDivId, string.Empty));
+            stb.Append(HtmlTextBox(FieldId, field));
+            stb.Append(DivEnd());
+            stb.Append("</td></tr>");
+
+            stb.Append(Invariant($"<tr><td class='tablecell'>Max valid value:</td><td class='tablecell' colspan=2>"));
+            stb.Append(DivStart(MaxValidValueDivId, string.Empty));
+
+            stb.Append(HtmlTextBox(MaxValidValueId, maxValidValue));
+            stb.Append(DivEnd());
+
+            stb.Append("</td></tr>");
+            stb.Append(Invariant($"<tr><td class='tablecell'>Min valid value:</td><td class='tablecell' colspan=2>"));
+            stb.Append(DivStart(MinValidValueDivId, string.Empty));
+
+            stb.Append(HtmlTextBox(MinValidValueId, minValidValue));
+            stb.Append(DivEnd());
+
+            stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Field for string value:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldStringId, fieldString)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell' colspan=2><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags)}</td></tr>"));
-
             stb.Append(Invariant($"<tr><td colspan=3>{HtmlTextBox(PersistenceId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=3>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
 
@@ -441,7 +487,9 @@ namespace Hspi
             stb.Append(@"<div>");
             stb.Append(@"<table class='full_width_table'");
             stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:75%'></td></tr>");
-            stb.Append(Invariant($"<tr><td class='tablecell'>Url:</td><td class='tablecell' style='width: 50px'>{HtmlTextBox(DBUriKey, dbConfig.DBUri != null ? dbConfig.DBUri.ToString() : string.Empty, type: "url")}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Url:</td><td class='tablecell' style='width: 50px'>"));
+            stb.Append(HtmlTextBox(DBUriKey, dbConfig.DBUri != null ? dbConfig.DBUri.ToString() : string.Empty, type: "url"));
+            stb.Append(Invariant($"</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>User:</td><td class='tablecell'>{HtmlTextBox(UserKey, dbConfig.User)} </td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Password:</td><td class='tablecell'>{HtmlTextBox(PasswordKey, dbConfig.Password)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Database:</td><td colspan=2 class='tablecell'>{HtmlTextBox(DBKey, dbConfig.DB)}</ td ></tr>"));
@@ -556,11 +604,16 @@ namespace Hspi
         private const string EditPersistenceCancel = "CancelP";
         private const string EditPersistenceSave = "SaveP";
         private const string ErrorDivId = "message_id";
+        private const string FieldDivId = "FieldDivId";
         private const string FieldId = "FieldId";
         private const string FieldStringId = "FieldStringId";
+        private const string FillDefaultValuesButtonName = "FillDefaultValues";
         private const string ImageDivId = "image_id";
+        private const string MaxValidValueDivId = "MaxValidValueDivId";
         private const string MaxValidValueId = "MaxValidValueId";
+        private const string MeasurementDivId = "MeasurementDivId";
         private const string MeasurementId = "MeasurementId";
+        private const string MinValidValueDivId = "MinValidValueDivId";
         private const string MinValidValueId = "MinValidValueId";
         private const string PageTypeId = "type";
         private const string PasswordKey = "PasswordId";
@@ -568,6 +621,7 @@ namespace Hspi
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TagsId = "TagsId";
+        private const string UseDefaultsId = "UseDefaultsId";
         private const string UserKey = "UserId";
         private static readonly string pageName = Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
         private readonly IHSApplication HS;

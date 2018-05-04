@@ -17,6 +17,7 @@ namespace Hspi
     /// <seealso cref="System.IDisposable" />
     internal class PluginConfig : IDisposable
     {
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PluginConfig"/> class.
         /// </summary>
@@ -69,7 +70,7 @@ namespace Hspi
                 }
 
                 double? maxValidValue = null;
-                double? minValidValue = null; 
+                double? minValidValue = null;
 
                 if (double.TryParse(maxValidValueString, out var value))
                 {
@@ -196,6 +197,18 @@ namespace Hspi
             }
         }
 
+        /// <summary>
+        /// Fires event that configuration changed.
+        /// </summary>
+        public void FireConfigChanged()
+        {
+            if (ConfigChanged != null)
+            {
+                var ConfigChangedCopy = ConfigChanged;
+                ConfigChangedCopy(this, EventArgs.Empty);
+            }
+        }
+
         public void RemoveDevicePersistenceData(string id)
         {
             configLock.EnterWriteLock();
@@ -215,18 +228,6 @@ namespace Hspi
             finally
             {
                 configLock.ExitWriteLock();
-            }
-        }
-
-        /// <summary>
-        /// Fires event that configuration changed.
-        /// </summary>
-        public void FireConfigChanged()
-        {
-            if (ConfigChanged != null)
-            {
-                var ConfigChangedCopy = ConfigChanged;
-                ConfigChangedCopy(this, EventArgs.Empty);
             }
         }
 
@@ -265,6 +266,7 @@ namespace Hspi
             string stringValue = value.HasValue ? System.Convert.ToString(value.Value, CultureInfo.InvariantCulture) : string.Empty;
             HS.SaveINISetting(section, key, stringValue, FileName);
         }
+
         private void SetValue<T>(string key, T value, ref T oldValue)
         {
             SetValue<T>(key, value, ref oldValue, DefaultSection);
@@ -279,6 +281,13 @@ namespace Hspi
                 oldValue = value;
             }
         }
+
+        public const string DeviceLocation1Tag = "location1";
+        public const string DeviceLocation2Tag = "location2";
+        public const string DeviceNameTag = "name";
+        public const string DefaultFieldValueString = "value";
+        public const string DeviceValueDefaultField = "value";
+        public const string DeviceStringValueDefaultField = "valueString";
 
         #region IDisposable Support
 
@@ -304,19 +313,17 @@ namespace Hspi
 
         private const string DebugLoggingKey = "DebugLogging";
         private const string DefaultSection = "Settings";
+        private const string DeviceRefIdKey = "DeviceRefId";
+        private const string FieldKey = "Field";
+        private const string FieldStringKey = "FieldString";
         private const string InfluxDBDBKey = "InfluxDBDB";
         private const string InfluxDBPasswordKey = "InfluxDBPassword";
         private const string InfluxDBUriKey = "InfluxDBUri";
         private const string InfluxDBUsernameKey = "InfluxDBUsername";
-        private const string DeviceRefIdKey = "DeviceRefId";
-        private const string MeasurementKey = "Measurement";
-        private const string FieldKey = "Field";
-        private const string FieldStringKey = "FieldString";
         private const string MaxValidValueKey = "MaxValidValue";
+        private const string MeasurementKey = "Measurement";
         private const string MinValidValueKey = "MinValidValue";
         private const string TagsKey = "Tags";
-        private string PersistenceIdsKey = "PersistenceIds";
-        private char PersistenceIdsSeparator = ',';
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim();
         private readonly Dictionary<string, DevicePersistenceData> devicePersistenceData = new Dictionary<string, DevicePersistenceData>();
@@ -324,5 +331,7 @@ namespace Hspi
         private bool debugLogging;
         private bool disposedValue = false;
         private InfluxDBLoginInformation influxDBLoginInformation;
+        private string PersistenceIdsKey = "PersistenceIds";
+        private char PersistenceIdsSeparator = ',';
     };
 }

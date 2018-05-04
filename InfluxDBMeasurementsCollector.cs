@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Hspi
 {
+    using System.Net.Http;
     using static System.FormattableString;
 
     internal class InfluxDBMeasurementsCollector
@@ -60,10 +61,7 @@ namespace Hspi
                         }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(value.FieldString))
-                    {
-                        fields.Add(value.FieldString, data.DeviceString);
-                    }
+                    AddIfNotEmpty(fields, value.FieldString, data.DeviceString);
 
                     if (fields.Count == 0)
                     {
@@ -73,14 +71,15 @@ namespace Hspi
 
                     var tags = new Dictionary<string, object>()
                     {
-                        {"name", data.Name },
-                        {"location1", data.Location1 },
-                        {"location2", data.Location2 },
+                        {PluginConfig.DeviceNameTag, data.Name },
                     };
+
+                    AddIfNotEmpty(tags, PluginConfig.DeviceLocation1Tag, data.Location1);
+                    AddIfNotEmpty(tags, PluginConfig.DeviceLocation2Tag, data.Location2);
 
                     foreach (var tag in value.Tags)
                     {
-                        tags.Add(tag.Key, tag.Value);
+                        AddIfNotEmpty(tags, tag.Key, tag.Value);
                     }
 
                     var point = new Point()
@@ -131,6 +130,14 @@ namespace Hspi
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
 
+        private void AddIfNotEmpty(IDictionary<string, object> dict, string key, string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                dict.Add(key, value);
+            }
+        }
+
         private async Task SendPoints()
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -143,7 +150,27 @@ namespace Hspi
                 catch (Exception ex)
                 {
                     Trace.TraceWarning(Invariant($"Failed to update {influxDBClient.Database} with {ExceptionHelper.GetFullMessage(ex)}"));
+                    bool connected = await IsConnectedToServer().ConfigureAwait(false);
+
+                    if (!connected)
+                    {
+                        await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(30000, cancellationToken).ConfigureAwait(false);
+                    }
                 }
+            }
+        }
+
+        private async Task<bool> IsConnectedToServer()
+        {
+            try
+            {
+                var pong = await influxDBClient.Diagnostics.PingAsync().ConfigureAwait(false);
+                return pong.Success;
+            }
+            catch (HttpRequestException)
+            {
+                return false;
             }
         }
 
