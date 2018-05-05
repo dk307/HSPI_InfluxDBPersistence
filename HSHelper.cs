@@ -5,8 +5,6 @@ using System.Collections.Generic;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     internal class HSHelper
     {
         public HSHelper(IHSApplication hS)
@@ -39,24 +37,40 @@ namespace Hspi
 
         public string GetName(DeviceClass device)
         {
-            string name;
+            List<string> parts = new List<string>();
+
+            string location1 = device.get_Location(HS);
             if (location2Enabled)
             {
+                string location2 = device.get_Location2(HS);
+
                 if (location1First)
                 {
-                    name = Invariant($"{device.get_Location(HS)} {device.get_Location2(HS)} {device.get_Name(HS)}");
+                    AddIfNotEmpty(parts, location1);
+                    AddIfNotEmpty(parts, location2);
                 }
                 else
                 {
-                    name = Invariant($"{device.get_Location2(HS)} {device.get_Location(HS)} {device.get_Name(HS)}");
+                    AddIfNotEmpty(parts, location2);
+                    AddIfNotEmpty(parts, location1);
                 }
             }
             else
             {
-                name = Invariant($"{device.get_Location(HS)} {device.get_Name(HS)}");
+                AddIfNotEmpty(parts, location1);
             }
 
-            return name;
+            AddIfNotEmpty(parts, device.get_Name(HS));
+
+            return string.Join(" ", parts);
+        }
+
+        private static void AddIfNotEmpty(List<string> parts, string name)
+        {
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                parts.Add(name);
+            }
         }
 
         private string FindTypeString(IEnumerable<string> descriptionStrings)
@@ -107,7 +121,7 @@ namespace Hspi
                 case "pressure":
                 case "amperes":
                 case "co2":
-                case "luminanace":
+                case "luminance":
                 case "pm25":
                     minValidValue = 0;
                     break;
@@ -132,6 +146,6 @@ namespace Hspi
         private bool location1First;
 
         private static string[] measurementTypes = { "temperature", "humidity", "watts", "kwh", "battery",
-                                                     "pressure", "amperes", "co2", "pm25", "volts", "luminanace" };
+                                                     "pressure", "amperes", "co2", "pm25", "volts", "luminance" };
     }
 }

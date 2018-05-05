@@ -89,7 +89,7 @@ namespace Hspi
                         Tags = tags,
                     };
 
-                    await queue.EnqueueAsync(point).ConfigureAwait(false);
+                    await queue.EnqueueAsync(point, CancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -132,7 +132,7 @@ namespace Hspi
 
         private void AddIfNotEmpty(IDictionary<string, object> dict, string key, string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
+            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
             {
                 dict.Add(key, value);
             }
@@ -142,10 +142,15 @@ namespace Hspi
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                List<Point> points = new List<Point>();
                 var point = await queue.DequeueAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    await influxDBClient.Client.WriteAsync(point, loginInformation.DB, precision: "s").ConfigureAwait(false);
+                    points.Add(point);
+
+                    while (queue.OutputAvailableAsync())
+
+                    await influxDBClient.Client.WriteAsync(points, loginInformation.DB, precision: "s").ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

@@ -6,13 +6,13 @@ using Scheduler;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
 
 namespace Hspi
 {
-    using System.Globalization;
     using static System.FormattableString;
 
     /// <summary>
@@ -68,10 +68,7 @@ namespace Hspi
                     default:
                     case null:
                         {
-                            string tab = parts[TabId] ?? "0";
-                            int tabId = 0;
-                            int.TryParse(tab, out tabId);
-                            stb.Append(BuildWebPageBody(tabId));
+                            stb.Append(BuildWebPageBody(parts));
                             break;
                         }
                 }
@@ -333,7 +330,7 @@ namespace Hspi
             return cb.Build();
         }
 
-        protected string FormDropDown(string name, NameValueCollection options, int selected, int width, string tooltip, bool autoPostBack = true)
+        protected string FormDropDown(string name, NameValueCollection options, string selected, int width, string tooltip, bool autoPostBack = true)
         {
             var dropdown = new clsJQuery.jqDropList(name, PageName, false)
             {
@@ -349,7 +346,7 @@ namespace Hspi
             {
                 for (var i = 0; i < options.Count; i++)
                 {
-                    var sel = i == selected;
+                    var sel = options.GetKey(i) == selected;
                     dropdown.AddItem(options.Get(i), options.GetKey(i), sel);
                 }
             }
@@ -376,6 +373,11 @@ namespace Hspi
             };
 
             return b.Build();
+        }
+
+        private static string CreateSortLinkOnTab1(string name, int column, bool descending)
+        {
+            return Invariant($"<a href=\"{HttpUtility.UrlEncode(pageName)}?{TabId}=1&{SortColumnId}={column}&{DescId}={Convert.ToInt32(!descending)}\">{name}</a>");
         }
 
         private static string NameToId(string name)
@@ -427,7 +429,7 @@ namespace Hspi
             stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>"));
-            stb.Append(FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId, 250, string.Empty, false));
+            stb.Append(FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId.ToString(CultureInfo.InvariantCulture), 250, string.Empty, false));
             stb.Append(Invariant($"&nbsp;"));
             stb.Append(FormButton(FillDefaultValuesButtonName, "Fill Default Values", "Fill default values"));
             stb.Append(Invariant($"</ td></tr>"));
@@ -504,42 +506,94 @@ namespace Hspi
             return stb.ToString();
         }
 
-        private string BuildPersistenceTab()
+        private string BuildPersistenceTab(NameValueCollection parts)
         {
+            int? sortColumn = null;
+            if (int.TryParse(parts[SortColumnId] ?? string.Empty, out var value))
+            {
+                if ((value > 0) && (value < 5))
+                {
+                    sortColumn = value;
+                }
+            }
+
+            bool ascending = true;
+            if (int.TryParse(parts[DescId] ?? string.Empty, out var descValue))
+            {
+                ascending = descValue > 0;
+            }
+
             HSHelper hsHelper = new HSHelper(HS);
             StringBuilder stb = new StringBuilder();
 
             stb.Append(@"<div>");
             stb.Append(@"<table class='full_width_table'");
             stb.Append("<tr height='5'><td colspan=7></td></tr>");
-            stb.Append(@"<tr>" +
-                        "<td class='tablecolumn'>Device</td>" +
-                        "<td class='tablecolumn'>Measurement</td>" +
-                        "<td class='tablecolumn'>Field for value</td>" +
-                        "<td class='tablecolumn'>Range for value</td>" +
-                        "<td class='tablecolumn'>Field for device string</td>" +
-                        "<td class='tablecolumn'>Tags</td>" +
-                        "<td class='tablecolumn'></td></tr>");
+            stb.Append("<tr>");
+            stb.Append(Invariant($"<td class='tablecolumn'>{CreateSortLinkOnTab1("Device", 1, ascending)}</td>"));
+            stb.Append(Invariant($"<td class='tablecolumn'>{CreateSortLinkOnTab1("Measurement", 2, ascending)}</td>"));
+            stb.Append(Invariant($"<td class='tablecolumn'>{CreateSortLinkOnTab1("Field for value", 3, ascending)}</td>"));
+            stb.Append(@"<td class='tablecolumn'>Range for value</td>");
+            stb.Append(Invariant($"<td class='tablecolumn'>{CreateSortLinkOnTab1("Field for device string", 4, ascending)}</td>"));
+            stb.Append("<td class='tablecolumn'>Tags</td>");
+            stb.Append("<td class='tablecolumn'></td></tr>");
 
-            foreach (var device in pluginConfig.DevicePersistenceData)
+            IEnumerable<string> sortedData;
+
+            if (sortColumn.HasValue)
             {
-                stb.Append(@"<tr>");
-                string name = hsHelper.GetName(device.Value.DeviceRefId) ?? Invariant($"Unknown(RefId:{device.Value.DeviceRefId})");
-                stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.Value.DeviceRefId}&edit=1'>{name}</a></td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Value.Measurement}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Value.Field ?? string.Empty}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Value.MaxValidValue ?? double.PositiveInfinity} to {device.Value.MinValidValue ?? double.NegativeInfinity}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Value.FieldString ?? string.Empty}</td>"));
-                stb.Append(@"<td class='tablecell'>");
-                if (device.Value.Tags != null)
+                sortedData = pluginConfig.DevicePersistenceData.Keys.OrderBy(x =>
                 {
-                    foreach (var item in device.Value.Tags)
+                    switch (sortColumn.Value)
+                    {
+                        case 1:
+                            return hsHelper.GetName(pluginConfig.DevicePersistenceData[x].DeviceRefId) ?? string.Empty;
+
+                        case 2:
+                            return pluginConfig.DevicePersistenceData[x].Measurement;
+
+                        case 3:
+                            return pluginConfig.DevicePersistenceData[x].Field;
+
+                        case 4:
+                            return pluginConfig.DevicePersistenceData[x].FieldString;
+
+                        default:
+                            return x;
+                    }
+                }, StringComparer.Ordinal);
+
+                if (!ascending)
+                {
+                    sortedData = sortedData.Reverse();
+                }
+            }
+            else
+            {
+                sortedData = pluginConfig.DevicePersistenceData.Keys;
+            }
+
+            foreach (var id in sortedData)
+            {
+                var device = pluginConfig.DevicePersistenceData[id];
+
+                stb.Append(@"<tr>");
+                string name = hsHelper.GetName(device.DeviceRefId) ?? Invariant($"Unknown(RefId:{device.DeviceRefId})");
+                stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.DeviceRefId}&edit=1'>{name}</a></td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Measurement}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Field ?? string.Empty}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.MaxValidValue ?? double.PositiveInfinity} to {device.MinValidValue ?? double.NegativeInfinity}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.FieldString ?? string.Empty}</td>"));
+                stb.Append(@"<td class='tablecell'>");
+                if (device.Tags != null)
+                {
+                    foreach (var item in device.Tags)
                     {
                         stb.Append(Invariant($"{item.Key}={item.Value}<br>"));
                     }
                 }
                 stb.Append("</td>");
-                stb.Append(Invariant($"<td class='tablecell'>{PageTypeButton(Invariant($"Edit{device.Key}"), "Edit", EditDevicePageType, persistenceId: device.Key)}</ td ></ tr > "));
+                stb.Append(Invariant($"<td class='tablecell'>{PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDevicePageType, persistenceId: id)}</ td ></ tr > "));
             }
 
             stb.Append(Invariant($"<tr><td colspan=7>{PageTypeButton("Add New Device", AddNewName, EditDevicePageType)}</td><td></td></tr>"));
@@ -558,8 +612,12 @@ namespace Hspi
         /// Builds the web page body for the configuration page.
         /// The page has separate forms so that only the data in the appropriate form is returned when a button is pressed.
         /// </summary>
-        private string BuildWebPageBody(int defaultTab)
+        private string BuildWebPageBody(NameValueCollection parts)
         {
+            string tab = parts[TabId] ?? "0";
+            int defaultTab = 0;
+            int.TryParse(tab, out defaultTab);
+
             int i = 0;
             StringBuilder stb = new StringBuilder();
 
@@ -573,7 +631,7 @@ namespace Hspi
             var tab2 = new clsJQuery.Tab();
             tab2.tabTitle = "Persistence";
             tab2.tabDIVID = Invariant($"tabs{i++}");
-            tab2.tabContent = BuildPersistenceTab();
+            tab2.tabContent = BuildPersistenceTab(parts);
             tabs.tabs.Add(tab2);
 
             switch (defaultTab)
@@ -599,6 +657,7 @@ namespace Hspi
         private const string DBUriKey = "DBUriId";
         private const string DebugLoggingId = "DebugLoggingId";
         private const string DeletePersistenceSave = "DeleteP";
+        private const string DescId = "desc";
         private const string DeviceRefId = "DeviceRefId";
         private const string EditDevicePageType = "edit";
         private const string EditPersistenceCancel = "CancelP";
@@ -620,12 +679,13 @@ namespace Hspi
         private const string PersistenceId = "PersistenceId";
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
+        private const string SortColumnId = "sort";
+        private const string TabId = "tab";
         private const string TagsId = "TagsId";
         private const string UseDefaultsId = "UseDefaultsId";
         private const string UserKey = "UserId";
         private static readonly string pageName = Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
         private readonly IHSApplication HS;
         private readonly PluginConfig pluginConfig;
-        private string TabId = "TabId";
     }
 }
