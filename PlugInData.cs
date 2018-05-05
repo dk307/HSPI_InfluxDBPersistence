@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-
-namespace Hspi
+﻿namespace Hspi
 {
     /// <summary>
     /// Class to store static data
@@ -13,5 +9,5 @@ namespace Hspi
         /// The plugin name
         /// </summary>
         public const string PlugInName = @"Influx DB Persistence";
-      }
+    }
 }

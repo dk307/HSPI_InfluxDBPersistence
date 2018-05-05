@@ -320,6 +320,7 @@ namespace Hspi
             Trace.WriteLine(Invariant($"Disconnected from HS3"));
             DisconnectHspiConnection();
         }
+
         private readonly int accessLevel;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly int capabilities;

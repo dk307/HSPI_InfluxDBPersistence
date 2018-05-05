@@ -9,11 +9,13 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Hspi</RootNamespace>
     <AssemblyName>HSPI_InfluxDBPersistence</AssemblyName>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -28,8 +30,6 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -58,14 +58,14 @@
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>
     </CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
+    <Prefer32Bit>true</Prefer32Bit>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>Hspi.Program</StartupObject>
   </PropertyGroup>
-  <PropertyGroup>
-    <NoWin32Manifest>true</NoWin32Manifest>
-  </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
@@ -76,21 +76,17 @@
   <ItemGroup>
     <Reference Include="HomeSeerAPI, Version=1.0.2.1, Culture=neutral, processorArchitecture=x86">
       <HintPath>packages\Homeseer.1.0.0\lib\net45\HomeSeerAPI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="HSCF, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Homeseer.1.0.0\lib\net45\HSCF.dll</HintPath>
-    </Reference>
-    <Reference Include="InfluxData.Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\InfluxData.Net.8.0.1\lib\net461\InfluxData.Net.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="InfluxData.Net.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\InfluxData.Net.8.0.1\lib\net461\InfluxData.Net.Common.dll</HintPath>
     </Reference>
     <Reference Include="InfluxData.Net.InfluxDb, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\InfluxData.Net.8.0.1\lib\net461\InfluxData.Net.InfluxDb.dll</HintPath>
-    </Reference>
-    <Reference Include="InfluxData.Net.Kapacitor, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\InfluxData.Net.8.0.1\lib\net461\InfluxData.Net.Kapacitor.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -112,43 +108,13 @@
     </Reference>
     <Reference Include="Scheduler, Version=3.0.0.0, Culture=neutral, processorArchitecture=x86">
       <HintPath>packages\Homeseer.1.0.0\lib\net45\Scheduler.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Collections.Immutable.1.4.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.IO">
-      <HintPath>packages\System.IO.4.3.0\lib\net462\System.IO.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Net.Http, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Net.Http.4.3.2\lib\net46\System.Net.Http.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime">
-      <HintPath>packages\System.Runtime.4.3.0\lib\net462\System.Runtime.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Algorithms">
-      <HintPath>packages\System.Security.Cryptography.Algorithms.4.3.0\lib\net463\System.Security.Cryptography.Algorithms.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Encoding">
-      <HintPath>packages\System.Security.Cryptography.Encoding.4.3.0\lib\net46\System.Security.Cryptography.Encoding.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Primitives">
-      <HintPath>packages\System.Security.Cryptography.Primitives.4.3.0\lib\net46\System.Security.Cryptography.Primitives.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.X509Certificates">
-      <HintPath>packages\System.Security.Cryptography.X509Certificates.4.3.0\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigPage.cs" />
@@ -199,7 +165,36 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\Fody.3.0.3\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Fody.3.0.3\build\Fody.targets'))" />
+    <Error Condition="!Exists('packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets'))" />
   </Target>
+  <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
+      <InputAssemblies Include="$(OutputPath)\InfluxData.Net.Common.dll" />
+      <InputAssemblies Include="$(OutputPath)\InfluxData.Net.InfluxDb.dll" />
+      <InputAssemblies Include="$(OutputPath)\Newtonsoft.Json.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Coordination.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Tasks.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.Collections.Deque.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.Disposables.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- Must be a fully qualified name -->
+      <!--<DoNotInternalizeAssemblies Include="ExampleAssemblyToMerge3" />-->
+    </ItemGroup>
+	
+    <ILRepack 
+		Parallel="true" 
+		Internalize="false" 
+		Union="true" 
+		InternalizeExclude="@(DoNotInternalizeAssemblies)" 
+		InputAssemblies="@(InputAssemblies)" 
+		TargetKind="Exe" 
+		OutputFile="$(OutputPath)\$(AssemblyName).exe" 
+	/>
+		
+  </Target>
+  <Import Project="packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -6,7 +6,7 @@ namespace Hspi
     internal class DevicePersistenceData
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
-                                     [AllowNull]string field, [AllowNull]string fieldString, 
+                                     [AllowNull]string field, [AllowNull]string fieldString,
                                      [AllowNull]IReadOnlyDictionary<string, string> tags,
                                      [AllowNull]double? maxValidValue, [AllowNull]double? minValidValue)
         {

@@ -17,7 +17,6 @@ namespace Hspi
     /// <seealso cref="System.IDisposable" />
     internal class PluginConfig : IDisposable
     {
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PluginConfig"/> class.
         /// </summary>
@@ -35,7 +34,7 @@ namespace Hspi
             this.influxDBLoginInformation = new InfluxDBLoginInformation(
                 influxDBUri,
                 GetValue(InfluxDBUsernameKey, string.Empty),
-                GetValue(InfluxDBPasswordKey, string.Empty),
+                HS.DecryptString(GetValue(InfluxDBPasswordKey, string.Empty), string.Empty),
                 GetValue(InfluxDBDBKey, string.Empty)
              );
 
@@ -114,7 +113,7 @@ namespace Hspi
                     influxDBLoginInformation = value;
                     SetValue(InfluxDBUriKey, value.DBUri);
                     SetValue(InfluxDBUsernameKey, value.User);
-                    SetValue(InfluxDBPasswordKey, value.Password);
+                    SetValue(InfluxDBPasswordKey, HS.EncryptString(value.Password, string.Empty));
                     SetValue(InfluxDBDBKey, value.DB);
                 }
                 finally

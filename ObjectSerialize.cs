@@ -4,7 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Hspi
 {
-    public static class ObjectSerialize
+    internal static class ObjectSerialize
     {
         public static string SerializeToString(object obj)
         {
