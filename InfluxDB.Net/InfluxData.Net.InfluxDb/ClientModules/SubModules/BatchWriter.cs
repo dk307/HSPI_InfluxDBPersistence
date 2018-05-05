@@ -8,6 +8,7 @@ using InfluxData.Net.Common.Constants;
 
 namespace InfluxData.Net.InfluxDb.ClientSubModules
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     public class BatchWriter : IBatchWriterFactory
     {
         private readonly IBasicClientModule _basicClientModule;

@@ -3,6 +3,7 @@ using System.Net;
 
 namespace InfluxData.Net.Common.Infrastructure
 {
+    [Serializable]
     public class InfluxDataException : Exception
     {
         public InfluxDataException(string message, Exception innerException)
@@ -16,6 +17,8 @@ namespace InfluxData.Net.Common.Infrastructure
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2240:ImplementISerializableCorrectly")]
+    [Serializable]
     public class InfluxDataApiException : InfluxDataException
     {
         public InfluxDataApiException(HttpStatusCode statusCode, string responseBody)
@@ -30,6 +33,8 @@ namespace InfluxData.Net.Common.Infrastructure
         public string ResponseBody { get; private set; }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2240:ImplementISerializableCorrectly")]
+    [Serializable]
     public class InfluxDataWarningException : InfluxDataException
     {
         public InfluxDataWarningException(string warningMessage)

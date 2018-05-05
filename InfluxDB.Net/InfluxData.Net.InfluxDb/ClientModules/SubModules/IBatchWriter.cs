@@ -54,6 +54,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         /// <summary>
         /// On batch writing error event handler.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly")]
         event EventHandler<Exception> OnError;
     }
 

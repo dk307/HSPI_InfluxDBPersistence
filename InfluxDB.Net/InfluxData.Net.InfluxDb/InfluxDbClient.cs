@@ -128,7 +128,7 @@ namespace InfluxData.Net.InfluxDb
         /// The default (latest supported) dependency chain setup.
         /// </summary>
         /// <param name="configuration">InfluxDb client configuration.</param>
-        protected virtual void BootstrapInfluxDbLatest(IInfluxDbClientConfiguration configuration)
+        protected void BootstrapInfluxDbLatest(IInfluxDbClientConfiguration configuration)
         {
             _requestClient = new InfluxDbRequestClient(configuration);
 
