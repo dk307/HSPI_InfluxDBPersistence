@@ -1,4 +1,5 @@
 ﻿using Hspi.Exceptions;
+using InfluxData.Net.Common.Constants;
 using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
@@ -7,12 +8,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hspi
 {
-    using System.Net.Http;
     using static System.FormattableString;
 
     internal class InfluxDBMeasurementsCollector
@@ -89,7 +90,7 @@ namespace Hspi
                         Tags = tags,
                     };
 
-                    await queue.EnqueueAsync(point, CancellationToken).ConfigureAwait(false);
+                    await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -143,14 +144,10 @@ namespace Hspi
             while (!cancellationToken.IsCancellationRequested)
             {
                 List<Point> points = new List<Point>();
-                var point = await queue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+                points.Add(await queue.DequeueAsync(cancellationToken).ConfigureAwait(false));
                 try
                 {
-                    points.Add(point);
-
-                    while (queue.OutputAvailableAsync())
-
-                    await influxDBClient.Client.WriteAsync(points, loginInformation.DB, precision: "s").ConfigureAwait(false);
+                     await influxDBClient.Client.WriteAsync(points, loginInformation.DB, precision: TimeUnit.Seconds).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -159,7 +156,10 @@ namespace Hspi
 
                     if (!connected)
                     {
-                        await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
+                        foreach (var point in points)
+                        {
+                            await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
+                        }
                         await Task.Delay(30000, cancellationToken).ConfigureAwait(false);
                     }
                 }

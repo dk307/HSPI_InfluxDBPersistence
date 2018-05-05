@@ -395,7 +395,9 @@ namespace Hspi
             HSHelper hsHelper = new HSHelper(HS);
             NameValueCollection persistanceNameCollection = new NameValueCollection();
 
-            foreach (var device in hsHelper.GetDevices())
+            var devices = hsHelper.GetDevices();
+            var devicesSorted = devices.OrderBy(x => x.Value);
+            foreach (var device in devicesSorted)
             {
                 persistanceNameCollection.Add(device.Key.ToString(CultureInfo.InvariantCulture), device.Value);
             }
@@ -582,7 +584,9 @@ namespace Hspi
                 stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.DeviceRefId}&edit=1'>{name}</a></td>"));
                 stb.Append(Invariant($"<td class='tablecell'>{device.Measurement}</td>"));
                 stb.Append(Invariant($"<td class='tablecell'>{device.Field ?? string.Empty}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.MaxValidValue ?? double.PositiveInfinity} to {device.MinValidValue ?? double.NegativeInfinity}</td>"));
+                string rangeString = !string.IsNullOrWhiteSpace(device.Field) ?
+                                        Invariant($"{device.MaxValidValue ?? double.PositiveInfinity} to {device.MinValidValue ?? double.NegativeInfinity}") : string.Empty;
+                stb.Append(Invariant($"<td class='tablecell'>{rangeString}</td>"));
                 stb.Append(Invariant($"<td class='tablecell'>{device.FieldString ?? string.Empty}</td>"));
                 stb.Append(@"<td class='tablecell'>");
                 if (device.Tags != null)

@@ -137,10 +137,13 @@ namespace Hspi
             {
                 int deviceRefId = device.get_Ref(HS);
                 double deviceValue = device.get_devValue(HS);
-                string deviceString = device.get_devString(HS);
-                Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId}"));
+                string deviceString = HS.DeviceString(deviceRefId);
+                if (string.IsNullOrWhiteSpace(deviceString))
+                {
+                    deviceString = HS.DeviceVSP_GetStatus(deviceRefId, deviceValue, ePairStatusControl.Status);
+                }
+                Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
 
-                //string deviceVSP = GetDeviceVSP(num, num2);
                 RecordData recordData = new RecordData(deviceRefId,
                                                        deviceValue,
                                                        deviceString,
