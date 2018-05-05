@@ -74,19 +74,16 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Costura, Version=2.0.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
+      <HintPath>packages\Costura.Fody.2.0.0\lib\net452\Costura.dll</HintPath>
+    </Reference>
     <Reference Include="HomeSeerAPI, Version=1.0.2.1, Culture=neutral, processorArchitecture=x86">
       <HintPath>packages\Homeseer.1.0.0\lib\net45\HomeSeerAPI.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="HSCF, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Homeseer.1.0.0\lib\net45\HSCF.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="InfluxData.Net.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\InfluxData.Net.8.0.1\lib\net461\InfluxData.Net.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="InfluxData.Net.InfluxDb, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\InfluxData.Net.8.0.1\lib\net461\InfluxData.Net.InfluxDb.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -108,7 +105,7 @@
     </Reference>
     <Reference Include="Scheduler, Version=3.0.0.0, Culture=neutral, processorArchitecture=x86">
       <HintPath>packages\Homeseer.1.0.0\lib\net45\Scheduler.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -125,6 +122,111 @@
     <Compile Include="HSPI.cs" />
     <Compile Include="HSTraceListener.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Constants\QueryParams.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Constants\TimeUnit.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Enums\InfluxDbVersion.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Enums\KapacitorVersion.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Enums\QueryLocation.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\MultipartContentExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\ObjectExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\ResponseExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\Stopwatch.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\StringExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\Validate.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IConfiguration.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IInfluxDataApiResponse.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IInfluxDbClientConfiguration.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IKapacitorClientConfiguration.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\InfluxDataApiResponse.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\InfluxDataException.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\RequestClients\RequestClientBase.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\BasicClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\ClientModuleBase.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\CqClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\CqClientModule_v_0_9_6.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\DatabaseClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\DatabaseClientModule_v_0_9_6.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\DiagnosticsClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\IBasicClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\ICqClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\IDatabaseClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\IDiagnosticsClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\IRetentionClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\ISerieClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\IUserClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\RetentionClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\SerieClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\SubModules\BatchWriter.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\SubModules\IBatchWriter.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\UserClientModule.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Constants\QueryParams.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Constants\QueryStatements.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Constants\RequestPaths.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Enums\FillType.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Enums\Privileges.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\IPointFormatter.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\PointFormatter.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\PointFormatter_v_0_9_2.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\PointFormatter_v_1_0_0.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Helpers\QueryExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Helpers\ResponseExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Helpers\SerieExtensions.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\IInfluxDbClient.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\InfluxDbClient.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Infrastructure\InfluxDbClientConfiguration.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Infrastructure\RequestParamsBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\BackfillParams.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\CqParams.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Point.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\ContinuousQuery.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Database.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Diagnostics.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\FieldKey.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Grant.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Measurement.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Message.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Pong.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\QueryResponse.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\RetentionPolicy.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Serie.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\SerieSet.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\Stats.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\TagValue.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\User.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\WriteRequest.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\CqQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\CqQueryBuilder_v_0_9_6.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\DatabaseQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\DiagnosticsQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\ICqQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\IDatabaseQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\IDiagnosticsQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\IRetentionQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\ISerieQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\IUserQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\RetentionQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\SerieQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\UserQueryBuilder.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\IInfluxDbRequestClient.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient_v_0_9_2.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient_v_0_9_6.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient_v_1_0_0.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\BasicResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\CqResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\DatabaseResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\DiagnosticsResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\IBasicResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\ICqResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\IDatabaseResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\IDiagnosticsResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\IRetentionResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\ISerieResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\IUserResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\RetentionResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\SerieResponseParser.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\SerieResponseParser_v_0_9_6.cs" />
+    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\UserResponseParser.cs" />
     <Compile Include="InfluxDBLoginInformation.cs" />
     <Compile Include="InfluxDBMeasurementsCollector.cs" />
     <Compile Include="ObjectSerialize.cs" />
@@ -140,7 +242,9 @@
     <Compile Include="RecordData.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -156,7 +260,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="FodyWeavers.xml" />
+    <None Include="FodyWeavers.xml">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.3.0.3\build\Fody.targets" Condition="Exists('packages\Fody.3.0.3\build\Fody.targets')" />
@@ -165,36 +271,9 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\Fody.3.0.3\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Fody.3.0.3\build\Fody.targets'))" />
-    <Error Condition="!Exists('packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets'))" />
+    <Error Condition="!Exists('packages\Costura.Fody.2.0.0\build\Costura.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Costura.Fody.2.0.0\build\Costura.Fody.targets'))" />
   </Target>
-  <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
-    <ItemGroup>
-      <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
-      <InputAssemblies Include="$(OutputPath)\InfluxData.Net.Common.dll" />
-      <InputAssemblies Include="$(OutputPath)\InfluxData.Net.InfluxDb.dll" />
-      <InputAssemblies Include="$(OutputPath)\Newtonsoft.Json.dll" />
-      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Coordination.dll" />
-      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Tasks.dll" />
-      <InputAssemblies Include="$(OutputPath)\Nito.Collections.Deque.dll" />
-      <InputAssemblies Include="$(OutputPath)\Nito.Disposables.dll" />
-    </ItemGroup>
-    <ItemGroup>
-      <!-- Must be a fully qualified name -->
-      <!--<DoNotInternalizeAssemblies Include="ExampleAssemblyToMerge3" />-->
-    </ItemGroup>
-	
-    <ILRepack 
-		Parallel="true" 
-		Internalize="false" 
-		Union="true" 
-		InternalizeExclude="@(DoNotInternalizeAssemblies)" 
-		InputAssemblies="@(InputAssemblies)" 
-		TargetKind="Exe" 
-		OutputFile="$(OutputPath)\$(AssemblyName).exe" 
-	/>
-		
-  </Target>
-  <Import Project="packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('packages\ILRepack.Lib.MSBuild.Task.2.0.15.4\build\ILRepack.Lib.MSBuild.Task.targets')" />
+  <Import Project="packages\Costura.Fody.2.0.0\build\Costura.Fody.targets" Condition="Exists('packages\Costura.Fody.2.0.0\build\Costura.Fody.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
