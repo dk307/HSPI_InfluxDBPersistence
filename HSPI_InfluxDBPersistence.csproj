@@ -125,7 +125,6 @@
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Constants\QueryParams.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Constants\TimeUnit.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Enums\InfluxDbVersion.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Enums\KapacitorVersion.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Enums\QueryLocation.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\MultipartContentExtensions.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Helpers\ObjectExtensions.cs" />
@@ -136,16 +135,13 @@
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IConfiguration.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IInfluxDataApiResponse.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IInfluxDbClientConfiguration.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\IKapacitorClientConfiguration.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\InfluxDataApiResponse.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\Infrastructure\InfluxDataException.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.Common\RequestClients\RequestClientBase.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\BasicClientModule.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\ClientModuleBase.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\CqClientModule.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\CqClientModule_v_0_9_6.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\DatabaseClientModule.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\DatabaseClientModule_v_0_9_6.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\DiagnosticsClientModule.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\IBasicClientModule.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ClientModules\ICqClientModule.cs" />
@@ -166,8 +162,6 @@
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Enums\Privileges.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\IPointFormatter.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\PointFormatter.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\PointFormatter_v_0_9_2.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Formatters\PointFormatter_v_1_0_0.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Helpers\QueryExtensions.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Helpers\ResponseExtensions.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Helpers\SerieExtensions.cs" />
@@ -195,7 +189,6 @@
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\Responses\User.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\Models\WriteRequest.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\CqQueryBuilder.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\CqQueryBuilder_v_0_9_6.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\DatabaseQueryBuilder.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\DiagnosticsQueryBuilder.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\ICqQueryBuilder.cs" />
@@ -209,9 +202,6 @@
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\QueryBuilders\UserQueryBuilder.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\IInfluxDbRequestClient.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient_v_0_9_2.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient_v_0_9_6.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\RequestClients\InfluxDbRequestClient_v_1_0_0.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\BasicResponseParser.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\CqResponseParser.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\DatabaseResponseParser.cs" />
@@ -225,7 +215,6 @@
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\IUserResponseParser.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\RetentionResponseParser.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\SerieResponseParser.cs" />
-    <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\SerieResponseParser_v_0_9_6.cs" />
     <Compile Include="InfluxDB.Net\InfluxData.Net.InfluxDb\ResponseParsers\UserResponseParser.cs" />
     <Compile Include="InfluxDBLoginInformation.cs" />
     <Compile Include="InfluxDBMeasurementsCollector.cs" />

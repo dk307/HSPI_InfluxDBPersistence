@@ -32,11 +32,7 @@ namespace InfluxData.Net.Common.RequestClients
         {
         }
 
-        protected RequestClientBase(IKapacitorClientConfiguration configuration, string userAgent)
-            : this((IConfiguration)configuration, userAgent)
-        {
-        }
-
+ 
         protected RequestClientBase(IConfiguration configuration, string userAgent)
         {
             this.Configuration = configuration;
