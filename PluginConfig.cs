@@ -281,6 +281,7 @@ namespace Hspi
             }
         }
 
+        public const string DeviceRefIdTag = "refid";
         public const string DeviceLocation1Tag = "location1";
         public const string DeviceLocation2Tag = "location2";
         public const string DeviceNameTag = "name";

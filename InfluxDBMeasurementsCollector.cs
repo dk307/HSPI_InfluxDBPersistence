@@ -75,6 +75,7 @@ namespace Hspi
                         {PluginConfig.DeviceNameTag, data.Name },
                     };
 
+                    tags.Add(PluginConfig.DeviceRefIdTag, data.DeviceRefId);
                     AddIfNotEmpty(tags, PluginConfig.DeviceLocation1Tag, data.Location1);
                     AddIfNotEmpty(tags, PluginConfig.DeviceLocation2Tag, data.Location2);
 
