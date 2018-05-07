@@ -150,7 +150,7 @@ namespace Hspi
                                                        device.get_Name(HS),
                                                        device.get_Location(HS),
                                                        device.get_Location2(HS),
-                                                       device.get_Last_Change(HS));
+                                                       device.get_Last_Change(HS).ToUniversalTime());
 
                 await collector.Record(recordData).ConfigureAwait(false);
             }

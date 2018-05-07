@@ -20,7 +20,7 @@ namespace Hspi
     /// </summary>
     /// <seealso cref="Scheduler.PageBuilderAndMenu.clsPageBuilder" />
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigPage" /> class.
@@ -53,16 +53,30 @@ namespace Hspi
                 string pageType = parts[PageTypeId];
                 reset();
 
-                AddHeader(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
-
                 StringBuilder stb = new StringBuilder();
+                stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
                 stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
 
                 switch (pageType)
                 {
                     case EditDevicePageType:
-                        pluginConfig.DevicePersistenceData.TryGetValue(parts[PersistenceId], out var data);
-                        stb.Append(BuildAddNewWebPageBody(data));
+                        {
+                            pluginConfig.DevicePersistenceData.TryGetValue(parts[PersistenceId], out var data);
+                            stb.Append(BuildAddNewWebPageBody(data));
+                        }
+                        break;
+
+                    case HistoryDevicePageType:
+                        {
+                            if (pluginConfig.DevicePersistenceData.TryGetValue(parts[PersistenceId], out var data))
+                            {
+                                stb.Append(BuildHistoryPage(parts, data));
+                            }
+                            else
+                            {
+                                stb.Append(BuildWebPageBody(parts));
+                            }
+                        }
                         break;
 
                     default:
@@ -73,9 +87,8 @@ namespace Hspi
                         }
                 }
 
-                AddBody(stb.ToString());
                 stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
-
+                AddBody(stb.ToString());
                 AddFooter(HS.GetPageFooter());
                 suppressDefaultFooter = true;
 
@@ -107,7 +120,7 @@ namespace Hspi
             }
             else if (form == NameToIdWithPrefix(EditPersistenceCancel))
             {
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
             }
             else if ((form == NameToIdWithPrefix(EditPersistenceSave)) ||
                      (form == NameToIdWithPrefix(FillDefaultValuesButtonName)))
@@ -118,7 +131,11 @@ namespace Hspi
             {
                 this.pluginConfig.RemoveDevicePersistenceData(parts[PersistenceId]);
                 this.pluginConfig.FireConfigChanged();
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+            }
+            else if ((form == NameToIdWithPrefix(HistoryQueryTypeId)) || (form == NameToIdWithPrefix(HistoryRunQueryButtonName)))
+            {
+                HandleHistoryPagePostBack(parts, form);
             }
 
             return base.postBackProc(Name, data, user, userRights);
@@ -167,7 +184,8 @@ namespace Hspi
                 autoPostBack = autoPostBack,
                 toolTip = tooltip,
                 style = Invariant($"width: {width}px;"),
-                enabled = true
+                enabled = true,
+                submitForm = autoPostBack,
             };
 
             if (options != null)
@@ -197,7 +215,7 @@ namespace Hspi
             var b = new clsJQuery.jqButton(name, label, PageName, false)
             {
                 id = NameToIdWithPrefix(name),
-                url = Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{PersistenceId}={HttpUtility.UrlEncode(persistenceId ?? string.Empty)}"),
+                url = Invariant($"/{pageUrl}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{PersistenceId}={HttpUtility.UrlEncode(persistenceId ?? string.Empty)}"),
             };
 
             return b.Build();
@@ -205,7 +223,7 @@ namespace Hspi
 
         private static string CreateSortLinkOnTab1(string name, int column, bool descending)
         {
-            return Invariant($"<a href=\"{HttpUtility.UrlEncode(pageName)}?{TabId}=1&{SortColumnId}={column}&{DescId}={Convert.ToInt32(!descending)}\">{name}</a>");
+            return Invariant($"<a href=\"{pageUrl}?{TabId}=1&{SortColumnId}={column}&{DescId}={Convert.ToInt32(!descending)}\">{name}</a>");
         }
 
         private static string NameToId(string name)
@@ -255,14 +273,14 @@ namespace Hspi
             stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmDeviceChange", "IdChange", "Post"));
 
             stb.Append(@"<div>");
-            stb.Append(@"<table class='full_width_table'");
+            stb.Append(@"<table class='full_width_table'>");
             stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>"));
             stb.Append(FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId.ToString(CultureInfo.InvariantCulture), 250, string.Empty, false));
             stb.Append(Invariant($"&nbsp;"));
             stb.Append(FormButton(FillDefaultValuesButtonName, "Fill Default Values", "Fill default values"));
-            stb.Append(Invariant($"</ td></tr>"));
+            stb.Append(Invariant($"</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>"));
             stb.Append(DivStart(MeasurementDivId, string.Empty));
             stb.Append(HtmlTextBox(MeasurementId, measurement));
@@ -317,14 +335,14 @@ namespace Hspi
 
             stb.Append(@"<br>");
             stb.Append(@"<div>");
-            stb.Append(@"<table class='full_width_table'");
+            stb.Append(@"<table class='full_width_table'>");
             stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:75%'></td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Url:</td><td class='tablecell' style='width: 50px'>"));
             stb.Append(HtmlTextBox(DBUriKey, dbConfig.DBUri != null ? dbConfig.DBUri.ToString() : string.Empty, type: "url"));
             stb.Append(Invariant($"</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>User:</td><td class='tablecell'>{HtmlTextBox(UserKey, dbConfig.User)} </td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Password:</td><td class='tablecell'>{HtmlTextBox(PasswordKey, dbConfig.Password, 25, "password")}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Database:</td><td colspan=2 class='tablecell'>{HtmlTextBox(DBKey, dbConfig.DB)}</ td ></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Database:</td><td colspan=2 class='tablecell'>{HtmlTextBox(DBKey, dbConfig.DB)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Debug Logging Enabled:</td><td class='tablecell'>{FormCheckBox(DebugLoggingId, string.Empty, this.pluginConfig.DebugLogging)}</td ></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2><div id='{ErrorDivId}' style='color:Red'></div></td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2>{FormButton(SettingSaveButtonName, "Save", "Save Settings")}</td></tr>"));
@@ -357,7 +375,7 @@ namespace Hspi
             StringBuilder stb = new StringBuilder();
 
             stb.Append(@"<div>");
-            stb.Append(@"<table class='full_width_table'");
+            stb.Append(@"<table class='full_width_table'>");
             stb.Append("<tr height='5'><td colspan=7></td></tr>");
             stb.Append("<tr>");
             stb.Append(Invariant($"<td class='tablecolumn'>{CreateSortLinkOnTab1("Device", 1, ascending)}</td>"));
@@ -425,12 +443,14 @@ namespace Hspi
                     }
                 }
                 stb.Append("</td>");
-                stb.Append(Invariant($"<td class='tablecell'>{PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDevicePageType, persistenceId: id)}</ td ></ tr > "));
+                stb.Append("<td class='tablecell'>");
+                stb.Append(PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDevicePageType, persistenceId: id));
+                stb.Append("&nbsp;");
+                stb.Append(PageTypeButton(Invariant($"History{id}"), "History", HistoryDevicePageType, persistenceId: id));
+                stb.Append("</td></tr>");
             }
 
             stb.Append(Invariant($"<tr><td colspan=7>{PageTypeButton("Add New Device", AddNewName, EditDevicePageType)}</td><td></td></tr>"));
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmSettings", "Id", "Post"));
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
 
             stb.Append(Invariant($"<tr><td colspan=7></td></tr>"));
             stb.Append(@"<tr height='5'><td colspan=7></td></tr>");
@@ -660,12 +680,11 @@ namespace Hspi
                     var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
                     this.pluginConfig.AddDevicePersistenceData(persistenceData);
                     this.pluginConfig.FireConfigChanged();
-                    this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{HttpUtility.UrlEncode(ConfigPage.Name)}?{TabId}=1")));
+                    this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
                 }
             }
         }
 
-        private const string IdPrefix = "id_";
         private const string AddNewName = "Add New";
         private const string DBKey = "DBId";
         private const string DBUriKey = "DBUriId";
@@ -681,6 +700,8 @@ namespace Hspi
         private const string FieldId = "FieldId";
         private const string FieldStringId = "FieldStringId";
         private const string FillDefaultValuesButtonName = "FillDefaultValues";
+        private const string HistoryDevicePageType = "history";
+        private const string IdPrefix = "id_";
         private const string ImageDivId = "image_id";
         private const string MaxValidValueDivId = "MaxValidValueDivId";
         private const string MaxValidValueId = "MaxValidValueId";
@@ -699,6 +720,7 @@ namespace Hspi
         private const string UseDefaultsId = "UseDefaultsId";
         private const string UserKey = "UserId";
         private static readonly string pageName = Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
+        private static readonly string pageUrl = HttpUtility.UrlEncode(pageName);
         private readonly IHSApplication HS;
         private readonly PluginConfig pluginConfig;
     }
