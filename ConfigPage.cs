@@ -146,9 +146,9 @@ namespace Hspi
             return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{defaultText}\' {(@readonly ? "readonly" : string.Empty)}>");
         }
 
-        protected static string TextArea(string name, string defaultText, int rows = 6, int cols = 35, bool @readonly = false)
+        protected static string TextArea(string name, string defaultText, int rows = 6, int cols = 120, bool @readonly = false)
         {
-            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' col=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText}</textarea>");
+            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' cols=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText}</textarea>");
         }
 
         protected string FormButton(string name, string label, string toolTip)
