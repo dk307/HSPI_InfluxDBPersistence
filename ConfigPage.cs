@@ -274,42 +274,42 @@ namespace Hspi
 
             stb.Append(@"<div>");
             stb.Append(@"<table class='full_width_table'>");
-            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
-            stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>{header}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>"));
+            stb.Append("<tr height='5'><td></td><td></td></tr>");
+            stb.Append(Invariant($"<tr><td class='tableheader' colspan=2>{header}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell'>"));
             stb.Append(FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId.ToString(CultureInfo.InvariantCulture), 250, string.Empty, false));
             stb.Append(Invariant($"&nbsp;"));
             stb.Append(FormButton(FillDefaultValuesButtonName, "Fill Default Values", "Fill default values"));
             stb.Append(Invariant($"</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell' colspan=2>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Measurement:</td><td class='tablecell'>"));
             stb.Append(DivStart(MeasurementDivId, string.Empty));
             stb.Append(HtmlTextBox(MeasurementId, measurement));
             stb.Append(DivEnd());
             stb.Append("</td></tr>");
-            stb.Append(Invariant($"<tr><td class='tablecell'>Field for value:</td><td class='tablecell' colspan=2>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Field for value:</td><td class='tablecell'>"));
             stb.Append(DivStart(FieldDivId, string.Empty));
             stb.Append(HtmlTextBox(FieldId, field));
             stb.Append(DivEnd());
             stb.Append("</td></tr>");
 
-            stb.Append(Invariant($"<tr><td class='tablecell'>Max valid value:</td><td class='tablecell' colspan=2>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Max valid value:</td><td class='tablecell'>"));
             stb.Append(DivStart(MaxValidValueDivId, string.Empty));
 
             stb.Append(HtmlTextBox(MaxValidValueId, maxValidValue));
             stb.Append(DivEnd());
 
             stb.Append("</td></tr>");
-            stb.Append(Invariant($"<tr><td class='tablecell'>Min valid value:</td><td class='tablecell' colspan=2>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Min valid value:</td><td class='tablecell'>"));
             stb.Append(DivStart(MinValidValueDivId, string.Empty));
 
             stb.Append(HtmlTextBox(MinValidValueId, minValidValue));
             stb.Append(DivEnd());
 
             stb.Append("</td></tr>");
-            stb.Append(Invariant($"<tr><td class='tablecell'>Field for string value:</td><td class='tablecell' colspan=2>{HtmlTextBox(FieldStringId, fieldString)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell' colspan=2><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td colspan=3>{HtmlTextBox(PersistenceId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
-            stb.Append(Invariant($"<tr><td colspan=3>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Field for string value:</td><td class='tablecell'>{HtmlTextBox(FieldStringId, fieldString)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell'><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags, cols:35)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td colspan=2>{HtmlTextBox(PersistenceId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
+            stb.Append(Invariant($"<tr><td colspan=2>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
 
             if (data != null)
             {
@@ -317,9 +317,9 @@ namespace Hspi
             }
 
             stb.Append(FormPageButton(EditPersistenceCancel, "Cancel"));
-            stb.Append(Invariant($"</td><td></td></tr>"));
-            stb.Append("<tr height='5'><td colspan=3></td></tr>");
-            stb.Append(@" </table>");
+            stb.Append(Invariant($"</td></tr>"));
+            stb.Append("<tr height='5'><td colspan=2></td></tr>");
+            stb.Append(@"</table>");
             stb.Append(@"</div>");
             stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
 
@@ -336,7 +336,7 @@ namespace Hspi
             stb.Append(@"<br>");
             stb.Append(@"<div>");
             stb.Append(@"<table class='full_width_table'>");
-            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:75%'></td></tr>");
+            stb.Append("<tr height='5'><td style='width:35%'></td><td style='width:65%'></td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Url:</td><td class='tablecell' style='width: 50px'>"));
             stb.Append(HtmlTextBox(DBUriKey, dbConfig.DBUri != null ? dbConfig.DBUri.ToString() : string.Empty, type: "url"));
             stb.Append(Invariant($"</td></tr>"));
