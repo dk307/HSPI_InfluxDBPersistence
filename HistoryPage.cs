@@ -1,4 +1,5 @@
-﻿using InfluxData.Net.Common.Enums;
+﻿using InfluxData.Net.Common.Constants;
+using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models.Responses;
 using Scheduler;
@@ -12,7 +13,6 @@ using System.Web;
 
 namespace Hspi
 {
-    using InfluxData.Net.Common.Constants;
     using static System.FormattableString;
 
     internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
@@ -117,7 +117,7 @@ namespace Hspi
                             {
                                 var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
                                 sortValue = column.ToString();
-                                value = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime().ToString(dateTimePattern, culture);
+                                value = ProcessInfluxDBDateTime(culture, dateTimePattern, timePoint);
                             }
                             else
                             {
@@ -126,11 +126,11 @@ namespace Hspi
 
                             if (sortValue != null)
                             {
-                                stb.Append(Invariant($"<td data-order='{HttpUtility.HtmlEncode(sortValue)}'>{ HttpUtility.HtmlEncode(value)}</td>"));
+                                stb.Append(Invariant($"<td data-order='{HttpUtility.HtmlEncode(sortValue)}' class='tablecell'>{ HttpUtility.HtmlEncode(value)}</td>"));
                             }
                             else
                             {
-                                stb.Append(Invariant($"<td>{HttpUtility.HtmlEncode(value)}</td>"));
+                                stb.Append(Invariant($"<td class='tablecell'>{HttpUtility.HtmlEncode(value)}</td>"));
                             }
                         }
                         stb.Append(@"</tr>");
@@ -155,6 +155,13 @@ namespace Hspi
             {
                 stb.Append(Invariant($"<br><div style='color:Red'>{ex.GetFullMessage()}</div><br>"));
             }
+        }
+
+        private static string ProcessInfluxDBDateTime(CultureInfo culture, string dateTimePattern, long timePoint)
+        {
+            var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
+
+            return dateTime.ToString(dateTimePattern, CultureInfo.InvariantCulture);
         }
 
         private IEnumerable<Serie> GetData(string query)
