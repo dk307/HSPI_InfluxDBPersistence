@@ -216,7 +216,7 @@ namespace Hspi
 
                 queries.Add(
                       "Min/Max/Average/Medium/Percentile Values By Hour(24h)",
-                      $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous)"
+                      $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous) TZ('{timezone.Id}'"
                 );
 
                 queries.Add(

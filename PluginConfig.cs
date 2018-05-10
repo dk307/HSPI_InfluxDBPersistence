@@ -41,6 +41,7 @@ namespace Hspi
             string deviceIdsConcatString = GetValue(PersistenceIdsKey, string.Empty);
             var persistenceIds = deviceIdsConcatString.Split(PersistenceIdsSeparator);
 
+            devicePersistenceData = new Dictionary<string, DevicePersistenceData>();
             foreach (var persistenceId in persistenceIds)
             {
                 string deviceRefIdString = GetValue(DeviceRefIdKey, string.Empty, persistenceId);
@@ -165,7 +166,7 @@ namespace Hspi
                 configLock.EnterReadLock();
                 try
                 {
-                    return new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
+                    return devicePersistenceData;
                 }
                 finally
                 {
@@ -179,7 +180,9 @@ namespace Hspi
             configLock.EnterWriteLock();
             try
             {
-                devicePersistenceData[device.Id] = device;
+                var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
+                newdevicePersistenceData[device.Id] = device;
+                devicePersistenceData = newdevicePersistenceData;
 
                 SetValue(DeviceRefIdKey, device.DeviceRefId, device.Id);
                 SetValue(MeasurementKey, device.Measurement, device.Id);
@@ -213,7 +216,10 @@ namespace Hspi
             configLock.EnterWriteLock();
             try
             {
-                devicePersistenceData.Remove(id);
+                var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
+                newdevicePersistenceData.Remove(id);
+                devicePersistenceData = newdevicePersistenceData;
+
                 if (devicePersistenceData.Count > 0)
                 {
                     SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
@@ -326,7 +332,7 @@ namespace Hspi
         private const string TagsKey = "Tags";
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim();
-        private readonly Dictionary<string, DevicePersistenceData> devicePersistenceData = new Dictionary<string, DevicePersistenceData>();
+        private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private readonly IHSApplication HS;
         private bool debugLogging;
         private bool disposedValue = false;

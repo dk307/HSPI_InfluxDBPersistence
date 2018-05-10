@@ -3,9 +3,10 @@ using NodaTime;
 
 namespace Hspi
 {
-    internal class RecordData
+    internal readonly struct RecordData
     {
-        public RecordData(int deviceRefId, double deviceValue, string deviceString, string name, string location1, string location2, Instant timeStamp)
+        public RecordData(int deviceRefId, in double deviceValue, string deviceString, 
+                          string name, string location1, string location2, in Instant timeStamp)
         {
             this.DeviceRefId = deviceRefId;
             this.DeviceValue = deviceValue;
