@@ -27,6 +27,12 @@ namespace Hspi
             }
         }
 
+        private static string ProcessInfluxDBDateTime(CultureInfo culture, string dateTimePattern, long timePoint)
+        {
+            var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
+            return dateTime.ToString(dateTimePattern, CultureInfo.InvariantCulture);
+        }
+
         private string BuildHistoryPage(NameValueCollection parts, DevicePersistenceData data)
         {
             StringBuilder stb = new StringBuilder();
@@ -157,13 +163,6 @@ namespace Hspi
             }
         }
 
-        private static string ProcessInfluxDBDateTime(CultureInfo culture, string dateTimePattern, long timePoint)
-        {
-            var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
-
-            return dateTime.ToString(dateTimePattern, CultureInfo.InvariantCulture);
-        }
-
         private IEnumerable<Serie> GetData(string query)
         {
             var loginInformation = pluginConfig.DBLoginInformation;
@@ -176,29 +175,64 @@ namespace Hspi
             DateTime timeNow = DateTime.Now;
             int secondsSinceDayStart = (int)(timeNow - timeNow.Date).TotalSeconds;
 
-            return new Dictionary<string, FormattableString>()
+            List<string> fields = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(data.Field))
+            {
+                fields.Add(Invariant($"\"{data.Field}\""));
+            }
+
+            if (!string.IsNullOrWhiteSpace(data.FieldString))
+            {
+                fields.Add(Invariant($"\"{data.FieldString}\""));
+            }
+
+            var queries = new Dictionary<string, FormattableString>()
             {
                 {
                     "Last 100 stored values",
-                    $"SELECT \"{data.Field}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"
+                    $"SELECT {string.Join(",", fields)} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"
                 },
-                {
-                    "Average/Medium/Percentile Value",
-                    $"SELECT MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile {data.Field}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
-                },
-                {
-                    "Average/Medium/Percentile Value(24h)",
-                    $"SELECT MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile {data.Field}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND  time > now() - 24h"
-                },
-                {
-                    "Average/Medium/Percentile Value By Hour(24h)",
-                    $"SELECT MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile {data.Field}\" FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous)"
-                },
-                {
-                    "Average/Medium/Percentile Value Today",
-                    $"SELECT MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile {data.Field}\" FROM \"{data.Measurement}\" WHERE time > now() - {secondsSinceDayStart}s AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
-                },
+                //{
+                //    "Top 100 values",
+                //    $"SELECT { string.Join(",", fields.Select((x) =>Invariant($"TOP({x}, 100)")))} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                //},
             };
+
+            if (!string.IsNullOrWhiteSpace(data.Field))
+            {
+                var standardFields = Invariant($"MIN(\"{data.Field}\"), MAX(\"{data.Field}\"), MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile\"");
+                queries.Add(
+                     "Min/Max/Average/Medium/Percentile Values",
+                     $"SELECT {standardFields} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                );
+
+                queries.Add(
+                      "Min/Max/Average/Medium/Percentile Values(24h)",
+                      $"SELECT {standardFields}  from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND  time > now() - 24h"
+                 );
+
+                queries.Add(
+                      "Min/Max/Average/Medium/Percentile Values By Hour(24h)",
+                      $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous)"
+                );
+
+                queries.Add(
+                      "Min/Max/Average/Medium/Percentile Values Today",
+                       $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - {secondsSinceDayStart}s AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                );
+
+                queries.Add(
+                    "Top 100 values",
+                    $"SELECT TOP(\"{data.Field}\", 100) FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                );
+
+                queries.Add(
+                    "Min/Max/Average/Medium/Percentile Values By Day(7d)",
+                    $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' and time > now() - 7d group by time(1d) TZ('{TimeZone.CurrentTimeZone.StandardName}')"
+                );
+            }
+            return queries;
         }
 
         private void HandleHistoryPagePostBack(NameValueCollection parts, string form)
@@ -224,6 +258,17 @@ namespace Hspi
             this.divToUpdate.Add(HistoryResultDivId, stb.ToString());
         }
 
+        private string HistoryBackButton()
+        {
+            var b = new clsJQuery.jqButton("Back", "Back", PageName, false)
+            {
+                id = NameToIdWithPrefix("Back"),
+                url = Invariant($"/{pageUrl}?{TabId}=1"),
+            };
+
+            return b.Build();
+        }
+
         private void IncludeResourceCSS(StringBuilder stb, string scriptFile)
         {
             stb.AppendLine("<style type=\"text/css\">");
@@ -238,17 +283,6 @@ namespace Hspi
             stb.AppendLine(Resource.ResourceManager.GetString(scriptFile.Replace('.', '_'), Resource.Culture));
             stb.AppendLine("</script>");
             this.AddScript(stb.ToString());
-        }
-
-        private string HistoryBackButton()
-        {
-            var b = new clsJQuery.jqButton("Back", "Back", PageName, false)
-            {
-                id = NameToIdWithPrefix("Back"),
-                url = Invariant($"/{pageUrl}?{TabId}=1"),
-            };
-
-            return b.Build();
         }
 
         private const string HistoryQueryTypeId = "historyquerytypeid";
