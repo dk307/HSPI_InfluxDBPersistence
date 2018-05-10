@@ -2,6 +2,7 @@
 using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models.Responses;
+using NodaTime;
 using Scheduler;
 using System;
 using System.Collections.Generic;
@@ -29,8 +30,8 @@ namespace Hspi
 
         private static string ProcessInfluxDBDateTime(CultureInfo culture, string dateTimePattern, long timePoint)
         {
-            var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
-            return dateTime.ToString(dateTimePattern, CultureInfo.InvariantCulture);
+            var dateTime = Instant.FromUnixTimeSeconds(timePoint).InZone(DateTimeZoneProviders.Tzdb.GetSystemDefault());
+            return dateTime.ToString(dateTimePattern, culture);
         }
 
         private string BuildHistoryPage(NameValueCollection parts, DevicePersistenceData data)
@@ -201,6 +202,7 @@ namespace Hspi
 
             if (!string.IsNullOrWhiteSpace(data.Field))
             {
+                var timezone = DateTimeZoneProviders.Tzdb.GetSystemDefault();
                 var standardFields = Invariant($"MIN(\"{data.Field}\"), MAX(\"{data.Field}\"), MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile\"");
                 queries.Add(
                      "Min/Max/Average/Medium/Percentile Values",
@@ -223,13 +225,13 @@ namespace Hspi
                 );
 
                 queries.Add(
-                    "Top 100 values",
-                    $"SELECT TOP(\"{data.Field}\", 100) FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                    "Min/Max/Average/Medium/Percentile Values By Day(7d)",
+                    $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' and time > now() - 7d group by time(1d) fill(previous) TZ('{timezone.Id}')"
                 );
 
                 queries.Add(
-                    "Min/Max/Average/Medium/Percentile Values By Day(7d)",
-                    $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' and time > now() - 7d group by time(1d) TZ('{TimeZone.CurrentTimeZone.StandardName}')"
+                    "Top 100 values",
+                    $"SELECT TOP(\"{data.Field}\", 100) FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
                 );
             }
             return queries;

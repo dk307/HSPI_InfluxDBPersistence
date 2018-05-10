@@ -1,13 +1,15 @@
 ﻿using HomeSeerAPI;
+using NodaTime;
+using NodaTime.Extensions;
 using NullGuard;
+using Scheduler.Classes;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Hspi
 {
-    using Scheduler.Classes;
-    using System.Threading.Tasks;
     using static System.FormattableString;
 
     /// <summary>
@@ -144,13 +146,17 @@ namespace Hspi
                 }
                 Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
 
+                DateTime lastChange = device.get_Last_Change(HS);
+                DateTimeZone hsZone = DateTimeZoneProviders.Tzdb.GetSystemDefault();
+                ZonedDateTime zonedDateTime = lastChange.ToLocalDateTime().InZoneStrictly(hsZone);
+
                 RecordData recordData = new RecordData(deviceRefId,
                                                        deviceValue,
                                                        deviceString,
                                                        device.get_Name(HS),
                                                        device.get_Location(HS),
                                                        device.get_Location2(HS),
-                                                       device.get_Last_Change(HS).ToUniversalTime());
+                                                       zonedDateTime.ToInstant());
 
                 await collector.Record(recordData).ConfigureAwait(false);
             }
