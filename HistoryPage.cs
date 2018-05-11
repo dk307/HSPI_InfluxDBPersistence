@@ -228,11 +228,6 @@ namespace Hspi
                     "Min/Max/Average/Medium/Percentile Values By Day(7d)",
                     $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' and time > now() - 7d group by time(1d) fill(previous) TZ('{timezone.Id}')"
                 );
-
-                queries.Add(
-                    "Top 100 values",
-                    $"SELECT TOP(\"{data.Field}\", 100) FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
-                );
             }
             return queries;
         }
