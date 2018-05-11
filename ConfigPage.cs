@@ -48,11 +48,12 @@ namespace Hspi
         {
             try
             {
+                reset();
+                this.UsesJqAll = false;
+
                 NameValueCollection parts = HttpUtility.ParseQueryString(queryString);
 
                 string pageType = parts[PageTypeId];
-                reset();
-
                 StringBuilder stb = new StringBuilder();
                 stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
                 stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
@@ -74,7 +75,7 @@ namespace Hspi
                             }
                             else
                             {
-                                stb.Append(BuildWebPageBody(parts));
+                                stb.Append(BuildDefaultWebPageBody(parts));
                             }
                         }
                         break;
@@ -82,7 +83,7 @@ namespace Hspi
                     default:
                     case null:
                         {
-                            stb.Append(BuildWebPageBody(parts));
+                            stb.Append(BuildDefaultWebPageBody(parts));
                             break;
                         }
                 }
@@ -166,6 +167,7 @@ namespace Hspi
 
         protected string FormCheckBox(string name, string label, bool @checked, bool autoPostBack = false)
         {
+            this.UsesjqCheckBox = true;
             var cb = new clsJQuery.jqCheckBox(name, label, PageName, true, true)
             {
                 id = NameToIdWithPrefix(name),
@@ -177,8 +179,8 @@ namespace Hspi
 
         protected string FormDropDown(string name, NameValueCollection options, string selected, int width, string tooltip, bool autoPostBack = true)
         {
-            var dropdown = new clsJQuery.jqDropList(name, PageName, false)
-            {
+             var dropdown = new clsJQuery.jqDropList(name, PageName, false)
+             {
                 selectedItemIndex = -1,
                 id = NameToIdWithPrefix(name),
                 autoPostBack = autoPostBack,
@@ -187,7 +189,6 @@ namespace Hspi
                 enabled = true,
                 submitForm = autoPostBack,
             };
-
 
             if (options != null)
             {
@@ -444,8 +445,9 @@ namespace Hspi
         /// Builds the web page body for the configuration page.
         /// The page has separate forms so that only the data in the appropriate form is returned when a button is pressed.
         /// </summary>
-        private string BuildWebPageBody(NameValueCollection parts)
+        private string BuildDefaultWebPageBody(NameValueCollection parts)
         {
+            this.UsesJqTabs = true;
             string tab = parts[TabId] ?? "0";
             int defaultTab = 0;
             int.TryParse(tab, out defaultTab);
