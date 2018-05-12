@@ -1,11 +1,10 @@
-﻿using System;
-using NodaTime;
+﻿using NodaTime;
 
 namespace Hspi
 {
     internal readonly struct RecordData
     {
-        public RecordData(int deviceRefId, in double deviceValue, string deviceString, 
+        public RecordData(int deviceRefId, in double deviceValue, string deviceString,
                           string name, string location1, string location2, in Instant timeStamp)
         {
             this.DeviceRefId = deviceRefId;

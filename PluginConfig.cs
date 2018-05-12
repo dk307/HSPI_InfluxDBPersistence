@@ -287,13 +287,13 @@ namespace Hspi
             }
         }
 
-        public const string DeviceRefIdTag = "refid";
+        public const string DefaultFieldValueString = "value";
         public const string DeviceLocation1Tag = "location1";
         public const string DeviceLocation2Tag = "location2";
         public const string DeviceNameTag = "name";
-        public const string DefaultFieldValueString = "value";
-        public const string DeviceValueDefaultField = "value";
+        public const string DeviceRefIdTag = "refid";
         public const string DeviceStringValueDefaultField = "valueString";
+        public const string DeviceValueDefaultField = "value";
 
         #region IDisposable Support
 
@@ -332,9 +332,9 @@ namespace Hspi
         private const string TagsKey = "Tags";
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim();
-        private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private readonly IHSApplication HS;
         private bool debugLogging;
+        private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private bool disposedValue = false;
         private InfluxDBLoginInformation influxDBLoginInformation;
         private string PersistenceIdsKey = "PersistenceIds";
