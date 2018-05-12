@@ -179,8 +179,8 @@ namespace Hspi
 
         protected string FormDropDown(string name, NameValueCollection options, string selected, int width, string tooltip, bool autoPostBack = true)
         {
-             var dropdown = new clsJQuery.jqDropList(name, PageName, false)
-             {
+            var dropdown = new clsJQuery.jqDropList(name, PageName, false)
+            {
                 selectedItemIndex = -1,
                 id = NameToIdWithPrefix(name),
                 autoPostBack = autoPostBack,
@@ -200,6 +200,25 @@ namespace Hspi
             }
 
             return dropdown.Build();
+        }
+
+        protected string FormDropDownChosen(string name, IDictionary<int, string> options, int selected)
+        {
+            string id = NameToIdWithPrefix(name);
+            StringBuilder stb = new StringBuilder();
+            stb.AppendLine(Invariant($"<select id=\"{id}\" form_id='{id}' name='{name}'>"));
+            foreach (var option in options)
+            {
+                stb.AppendLine(Invariant($" <option value=\"{option.Key}\" {(option.Key == selected ? "selected" : string.Empty)}>{option.Value}</option>"));
+            }
+            stb.AppendLine(Invariant($"</select>"));
+
+            stb.AppendLine("<script type='text/javascript'>");
+            stb.AppendLine("$(document).ready(function() {");
+            stb.AppendLine(Invariant($"     $(\"#{id}\").chosen();"));
+            stb.AppendLine("});");
+            stb.AppendLine("</script>");
+            return stb.ToString();
         }
 
         protected string FormPageButton(string name, string label)
@@ -236,13 +255,13 @@ namespace Hspi
         private string BuildAddNewWebPageBody([AllowNull]DevicePersistenceData data)
         {
             HSHelper hsHelper = new HSHelper(HS);
-            NameValueCollection persistanceNameCollection = new NameValueCollection();
 
             var devices = hsHelper.GetDevices();
             var devicesSorted = devices.OrderBy(x => x.Value);
+            var options = new Dictionary<int, string>();
             foreach (var device in devicesSorted)
             {
-                persistanceNameCollection.Add(device.Key.ToString(CultureInfo.InvariantCulture), device.Value);
+                options.Add(device.Key, device.Value);
             }
 
             int deviceRefId = data != null ? data.DeviceRefId : -1;
@@ -267,6 +286,9 @@ namespace Hspi
 
             StringBuilder stb = new StringBuilder();
 
+            IncludeResourceCSS(stb, "chosen.css");
+            IncludeResourceScript(stb, "chosen.jquery.min.js");
+
             stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmDeviceChange", "IdChange", "Post"));
 
             stb.Append(@"<div>");
@@ -274,7 +296,7 @@ namespace Hspi
             stb.Append("<tr height='5'><td></td><td></td></tr>");
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=2>{header}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell'>"));
-            stb.Append(FormDropDown(DeviceRefId, persistanceNameCollection, deviceRefId.ToString(CultureInfo.InvariantCulture), 250, string.Empty, false));
+            stb.Append(FormDropDownChosen(DeviceRefIdId, options, deviceRefId));
             stb.Append(Invariant($"&nbsp;"));
             stb.Append(FormButton(FillDefaultValuesButtonName, "Fill Default Values", "Fill default values"));
             stb.Append(Invariant($"</td></tr>"));
@@ -542,7 +564,7 @@ namespace Hspi
         {
             StringBuilder results = new StringBuilder();
 
-            string deviceId = parts[DeviceRefId];
+            string deviceId = parts[DeviceRefIdId];
             if (!int.TryParse(deviceId, out int deviceRefId))
             {
                 results.AppendLine("Device is not valid.<br>");
@@ -673,7 +695,7 @@ namespace Hspi
         private const string DebugLoggingId = "DebugLoggingId";
         private const string DeletePersistenceSave = "DeleteP";
         private const string DescId = "desc";
-        private const string DeviceRefId = "DeviceRefId";
+        private const string DeviceRefIdId = "devicerefidid";
         private const string EditDevicePageType = "edit";
         private const string EditPersistenceCancel = "CancelP";
         private const string EditPersistenceSave = "SaveP";
