@@ -194,10 +194,6 @@ namespace Hspi
                     "Last 100 stored values",
                     $"SELECT {string.Join(",", fields)} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"
                 },
-                //{
-                //    "Top 100 values",
-                //    $"SELECT { string.Join(",", fields.Select((x) =>Invariant($"TOP({x}, 100)")))} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
-                //},
             };
 
             if (!string.IsNullOrWhiteSpace(data.Field))
@@ -211,12 +207,12 @@ namespace Hspi
 
                 queries.Add(
                       "Min/Max/Average/Medium/Percentile Values(24h)",
-                      $"SELECT {standardFields}  from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND  time > now() - 24h"
+                      $"SELECT {standardFields}  from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h"
                  );
 
                 queries.Add(
                       "Min/Max/Average/Medium/Percentile Values By Hour(24h)",
-                      $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous) TZ('{timezone.Id}'"
+                      $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous) TZ('{timezone.Id}')"
                 );
 
                 queries.Add(

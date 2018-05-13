@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace Hspi
 {
+    using NullGuard;
     using static System.FormattableString;
 
     /// <summary>
@@ -33,9 +34,10 @@ namespace Hspi
 
             this.influxDBLoginInformation = new InfluxDBLoginInformation(
                 influxDBUri,
-                GetValue(InfluxDBUsernameKey, string.Empty),
-                HS.DecryptString(GetValue(InfluxDBPasswordKey, string.Empty), string.Empty),
-                GetValue(InfluxDBDBKey, string.Empty)
+                CheckEmptyOrWhitespace(GetValue(InfluxDBUsernameKey, string.Empty)),
+                CheckEmptyOrWhitespace(HS.DecryptString(GetValue(InfluxDBPasswordKey, string.Empty), string.Empty)),
+                CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty)),
+                CheckEmptyOrWhitespace(GetValue(RetentionKey, string.Empty))
              );
 
             string deviceIdsConcatString = GetValue(PersistenceIdsKey, string.Empty);
@@ -82,7 +84,7 @@ namespace Hspi
                     minValidValue = value;
                 }
 
-                var data = new Hspi.DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                var data = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
                 this.devicePersistenceData.Add(persistenceId, data);
             }
 
@@ -116,6 +118,7 @@ namespace Hspi
                     SetValue(InfluxDBUsernameKey, value.User);
                     SetValue(InfluxDBPasswordKey, HS.EncryptString(value.Password, string.Empty));
                     SetValue(InfluxDBDBKey, value.DB);
+                    SetValue(RetentionKey, value.Retention);
                 }
                 finally
                 {
@@ -236,6 +239,11 @@ namespace Hspi
             }
         }
 
+        public static string CheckEmptyOrWhitespace([AllowNull]string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
         private T GetValue<T>(string key, T defaultValue)
         {
             return GetValue(key, defaultValue, DefaultSection);
@@ -329,6 +337,7 @@ namespace Hspi
         private const string MaxValidValueKey = "MaxValidValue";
         private const string MeasurementKey = "Measurement";
         private const string MinValidValueKey = "MinValidValue";
+        private const string RetentionKey = "Retention";
         private const string TagsKey = "Tags";
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim();

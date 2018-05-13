@@ -149,7 +149,7 @@ namespace Hspi
                 points.Add(await queue.DequeueAsync(cancellationToken).ConfigureAwait(false));
                 try
                 {
-                    await influxDBClient.Client.WriteAsync(points, loginInformation.DB, precision: TimeUnit.Seconds).ConfigureAwait(false);
+                    await influxDBClient.Client.WriteAsync(points, loginInformation.DB, loginInformation.Retention, precision: TimeUnit.Seconds).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

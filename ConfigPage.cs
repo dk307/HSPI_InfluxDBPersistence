@@ -142,14 +142,14 @@ namespace Hspi
             return base.postBackProc(Name, data, user, userRights);
         }
 
-        protected static string HtmlTextBox(string name, string defaultText, int size = 25, string type = "text", bool @readonly = false)
+        protected static string HtmlTextBox(string name, [AllowNull]string defaultText, int size = 25, string type = "text", bool @readonly = false)
         {
-            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{defaultText}\' {(@readonly ? "readonly" : string.Empty)}>");
+            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{defaultText ?? string.Empty}\' {(@readonly ? "readonly" : string.Empty)}>");
         }
 
-        protected static string TextArea(string name, string defaultText, int rows = 6, int cols = 120, bool @readonly = false)
+        protected static string TextArea(string name, [AllowNull]string defaultText, int rows = 6, int cols = 120, bool @readonly = false)
         {
-            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' cols=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText}</textarea>");
+            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' cols=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText ?? string.Empty}</textarea>");
         }
 
         protected string FormButton(string name, string label, string toolTip)
@@ -362,6 +362,7 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td class='tablecell'>User:</td><td class='tablecell'>{HtmlTextBox(UserKey, dbConfig.User)} </td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Password:</td><td class='tablecell'>{HtmlTextBox(PasswordKey, dbConfig.Password, 25, "password")}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Database:</td><td colspan=2 class='tablecell'>{HtmlTextBox(DBKey, dbConfig.DB)}</td></tr>"));
+            stb.Append(Invariant($"<tr><td class='tablecell'>Retention Policy:</td><td colspan=2 class='tablecell'>{HtmlTextBox(RetentionKey, dbConfig.Retention)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Debug Logging Enabled:</td><td class='tablecell'>{FormCheckBox(DebugLoggingId, string.Empty, this.pluginConfig.DebugLogging)}</td ></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2><div id='{ErrorDivId}' style='color:Red'></div></td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2>{FormButton(SettingSaveButtonName, "Save", "Save Settings")}</td></tr>"));
@@ -369,6 +370,50 @@ namespace Hspi
             stb.Append(@" </table>");
             stb.Append(@"</div>");
             stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
+
+            return stb.ToString();
+        }
+
+        /// <summary>
+        /// Builds the web page body for the configuration page.
+        /// The page has separate forms so that only the data in the appropriate form is returned when a button is pressed.
+        /// </summary>
+        private string BuildDefaultWebPageBody(NameValueCollection parts)
+        {
+            this.UsesJqTabs = true;
+            string tab = parts[TabId] ?? "0";
+            int defaultTab = 0;
+            int.TryParse(tab, out defaultTab);
+
+            int i = 0;
+            StringBuilder stb = new StringBuilder();
+
+            var tabs = new clsJQuery.jqTabs("tab1id", PageName);
+            var tab1 = new clsJQuery.Tab();
+            tab1.tabTitle = "DB Settings";
+            tab1.tabDIVID = Invariant($"tabs{i++}");
+            tab1.tabContent = BuildDBSettingTab();
+            tabs.tabs.Add(tab1);
+
+            var tab2 = new clsJQuery.Tab();
+            tab2.tabTitle = "Persistence";
+            tab2.tabDIVID = Invariant($"tabs{i++}");
+            tab2.tabContent = BuildPersistenceTab(parts);
+            tabs.tabs.Add(tab2);
+
+            switch (defaultTab)
+            {
+                case 0:
+                    tabs.defaultTab = tab1.tabDIVID;
+                    break;
+
+                case 1:
+                    tabs.defaultTab = tab2.tabDIVID;
+                    break;
+            }
+
+            tabs.postOnTabClick = false;
+            stb.Append(tabs.Build());
 
             return stb.ToString();
         }
@@ -462,51 +507,6 @@ namespace Hspi
 
             return stb.ToString();
         }
-
-        /// <summary>
-        /// Builds the web page body for the configuration page.
-        /// The page has separate forms so that only the data in the appropriate form is returned when a button is pressed.
-        /// </summary>
-        private string BuildDefaultWebPageBody(NameValueCollection parts)
-        {
-            this.UsesJqTabs = true;
-            string tab = parts[TabId] ?? "0";
-            int defaultTab = 0;
-            int.TryParse(tab, out defaultTab);
-
-            int i = 0;
-            StringBuilder stb = new StringBuilder();
-
-            var tabs = new clsJQuery.jqTabs("tab1id", PageName);
-            var tab1 = new clsJQuery.Tab();
-            tab1.tabTitle = "DB Settings";
-            tab1.tabDIVID = Invariant($"tabs{i++}");
-            tab1.tabContent = BuildDBSettingTab();
-            tabs.tabs.Add(tab1);
-
-            var tab2 = new clsJQuery.Tab();
-            tab2.tabTitle = "Persistence";
-            tab2.tabDIVID = Invariant($"tabs{i++}");
-            tab2.tabContent = BuildPersistenceTab(parts);
-            tabs.tabs.Add(tab2);
-
-            switch (defaultTab)
-            {
-                case 0:
-                    tabs.defaultTab = tab1.tabDIVID;
-                    break;
-
-                case 1:
-                    tabs.defaultTab = tab2.tabDIVID;
-                    break;
-            }
-
-            tabs.postOnTabClick = false;
-            stb.Append(tabs.Build());
-
-            return stb.ToString();
-        }
-
         private void HandleSaveDBSettingPostBack(NameValueCollection parts)
         {
             StringBuilder results = new StringBuilder();
@@ -529,6 +529,7 @@ namespace Hspi
 
             string username = parts[UserKey];
             string password = parts[PasswordKey];
+            string retention = parts[RetentionKey];
 
             try
             {
@@ -536,9 +537,21 @@ namespace Hspi
 
                 var databases = influxDbClient.Database.GetDatabasesAsync().Result;
 
-                if (!databases.Any((db) => { return db.Name == database; }))
+                var selectedDb = databases.Where((db) => { return db.Name == database; }).FirstOrDefault();
+                if (selectedDb == null)
                 {
                     results.AppendLine("Database not found on server.<br>");
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(retention))
+                    {
+                        var retentionPolcies = influxDbClient.Retention.GetRetentionPoliciesAsync(selectedDb.Name).Result;
+                        if (!retentionPolcies.Any(r => r.Name == retention))
+                        {
+                            results.AppendLine("Retention policy not found for database.<br>");
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -553,7 +566,11 @@ namespace Hspi
             else
             {
                 this.divToUpdate.Add(ErrorDivId, string.Empty);
-                var dbConfig = new InfluxDBLoginInformation(dbUri, username, password, parts[DBKey]);
+                var dbConfig = new InfluxDBLoginInformation(dbUri, 
+                                                            PluginConfig.CheckEmptyOrWhitespace(username),
+                                                            PluginConfig.CheckEmptyOrWhitespace(password),
+                                                            PluginConfig.CheckEmptyOrWhitespace(parts[DBKey]),
+                                                            PluginConfig.CheckEmptyOrWhitespace(retention));
                 this.pluginConfig.DBLoginInformation = dbConfig;
                 this.pluginConfig.DebugLogging = parts[DebugLoggingId] == "checked";
                 this.pluginConfig.FireConfigChanged();
@@ -716,6 +733,7 @@ namespace Hspi
         private const string PageTypeId = "type";
         private const string PasswordKey = "PasswordId";
         private const string PersistenceId = "PersistenceId";
+        private const string RetentionKey = "RetentionId";
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TabId = "tab";
