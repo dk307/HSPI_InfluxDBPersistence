@@ -117,11 +117,12 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfigPage.cs" />
+    <Compile Include="Pages\PersistencePage.cs" />
+    <Compile Include="Pages\ConfigPage.cs" />
     <Compile Include="DevicePersistenceData.cs" />
     <Compile Include="EnumHelper.cs" />
     <Compile Include="ExceptionHelper.cs" />
-    <Compile Include="HistoryPage.cs" />
+    <Compile Include="Pages\HistoryPage.cs" />
     <Compile Include="HSHelper.cs" />
     <Compile Include="HSPI.cs" />
     <Compile Include="HSTraceListener.cs" />
