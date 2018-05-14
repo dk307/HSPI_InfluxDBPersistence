@@ -154,17 +154,33 @@ namespace Hspi
                 }
                 else
                 {
-                    string id = parts[RecordId];
-
-                    if (string.IsNullOrWhiteSpace(id))
+                    try
                     {
-                        id = System.Guid.NewGuid().ToString();
+                        GetData(sql);
+                    }
+                    catch (Exception ex)
+                    {
+                        results.Append(Invariant($"Query Failed with {ex.GetFullMessage()}"));
                     }
 
-                    var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(intervalSeconds));
-                    this.pluginConfig.AddImportDeviceData(data);
-                    this.pluginConfig.FireConfigChanged();
-                    this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=2")));
+                    if (results.Length > 0)
+                    {
+                        this.divToUpdate.Add(SaveErrorDivId, results.ToString());
+                    }
+                    else
+                    {
+                        string id = parts[RecordId];
+
+                        if (string.IsNullOrWhiteSpace(id))
+                        {
+                            id = System.Guid.NewGuid().ToString();
+                        }
+
+                        var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(intervalSeconds));
+                        this.pluginConfig.AddImportDeviceData(data);
+                        this.pluginConfig.FireConfigChanged();
+                        this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=2")));
+                    }
                 }
             }
         }
