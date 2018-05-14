@@ -66,7 +66,7 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td>{FormDropDown(HistoryQueryTypeId, collection, querySelection, 400, string.Empty, true)}</td></tr>"));
 
             string finalQuery = Invariant(queries[querySelection]);
-            stb.Append(Invariant($"<tr height='10'><td>{HtmlTextBox(PersistenceId, data.Id.ToString(), @type: "hidden")}</td></tr>"));
+            stb.Append(Invariant($"<tr height='10'><td>{HtmlTextBox(RecordId, data.Id.ToString(), @type: "hidden")}</td></tr>"));
             stb.Append("<tr><td>");
             stb.Append(DivStart(QueryTestDivId, string.Empty));
             stb.Append(Invariant($"{TextArea(QueryTestId, finalQuery)}"));
@@ -234,7 +234,7 @@ namespace Hspi
             if (form == NameToIdWithPrefix(HistoryQueryTypeId))
             {
                 var queryType = parts[HistoryQueryTypeId];
-                var id = parts[PersistenceId];
+                var id = parts[RecordId];
                 var data = pluginConfig.DevicePersistenceData[id];
                 var queries = GetDefaultValueQueries(data);
 

@@ -61,14 +61,21 @@ namespace Hspi
                 {
                     case EditDevicePageType:
                         {
-                            pluginConfig.DevicePersistenceData.TryGetValue(parts[PersistenceId], out var data);
+                            pluginConfig.DevicePersistenceData.TryGetValue(parts[RecordId], out var data);
                             stb.Append(BuildAddNewPersistenceWebPageBody(data));
+                        }
+                        break;
+
+                    case EditDeviceImportPageType:
+                        {
+                            pluginConfig.ImportDeviceData.TryGetValue(parts[RecordId], out var data);
+                            stb.Append(BuildAddNewDeviceImportWebPageBody(data));
                         }
                         break;
 
                     case HistoryDevicePageType:
                         {
-                            if (pluginConfig.DevicePersistenceData.TryGetValue(parts[PersistenceId], out var data))
+                            if (pluginConfig.DevicePersistenceData.TryGetValue(parts[RecordId], out var data))
                             {
                                 stb.Append(BuildHistoryPage(parts, data));
                             }
@@ -118,22 +125,21 @@ namespace Hspi
             {
                 HandleSaveDBSettingPostBack(parts);
             }
-            else if (form == NameToIdWithPrefix(EditPersistenceCancel))
-            {
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
-            }
             else if ((form == NameToIdWithPrefix(EditPersistenceSave)) ||
-                     (form == NameToIdWithPrefix(FillDefaultValuesButtonName)))
+                    (form == NameToIdWithPrefix(FillDefaultValuesButtonName)) ||
+                    (form == NameToIdWithPrefix(EditPersistenceCancel)) ||
+                    (form == NameToIdWithPrefix(DeletePersistenceSave)))
             {
                 HandleSavingPersistencePostBack(parts, form);
             }
-            else if (form == NameToIdWithPrefix(DeletePersistenceSave))
+            else if ((form == NameToIdWithPrefix(DeleteDeviceImport)) ||
+                     (form == NameToIdWithPrefix(CancelDeviceImport)) ||
+                     (form == NameToIdWithPrefix(SaveDeviceImport)))
             {
-                this.pluginConfig.RemoveDevicePersistenceData(parts[PersistenceId]);
-                this.pluginConfig.FireConfigChanged();
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+                HandleSavingDeviceImportPostBack(parts, form);
             }
-            else if ((form == NameToIdWithPrefix(HistoryQueryTypeId)) || (form == NameToIdWithPrefix(HistoryRunQueryButtonName)))
+            else if ((form == NameToIdWithPrefix(HistoryQueryTypeId)) ||
+                     (form == NameToIdWithPrefix(HistoryRunQueryButtonName)))
             {
                 HandleHistoryPagePostBack(parts, form);
             }
@@ -230,12 +236,12 @@ namespace Hspi
             return b.Build();
         }
 
-        protected string PageTypeButton(string name, string label, string type, string persistenceId = null)
+        protected string PageTypeButton(string name, string label, string type, string id = null)
         {
             var b = new clsJQuery.jqButton(name, label, PageName, false)
             {
                 id = NameToIdWithPrefix(name),
-                url = Invariant($"/{pageUrl}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{PersistenceId}={HttpUtility.UrlEncode(persistenceId ?? string.Empty)}"),
+                url = Invariant($"/{pageUrl}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{RecordId}={HttpUtility.UrlEncode(id ?? string.Empty)}"),
             };
 
             return b.Build();
@@ -293,6 +299,8 @@ namespace Hspi
 
             int i = 0;
             StringBuilder stb = new StringBuilder();
+            IncludeResourceCSS(stb, "jquery.dataTables.css");
+            IncludeResourceScript(stb, "jquery.dataTables.min.js");
 
             var tabs = new clsJQuery.jqTabs("tab1id", PageName);
             var tab1 = new clsJQuery.Tab();
@@ -307,6 +315,12 @@ namespace Hspi
             tab2.tabContent = BuildPersistenceTab(parts);
             tabs.tabs.Add(tab2);
 
+            var tab3 = new clsJQuery.Tab();
+            tab3.tabTitle = "Devices Import";
+            tab3.tabDIVID = Invariant($"tabs{i++}");
+            tab3.tabContent = BuildImportDevicesTab(parts);
+            tabs.tabs.Add(tab3);
+
             switch (defaultTab)
             {
                 case 0:
@@ -315,6 +329,10 @@ namespace Hspi
 
                 case 1:
                     tabs.defaultTab = tab2.tabDIVID;
+                    break;
+
+                case 2:
+                    tabs.defaultTab = tab3.tabDIVID;
                     break;
             }
 
@@ -398,18 +416,13 @@ namespace Hspi
         private const string DBUriKey = "DBUriId";
         private const string DebugLoggingId = "DebugLoggingId";
         private const string ErrorDivId = "message_id";
-        private const string FieldDivId = "FieldDivId";
-        private const string FieldId = "FieldId";
-        private const string FieldStringId = "FieldStringId";
         private const string IdPrefix = "id_";
         private const string PageTypeId = "type";
         private const string PasswordKey = "PasswordId";
-        private const string PersistenceId = "PersistenceId";
         private const string RetentionKey = "RetentionId";
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TabId = "tab";
-        private const string TagsId = "TagsId";
         private const string UserKey = "UserId";
         private static readonly string pageName = Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
         private static readonly string pageUrl = HttpUtility.UrlEncode(pageName);

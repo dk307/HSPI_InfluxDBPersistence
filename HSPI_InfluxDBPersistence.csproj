@@ -117,6 +117,8 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ImportDeviceInfo.cs" />
+    <Compile Include="Pages\ImportDevicesPage.cs" />
     <Compile Include="Pages\PersistencePage.cs" />
     <Compile Include="Pages\ConfigPage.cs" />
     <Compile Include="DevicePersistenceData.cs" />

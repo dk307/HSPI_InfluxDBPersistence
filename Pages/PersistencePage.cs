@@ -15,6 +15,7 @@ namespace Hspi
     /// Helper class to generate configuration page for plugin
     /// </summary>
     /// <seealso cref="Scheduler.PageBuilderAndMenu.clsPageBuilder" />
+    //[NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
     {
         private string BuildAddNewPersistenceWebPageBody([AllowNull]DevicePersistenceData data)
@@ -92,7 +93,7 @@ namespace Hspi
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Field for string value:</td><td class='tablecell'>{HtmlTextBox(FieldStringId, fieldString)}</td></tr>"));
             stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell'><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags, cols: 35)}</td></tr>"));
-            stb.Append(Invariant($"<tr><td colspan=2>{HtmlTextBox(PersistenceId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
+            stb.Append(Invariant($"<tr><td colspan=2>{HtmlTextBox(RecordId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
 
             if (data != null)
@@ -161,9 +162,9 @@ namespace Hspi
 
                 stb.Append("</td>");
                 stb.Append("<td class='tablecell'>");
-                stb.Append(PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDevicePageType, persistenceId: id));
+                stb.Append(PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDevicePageType, id: id));
                 stb.Append("&nbsp;");
-                stb.Append(PageTypeButton(Invariant($"History{id}"), "History", HistoryDevicePageType, persistenceId: id));
+                stb.Append(PageTypeButton(Invariant($"History{id}"), "History", HistoryDevicePageType, id: id));
                 stb.Append("</td></tr>");
             }
             stb.Append(@"</tbody>");
@@ -202,146 +203,173 @@ namespace Hspi
 
         private void HandleSavingPersistencePostBack(NameValueCollection parts, string form)
         {
-            StringBuilder results = new StringBuilder();
-
-            string deviceId = parts[DeviceRefIdId];
-            if (!int.TryParse(deviceId, out int deviceRefId))
+            if (form == NameToIdWithPrefix(DeletePersistenceSave))
             {
-                results.AppendLine("Device is not valid.<br>");
+                this.pluginConfig.RemoveDevicePersistenceData(parts[RecordId]);
+                this.pluginConfig.FireConfigChanged();
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
             }
-
-            if (form == NameToIdWithPrefix(FillDefaultValuesButtonName))
+            else if (form == NameToIdWithPrefix(EditPersistenceCancel))
             {
-                if (results.Length == 0)
-                {
-                    HSHelper hSHelper = new HSHelper(HS);
-
-                    hSHelper.Fill(deviceRefId, out var typeString, out var maxValidValue, out var minValidValue);
-
-                    divToUpdate.Add(MeasurementDivId, HtmlTextBox(MeasurementId, typeString ?? string.Empty));
-                    if (!string.IsNullOrEmpty(typeString))
-                    {
-                        divToUpdate.Add(FieldDivId, HtmlTextBox(FieldId, PluginConfig.DefaultFieldValueString));
-                        divToUpdate.Add(MaxValidValueDivId, HtmlTextBox(MaxValidValueId, maxValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
-                        divToUpdate.Add(MinValidValueDivId, HtmlTextBox(MinValidValueId, minValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
-                    }
-                }
+                this.pluginConfig.RemoveDevicePersistenceData(parts[RecordId]);
+                this.pluginConfig.FireConfigChanged();
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
             }
-            else
+            else if ((form == NameToIdWithPrefix(EditPersistenceSave)) ||
+                     (form == NameToIdWithPrefix(FillDefaultValuesButtonName)))
             {
-                string measurement = parts[MeasurementId];
-                if (string.IsNullOrWhiteSpace(measurement))
+                StringBuilder results = new StringBuilder();
+
+                string deviceId = parts[DeviceRefIdId];
+                if (!int.TryParse(deviceId, out int deviceRefId))
                 {
-                    results.AppendLine("Measurement is not valid.<br>");
+                    results.AppendLine("Device is not valid.<br>");
                 }
 
-                string field = parts[FieldId];
-                string fieldString = parts[FieldStringId];
-                if (string.IsNullOrWhiteSpace(field) && string.IsNullOrWhiteSpace(fieldString))
+                if (form == NameToIdWithPrefix(FillDefaultValuesButtonName))
                 {
-                    results.AppendLine("Both Field and FieldString are not valid. One of them need to valid.<br>");
-                }
-
-                string tagsString = parts[TagsId];
-                var tagsList = tagsString.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
-
-                var tags = new Dictionary<string, string>();
-                foreach (var tagString in tagsList)
-                {
-                    if (string.IsNullOrWhiteSpace(tagString))
+                    if (results.Length == 0)
                     {
-                        continue;
+                        HSHelper hSHelper = new HSHelper(HS);
+
+                        hSHelper.Fill(deviceRefId, out var typeString, out var maxValidValue, out var minValidValue);
+
+                        divToUpdate.Add(MeasurementDivId, HtmlTextBox(MeasurementId, typeString ?? string.Empty));
+                        if (!string.IsNullOrEmpty(typeString))
+                        {
+                            divToUpdate.Add(FieldDivId, HtmlTextBox(FieldId, PluginConfig.DefaultFieldValueString));
+                            divToUpdate.Add(MaxValidValueDivId, HtmlTextBox(MaxValidValueId, maxValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+                            divToUpdate.Add(MinValidValueDivId, HtmlTextBox(MinValidValueId, minValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+                        }
                     }
-
-                    var pair = tagString.Split('=');
-
-                    if (pair.Length != 2)
-                    {
-                        results.AppendLine(Invariant($"Unknown tag type: {tagString}. Format tagType= value<br>"));
-                    }
-                    else
-                    {
-                        tags.Add(pair[0], pair[1]);
-                    }
-                }
-
-                string maxValidValueString = parts[MaxValidValueId];
-                string minValidValueString = parts[MinValidValueId];
-
-                double? maxValidValue = null;
-                double? minValidValue = null;
-
-                if (!string.IsNullOrEmpty(maxValidValueString))
-                {
-                    if (double.TryParse(parts[MaxValidValueId], out var value))
-                    {
-                        maxValidValue = value;
-                    }
-                    else
-                    {
-                        results.AppendLine("Max valid value is not valid.<br>");
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(minValidValueString))
-                {
-                    if (double.TryParse(parts[MinValidValueId], out var value))
-                    {
-                        minValidValue = value;
-                    }
-                    else
-                    {
-                        results.AppendLine("Min valid value is not valid.<br>");
-                    }
-                }
-
-                if (maxValidValue.HasValue && minValidValue.HasValue)
-                {
-                    if ((maxValidValue.Value - minValidValue.Value) <= 0)
-                    {
-                        results.AppendLine("Max and Min valid values are not valid.<br>");
-                    }
-                }
-
-                if ((maxValidValue.HasValue || minValidValue.HasValue) && string.IsNullOrWhiteSpace(field))
-                {
-                    results.AppendLine("Max and Min valid values don't mean anything without field to store them.<br>");
-                }
-
-                if (results.Length > 0)
-                {
-                    this.divToUpdate.Add(SaveErrorDivId, results.ToString());
                 }
                 else
                 {
-                    string persistenceId = parts[PersistenceId];
-
-                    if (string.IsNullOrWhiteSpace(persistenceId))
+                    string measurement = parts[MeasurementId];
+                    if (string.IsNullOrWhiteSpace(measurement))
                     {
-                        persistenceId = System.Guid.NewGuid().ToString();
+                        results.AppendLine("Measurement is not valid.<br>");
                     }
 
-                    var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
-                    this.pluginConfig.AddDevicePersistenceData(persistenceData);
-                    this.pluginConfig.FireConfigChanged();
-                    this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+                    string field = parts[FieldId];
+                    string fieldString = parts[FieldStringId];
+                    if (string.IsNullOrWhiteSpace(field) && string.IsNullOrWhiteSpace(fieldString))
+                    {
+                        results.AppendLine("Both Field and FieldString are not valid. One of them need to valid.<br>");
+                    }
+
+                    string tagsString = parts[TagsId];
+                    var tagsList = tagsString.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+
+                    var tags = new Dictionary<string, string>();
+                    foreach (var tagString in tagsList)
+                    {
+                        if (string.IsNullOrWhiteSpace(tagString))
+                        {
+                            continue;
+                        }
+
+                        var pair = tagString.Split('=');
+
+                        if (pair.Length != 2)
+                        {
+                            results.AppendLine(Invariant($"Unknown tag type: {tagString}. Format tagType= value<br>"));
+                        }
+                        else
+                        {
+                            tags.Add(pair[0], pair[1]);
+                        }
+                    }
+
+                    string maxValidValueString = parts[MaxValidValueId];
+                    string minValidValueString = parts[MinValidValueId];
+
+                    double? maxValidValue = null;
+                    double? minValidValue = null;
+
+                    if (!string.IsNullOrEmpty(maxValidValueString))
+                    {
+                        if (double.TryParse(parts[MaxValidValueId], out var value))
+                        {
+                            maxValidValue = value;
+                        }
+                        else
+                        {
+                            results.AppendLine("Max valid value is not valid.<br>");
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(minValidValueString))
+                    {
+                        if (double.TryParse(parts[MinValidValueId], out var value))
+                        {
+                            minValidValue = value;
+                        }
+                        else
+                        {
+                            results.AppendLine("Min valid value is not valid.<br>");
+                        }
+                    }
+
+                    if (maxValidValue.HasValue && minValidValue.HasValue)
+                    {
+                        if ((maxValidValue.Value - minValidValue.Value) <= 0)
+                        {
+                            results.AppendLine("Max and Min valid values are not valid.<br>");
+                        }
+                    }
+
+                    if ((maxValidValue.HasValue || minValidValue.HasValue) && string.IsNullOrWhiteSpace(field))
+                    {
+                        results.AppendLine("Max and Min valid values don't mean anything without field to store them.<br>");
+                    }
+
+                    if (results.Length > 0)
+                    {
+                        this.divToUpdate.Add(SaveErrorDivId, results.ToString());
+                    }
+                    else
+                    {
+                        string persistenceId = parts[RecordId];
+
+                        if (string.IsNullOrWhiteSpace(persistenceId))
+                        {
+                            persistenceId = System.Guid.NewGuid().ToString();
+                        }
+
+                        var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                        this.pluginConfig.AddDevicePersistenceData(persistenceData);
+                        this.pluginConfig.FireConfigChanged();
+                        this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+                    }
                 }
             }
         }
 
         private const string AddNewName = "Add New";
         private const string DeletePersistenceSave = "DeleteP";
+        private const string DescId = "desc";
         private const string DeviceRefIdId = "devicerefidid";
-        private const string EditDevicePageType = "edit";
+        private const string EditDevicePageType = "editdevice";
+        private const string EditDeviceImportPageType = "editdeviceimport";
         private const string EditPersistenceCancel = "CancelP";
         private const string EditPersistenceSave = "SaveP";
+        private const string FieldDivId = "FieldDivId";
+        private const string FieldId = "FieldId";
+        private const string FieldStringId = "FieldStringId";
         private const string FillDefaultValuesButtonName = "FillDefaultValues";
         private const string HistoryDevicePageType = "history";
+        private const string ImageDivId = "image_id";
         private const string MaxValidValueDivId = "MaxValidValueDivId";
         private const string MaxValidValueId = "MaxValidValueId";
         private const string MeasurementDivId = "MeasurementDivId";
         private const string MeasurementId = "MeasurementId";
         private const string MinValidValueDivId = "MinValidValueDivId";
         private const string MinValidValueId = "MinValidValueId";
+        private const string RecordId = "RecordId";
+        private const string TagsId = "TagsId";
+        private const string UseDefaultsId = "UseDefaultsId";
+        private const string SqlId = "sqlid";
+        private const string IntervalId = "intervalid";
     }
 }
