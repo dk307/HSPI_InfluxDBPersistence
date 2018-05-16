@@ -119,14 +119,15 @@ namespace Hspi
                 }
             }
         }
-            public IReadOnlyDictionary<string, ImportDeviceData> ImportDeviceData
+
+        public IReadOnlyDictionary<string, ImportDeviceData> ImportDevicesData
         {
             get
             {
                 configLock.EnterReadLock();
                 try
                 {
-                    return importDeviceData;
+                    return importDevicesData;
                 }
                 finally
                 {
@@ -169,13 +170,13 @@ namespace Hspi
             configLock.EnterWriteLock();
             try
             {
-                var newImportDeviceData = new Dictionary<string, ImportDeviceData>(importDeviceData);
+                var newImportDeviceData = new Dictionary<string, ImportDeviceData>(importDevicesData);
                 newImportDeviceData[device.Id] = device;
-                importDeviceData = newImportDeviceData;
+                importDevicesData = newImportDeviceData;
 
                 SetValue(SqlKey, device.Sql, device.Id);
                 SetValue(IntervalKey, device.Interval.TotalSeconds, device.Id);
-                SetValue(ImportDevicesIdsKey, importDeviceData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
+                SetValue(ImportDevicesIdsKey, importDevicesData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
             }
             finally
             {
@@ -225,11 +226,11 @@ namespace Hspi
             configLock.EnterWriteLock();
             try
             {
-                var newImportDeviceData = new Dictionary<string, ImportDeviceData>(importDeviceData);
+                var newImportDeviceData = new Dictionary<string, ImportDeviceData>(importDevicesData);
                 newImportDeviceData.Remove(id);
-                importDeviceData = newImportDeviceData;
+                importDevicesData = newImportDeviceData;
 
-                if (importDeviceData.Count > 0)
+                if (importDevicesData.Count > 0)
                 {
                     SetValue(ImportDevicesIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
                 }
@@ -291,7 +292,7 @@ namespace Hspi
             string importDevicesConcatString = GetValue(ImportDevicesIdsKey, string.Empty);
             var ids = importDevicesConcatString.Split(ImportDevicesIdsSeparator);
 
-            importDeviceData = new Dictionary<string, ImportDeviceData>();
+            importDevicesData = new Dictionary<string, ImportDeviceData>();
             foreach (var id in ids)
             {
                 string name = GetValue(NameKey, string.Empty, id);
@@ -304,7 +305,7 @@ namespace Hspi
                 }
 
                 var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(timeSeconds));
-                this.importDeviceData.Add(id, data);
+                this.importDevicesData.Add(id, data);
             }
         }
 
@@ -443,7 +444,7 @@ namespace Hspi
         private bool debugLogging;
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private bool disposedValue = false;
-        private Dictionary<string, ImportDeviceData> importDeviceData;
+        private Dictionary<string, ImportDeviceData> importDevicesData;
         private InfluxDBLoginInformation influxDBLoginInformation;
     };
 }

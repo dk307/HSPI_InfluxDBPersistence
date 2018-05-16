@@ -68,7 +68,7 @@ namespace Hspi
 
                     case EditDeviceImportPageType:
                         {
-                            pluginConfig.ImportDeviceData.TryGetValue(parts[RecordId], out var data);
+                            pluginConfig.ImportDevicesData.TryGetValue(parts[RecordId], out var data);
                             stb.Append(BuildAddNewDeviceImportWebPageBody(data));
                         }
                         break;

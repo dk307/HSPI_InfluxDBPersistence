@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Hspi
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-     internal class DevicePersistenceData
+    internal class DevicePersistenceData
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
                                      [AllowNull]string field, [AllowNull]string fieldString,

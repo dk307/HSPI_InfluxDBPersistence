@@ -3,9 +3,12 @@ using System;
 
 namespace Hspi
 {
+    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal class InfluxDBLoginInformation : IEquatable<InfluxDBLoginInformation>
     {
-        public InfluxDBLoginInformation([AllowNull]System.Uri dBUri, [AllowNull]string user, [AllowNull]string password, [AllowNull]string db, [AllowNull]string retention)
+        public InfluxDBLoginInformation([AllowNull]System.Uri dBUri, [AllowNull]string user, 
+                                        [AllowNull]string password, [AllowNull]string db, 
+                                        [AllowNull]string retention)
         {
             DBUri = dBUri;
             User = user ?? string.Empty;

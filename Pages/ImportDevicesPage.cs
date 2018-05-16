@@ -79,7 +79,7 @@ namespace Hspi
             stb.Append(@"</tr></thead>");
             stb.Append(@"<tbody>");
 
-            foreach (var pair in pluginConfig.ImportDeviceData)
+            foreach (var pair in pluginConfig.ImportDevicesData)
             {
                 var id = pair.Key;
                 var device = pair.Value;
