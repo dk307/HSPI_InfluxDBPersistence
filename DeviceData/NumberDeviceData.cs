@@ -28,11 +28,13 @@ namespace Hspi.DeviceData
                     RangeEnd = int.MaxValue,
                     IncludeValues = true,
                     RangeStatusDecimals = 3,
-                    //RangeStatusSuffix = " " + PluginConfig.GetUnits(DeviceType),
+                    RangeStatusSuffix = " @S@",
+                    HasScale = !string.IsNullOrEmpty(ScaleDisplayText),
                 });
                 return pairs;
             }
         }
         public override IList<VSVGPairs.VGPair> GraphicsPairs => new List<VSVGPairs.VGPair>();
+        public override string ScaleDisplayText => Data.Unit;
     }
 }

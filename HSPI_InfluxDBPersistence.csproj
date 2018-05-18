@@ -122,14 +122,13 @@
     <Compile Include="DeviceData\DeviceRootDeviceManager.cs" />
     <Compile Include="DeviceData\NumberDeviceData.cs" />
     <Compile Include="DeviceData\RootDeviceData.cs" />
-    <Compile Include="DeviceIdentifier.cs" />
+    <Compile Include="DeviceData\DeviceIdentifier.cs" />
     <Compile Include="ImportDeviceData.cs" />
     <Compile Include="InfluxDBHelper.cs" />
     <Compile Include="Pages\ImportDevicesPage.cs" />
     <Compile Include="Pages\PersistencePage.cs" />
     <Compile Include="Pages\ConfigPage.cs" />
     <Compile Include="DevicePersistenceData.cs" />
-    <Compile Include="EnumHelper.cs" />
     <Compile Include="ExceptionHelper.cs" />
     <Compile Include="Pages\HistoryPage.cs" />
     <Compile Include="HSHelper.cs" />

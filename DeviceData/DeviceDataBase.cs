@@ -37,6 +37,7 @@ namespace Hspi.DeviceData
         public virtual DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI DeviceAPI => DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI.Plug_In;
         public abstract string HSDeviceTypeString { get; }
         public abstract bool StatusDevice { get; }
+        public virtual string ScaleDisplayText => string.Empty;
 
         /// <summary>
         /// Sets the initial data for the device.

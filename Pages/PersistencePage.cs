@@ -371,5 +371,6 @@ namespace Hspi
         private const string UseDefaultsId = "UseDefaultsId";
         private const string SqlId = "sqlid";
         private const string IntervalId = "intervalid";
+        private const string UnitId = "unitid";
     }
 }

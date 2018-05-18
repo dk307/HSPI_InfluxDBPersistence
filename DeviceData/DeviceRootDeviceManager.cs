@@ -69,6 +69,11 @@ namespace Hspi.DeviceData
                 device.set_Last_Change(HS, DateTime.Now);
                 device.set_Location(HS, PlugInData.PlugInName);
 
+                if (!string.IsNullOrEmpty(deviceData.ScaleDisplayText))
+                {
+                    device.set_ScaleText(HS, deviceData.ScaleDisplayText);
+                }
+
                 device.MISC_Set(HS, Enums.dvMISC.SHOW_VALUES);
                 if (deviceData.StatusDevice)
                 {

@@ -20,6 +20,7 @@ namespace Hspi
 
             string name = data?.Name ?? string.Empty;
             string sql = data?.Sql ?? string.Empty;
+            string unit = data?.Unit ?? string.Empty;
             int intervalSeconds = data != null ? (int)data.Interval.TotalSeconds : 60;
             string id = data != null ? data.Id : string.Empty;
             string buttonLabel = data != null ? "Save" : "Add";
@@ -35,13 +36,17 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=2>{header}</td></tr>"));
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell'>"));
-            stb.Append(HtmlTextBox(NameId, name, @readonly: !string.IsNullOrEmpty(name)));
+            stb.Append(HtmlTextBox(NameId, name, @readonly: data != null ));
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell'>"));
             stb.Append(TextArea(SqlId, sql, 6, 65));
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Refresh Intervals(seconds):</td><td class='tablecell'>"));
             stb.Append(HtmlTextBox(IntervalId, Invariant($"{intervalSeconds}")));
+            stb.Append("</td></tr>");
+            stb.Append("</td></tr>");
+            stb.Append(Invariant($"<tr><td class='tablecell'>Unit:</td><td class='tablecell'>"));
+            stb.Append(HtmlTextBox(UnitId, unit, @readonly: data != null));
             stb.Append("</td></tr>");
 
             stb.Append(Invariant($"<tr><td colspan=2>{HtmlTextBox(RecordId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
@@ -75,6 +80,7 @@ namespace Hspi
             stb.Append(Invariant($"<th>Name</th>"));
             stb.Append(Invariant($"<th>Sql</th>"));
             stb.Append(Invariant($"<th>Interval</th>"));
+            stb.Append(Invariant($"<th>Unit</th>"));
             stb.Append(Invariant($"<th></th>"));
             stb.Append(@"</tr></thead>");
             stb.Append(@"<tbody>");
@@ -88,6 +94,7 @@ namespace Hspi
                 stb.Append(Invariant($"<td class='tablecell'>{device.Name}</td>"));
                 stb.Append(Invariant($"<td class='tablecell'>{device.Sql}</td>"));
                 stb.Append(Invariant($"<td class='tablecell'>{device.Interval}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{device.Unit}</td>"));
                 stb.Append("</td>");
                 stb.Append("<td class='tablecell'>");
                 stb.Append(PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDeviceImportPageType, id: id));
@@ -176,7 +183,7 @@ namespace Hspi
                             id = System.Guid.NewGuid().ToString();
                         }
 
-                        var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(intervalSeconds));
+                        var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(intervalSeconds), parts[UnitId]);
                         this.pluginConfig.AddImportDeviceData(data);
                         this.pluginConfig.FireConfigChanged();
                         this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=2")));

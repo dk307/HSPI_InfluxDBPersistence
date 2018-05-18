@@ -177,6 +177,7 @@ namespace Hspi
                 SetValue(NameKey, device.Name, device.Id);
                 SetValue(SqlKey, device.Sql, device.Id);
                 SetValue(IntervalKey, device.Interval.TotalSeconds, device.Id);
+                SetValue(UnitKey, device.Unit, device.Id);
                 SetValue(ImportDevicesIdsKey, importDevicesData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
             }
             finally
@@ -299,13 +300,14 @@ namespace Hspi
                 string name = GetValue(NameKey, string.Empty, id);
                 string sql = GetValue(SqlKey, string.Empty, id);
                 string time = GetValue(IntervalKey, string.Empty, id);
+                string unit = GetValue(UnitKey, string.Empty, id);
 
                 if (!int.TryParse(time, out int timeSeconds))
                 {
                     continue;
                 }
 
-                var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(timeSeconds));
+                var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(timeSeconds), unit);
                 this.importDevicesData.Add(id, data);
             }
         }
@@ -433,12 +435,13 @@ namespace Hspi
         private const string MaxValidValueKey = "MaxValidValue";
         private const string MeasurementKey = "Measurement";
         private const string MinValidValueKey = "MinValidValue";
+        private const string NameKey = "Name";
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';
         private const string RetentionKey = "Retention";
-        private const string NameKey = "Name";
         private const string SqlKey = "Sql";
         private const string TagsKey = "Tags";
+        private const string UnitKey = "Unit";
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim();
         private readonly IHSApplication HS;
