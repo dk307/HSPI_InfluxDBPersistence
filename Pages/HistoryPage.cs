@@ -1,7 +1,4 @@
-﻿using InfluxData.Net.Common.Constants;
-using InfluxData.Net.Common.Enums;
-using InfluxData.Net.InfluxDb;
-using InfluxData.Net.InfluxDb.Models.Responses;
+﻿using InfluxData.Net.InfluxDb.Models.Responses;
 using NodaTime;
 using Scheduler;
 using System;
@@ -167,8 +164,7 @@ namespace Hspi
         private IEnumerable<Serie> GetData(string query)
         {
             var loginInformation = pluginConfig.DBLoginInformation;
-            var influxDbClient = new InfluxDbClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password, InfluxDbVersion.v_1_3);
-            return influxDbClient.Client.QueryAsync(query, loginInformation.DB, TimeUnit.Seconds).Result;
+            return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).Result;
         }
 
         private IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)

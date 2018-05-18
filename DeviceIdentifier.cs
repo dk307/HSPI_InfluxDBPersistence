@@ -19,7 +19,7 @@ namespace Hspi.DeviceData
         public string DeviceId { get; }
         public string RootDeviceAddress { get; }
 
-        public static string CreateRootAddress() => Invariant($"{PlugInData.PlugInName}");
+        public static string CreateRootAddress() => "Root";
 
         public static DeviceIdentifier Identify(DeviceClass hsDevice)
         {

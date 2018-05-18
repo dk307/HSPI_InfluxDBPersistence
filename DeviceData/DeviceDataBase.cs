@@ -1,7 +1,7 @@
 ﻿using HomeSeerAPI;
 using NullGuard;
+using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace Hspi.DeviceData
 {
@@ -51,10 +51,18 @@ namespace Hspi.DeviceData
         /// <param name="HS">Homeseer application.</param>
         /// <param name="refId">The reference identifier.</param>
         /// <param name="data">Number data.</param>
-        protected static void UpdateDeviceData(IHSApplication HS, int refId, double data)
+        protected static void UpdateDeviceData(IHSApplication HS, int refId, in double? data)
         {
-            HS.set_DeviceInvalidValue(refId, false);
-            HS.SetDeviceValueByRef(refId, data, true);
+            if (data.HasValue)
+            {
+                HS.set_DeviceInvalidValue(refId, false);
+                HS.SetDeviceValueByRef(refId, data.Value, true);
+                HS.SetDeviceLastChange(refId, DateTime.Now);
+            }
+            else
+            {
+                HS.set_DeviceInvalidValue(refId, true);
+            }
         }
     };
 }

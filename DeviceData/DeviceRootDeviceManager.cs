@@ -5,14 +5,16 @@ using Scheduler.Classes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Hspi.DeviceData
 {
     using static System.FormattableString;
 
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal class DeviceRootDeviceManager
+    internal class DeviceRootDeviceManager : IDisposable
     {
         public DeviceRootDeviceManager(IHSApplication HS,
                                        InfluxDBLoginInformation dbLoginInformation,
@@ -23,10 +25,16 @@ namespace Hspi.DeviceData
             this.dbLoginInformation = dbLoginInformation;
             this.importDevicesData = importDevicesData;
             this.cancellationToken = cancellationToken;
-            combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                                      cancellationTokenSourceForUpdateDevice.Token);
-            var deviceData = GetCurrentDevices();
-            CreateDevices(deviceData);
+            this.combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
+                                                                            cancellationTokenSourceForUpdateDevice.Token);
+            var hsDevices = GetCurrentDevices();
+            CreateDevices(hsDevices);
+            StartDeviceFetchFromDB(hsDevices);
+        }
+
+        public void Cancel()
+        {
+            cancellationTokenSourceForUpdateDevice.Cancel();
         }
 
         /// <summary>
@@ -117,27 +125,27 @@ namespace Hspi.DeviceData
         {
             try
             {
-                string parentAddress = DeviceIdentifier.CreateRootAddress();
+                var existingDevices = hsDevices.Children.ToDictionary(x => x.Value.Data.Id);
                 foreach (var deviceImport in importDevicesData)
                 {
                     combinedToken.Token.ThrowIfCancellationRequested();
-                    var deviceIdentifier = new DeviceIdentifier(deviceImport.Key);
 
-                    hsDevices.Children.TryGetValue(deviceIdentifier, out DeviceClass device);
-
-                    if (device == null)
+                    if (!existingDevices.TryGetValue(deviceImport.Key, out var device))
                     {
+                        DeviceIdentifier deviceIdentifier = new DeviceIdentifier(deviceImport.Value.Id);
                         // lazy creation of parent device when child is created
-                        if (hsDevices.Parent == null)
+                        if (!hsDevices.ParentRefId.HasValue)
                         {
-                            hsDevices.Parent = CreateDevice(null, "Root", deviceIdentifier.RootDeviceAddress, new RootDeviceData());
+                            var parentDeviceClass = CreateDevice(null, Invariant($"{PlugInData.PlugInName} Root"),
+                                                                 deviceIdentifier.RootDeviceAddress, new RootDeviceData());
+                            hsDevices.ParentRefId = parentDeviceClass.get_Ref(HS);
                         }
 
                         string address = deviceIdentifier.Address;
-                        var childDevice = new NumberDeviceData();
+                        var childDevice = new NumberDeviceData(deviceImport.Value);
 
-                        var childHSDevice = CreateDevice(hsDevices.Parent.get_Ref(HS), deviceImport.Value.Name, address, childDevice);
-                        hsDevices.Children[deviceIdentifier] = childHSDevice;
+                        var childHSDevice = CreateDevice(hsDevices.ParentRefId.Value, deviceImport.Value.Name, address, childDevice);
+                        hsDevices.Children[childHSDevice.get_Ref(HS)] = childDevice;
                     }
                 }
             }
@@ -156,8 +164,8 @@ namespace Hspi.DeviceData
                 throw new HspiException(Invariant($"{PlugInData.PlugInName} failed to get a device enumerator from HomeSeer."));
             }
 
-            DeviceClass parentDeviceClass = null;
-            var currentChildDevices = new Dictionary<DeviceIdentifier, DeviceClass>();
+            int? parentRefId = null;
+            var currentChildDevices = new Dictionary<int, DeviceData>();
 
             string parentAddress = DeviceIdentifier.CreateRootAddress();
             do
@@ -170,14 +178,17 @@ namespace Hspi.DeviceData
                     string address = device.get_Address(HS);
                     if (address == parentAddress)
                     {
-                        parentDeviceClass = device;
+                        parentRefId = device.get_Ref(HS);
                     }
                     else
                     {
                         var childDeviceData = DeviceIdentifier.Identify(device);
                         if (childDeviceData != null)
                         {
-                            currentChildDevices.Add(childDeviceData, device);
+                            if (importDevicesData.TryGetValue(childDeviceData.DeviceId, out var importDeviceData))
+                            {
+                                currentChildDevices.Add(device.get_Ref(HS), new NumberDeviceData(importDeviceData));
+                            }
                         }
                     }
                 }
@@ -185,26 +196,61 @@ namespace Hspi.DeviceData
 
             return new HSDevices()
             {
-                Parent = parentDeviceClass,
+                ParentRefId = parentRefId,
                 Children = currentChildDevices,
             };
         }
 
-        private void StartDeviceFetchFromDB(in HSDevices hSDevices)
+        private async Task ImportDataForDevice(int refID, DeviceData deviceData)
         {
-            foreach (var childDevice in hSDevices.Children)
+            while (!combinedToken.Token.IsCancellationRequested)
             {
-                if (importDevicesData.TryGetValue(childDevice.Key.DeviceId, out var importDeviceData))
+                ImportDeviceData importDeviceData = deviceData.Data;
+
+                //start as task to fetch data
+                double? deviceValue = null;
+                try
                 {
-                    //start as task to fetch data
+                    var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
+                    deviceValue = Convert.ToDouble(queryData);
                 }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(Invariant($"Failed to get value from Db for {importDeviceData.Name} with {ex.GetFullMessage()}"));
+                }
+
+                try
+                {
+                    deviceData.Update(HS, refID, deviceValue);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(Invariant($"Failed to write value to HS for {importDeviceData.Name} with {ex.GetFullMessage()}"));
+                }
+                await Task.Delay((int)Math.Min(importDeviceData.Interval.TotalMilliseconds, TimeSpan.FromDays(1).TotalMilliseconds), combinedToken.Token).ConfigureAwait(false);
+            }
+        }
+
+        private void StartDeviceFetchFromDB(HSDevices hSDevices)
+        {
+            foreach (var childDeviceKeyValuePair in hSDevices.Children)
+            {
+                int refID = childDeviceKeyValuePair.Key;
+                DeviceData deviceData = childDeviceKeyValuePair.Value;
+
+                Task.Factory.StartNew(() => ImportDataForDevice(refID, deviceData),
+                                      cancellationTokenSourceForUpdateDevice.Token,
+                                      TaskCreationOptions.RunContinuationsAsynchronously,
+                                      TaskScheduler.Current);
             }
         }
 
         private struct HSDevices
         {
-            public IDictionary<DeviceIdentifier, DeviceClass> Children;
-            public DeviceClass Parent;
+            // RefId to DeviceData
+            public IDictionary<int, DeviceData> Children;
+
+            public int? ParentRefId;
         };
 
         private readonly CancellationToken cancellationToken;
@@ -213,5 +259,41 @@ namespace Hspi.DeviceData
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHSApplication HS;
         private readonly IReadOnlyDictionary<string, ImportDeviceData> importDevicesData;
+
+        #region IDisposable Support
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        private bool disposedValue = false; // To detect redundant calls
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~DeviceRootDeviceManager() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        #endregion IDisposable Support
     };
 }

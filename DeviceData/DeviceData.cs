@@ -12,9 +12,9 @@ namespace Hspi.DeviceData
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal abstract class DeviceData : DeviceDataBase
     {
-        public DeviceData(DeviceType deviceType)
+        public DeviceData(ImportDeviceData data)
         {
-            DeviceType = deviceType;
+            Data = data;
         }
 
         public override void SetInitialData(IHSApplication HS, int refId)
@@ -23,11 +23,11 @@ namespace Hspi.DeviceData
             HS.set_DeviceInvalidValue(refId, true);
         }
 
-        public abstract void Update(IHSApplication HS, double deviceValue);
+        public abstract void Update(IHSApplication HS, int refId, in double? deviceValue);
 
-        public int RefId { get; set; }
-        public DeviceType DeviceType { get; }
         public override int HSDeviceType => 0;
         public override string HSDeviceTypeString => Invariant($"{PlugInData.PlugInName} Import Device");
+
+        public ImportDeviceData Data { get; }
     };
 }

@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace Hspi
 {
+    using Hspi.DeviceData;
+    using Nito.AsyncEx;
     using static System.FormattableString;
 
     /// <summary>
@@ -22,11 +24,6 @@ namespace Hspi
         public PlugIn()
             : base(PlugInData.PlugInName)
         {
-        }
-
-        private InfluxDBMeasurementsCollector DbCollector
-        {
-            get { lock (collectorLock) { return dbCollector; } }
         }
 
         public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
@@ -71,7 +68,8 @@ namespace Hspi
 
                 Callback.RegisterEventCB(Enums.HSEvent.VALUE_CHANGE, Name, string.Empty);
 
-                StartCollector();
+                RestartProcessing();
+
                 Trace.TraceInformation("Plugin Started");
             }
             catch (Exception ex)
@@ -162,6 +160,13 @@ namespace Hspi
             }
         }
 
+        private async Task<InfluxDBMeasurementsCollector> GetInfluxDBMeasurementsCollector()
+        {
+            using (var lock1 = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
+            {
+                return influxDBMeasurementsCollector;
+            }
+        }
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
@@ -170,12 +175,12 @@ namespace Hspi
 
         private void PluginConfig_ConfigChanged(object sender, EventArgs e)
         {
-            StartCollector();
+            RestartProcessing();
         }
 
         private async Task RecordDeviceValue(int deviceRefId)
         {
-            var collector = DbCollector;
+            var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if ((collector != null) && collector.IsTracked(deviceRefId))
             {
                 DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
@@ -185,7 +190,7 @@ namespace Hspi
 
         private async Task RecordTrackedDevices()
         {
-            var collector = DbCollector;
+            var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if (collector != null)
             {
                 var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
@@ -221,11 +226,33 @@ namespace Hspi
             Callback.RegisterLink(wpd);
         }
 
-        private void StartCollector()
+        private void RestartProcessing()
         {
-            lock (collectorLock)
+            Task.Factory.StartNew(StartInfluxDBMeasurementsCollector, ShutdownCancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+            Task.Factory.StartNew(StartDeviceImport, ShutdownCancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+        }
+
+        private async Task StartDeviceImport()
+        {
+            using (await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
             {
-                bool recreate = (dbCollector == null) || (!dbCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
+                if (deviceRootDeviceManager != null)
+                {
+                    deviceRootDeviceManager.Cancel();
+                    deviceRootDeviceManager.Dispose();
+                }
+
+                deviceRootDeviceManager = new DeviceRootDeviceManager(HS,
+                                                                      pluginConfig.DBLoginInformation,
+                                                                      pluginConfig.ImportDevicesData,
+                                                                      ShutdownCancellationToken);
+            }
+        }
+        private async Task StartInfluxDBMeasurementsCollector()
+        {
+            using (var lock1 = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
+            {
+                bool recreate = (influxDBMeasurementsCollector == null) || (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
 
                 if (recreate)
                 {
@@ -233,25 +260,27 @@ namespace Hspi
                     collectionShutdownToken = new CancellationTokenSource();
                     if (pluginConfig.DBLoginInformation.IsValid)
                     {
-                        dbCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation);
-                        dbCollector.Start(pluginConfig.DevicePersistenceData.Values,
+                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation);
+                        influxDBMeasurementsCollector.Start(pluginConfig.DevicePersistenceData.Values,
                                           CancellationTokenSource.CreateLinkedTokenSource(collectionShutdownToken.Token, ShutdownCancellationToken).Token);
                     }
                 }
                 else
                 {
-                    dbCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
+                    influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
 
-                Task.Factory.StartNew(RecordTrackedDevices, ShutdownCancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+                await RecordTrackedDevices().ConfigureAwait(false);
             }
         }
 
+        private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
+        private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
         private CancellationTokenSource collectionShutdownToken;
-        private object collectorLock = new object();
         private ConfigPage configPage;
-        private InfluxDBMeasurementsCollector dbCollector;
+        private DeviceRootDeviceManager deviceRootDeviceManager;
         private bool disposedValue = false;
+        private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;
     }
 }

@@ -119,12 +119,12 @@
   <ItemGroup>
     <Compile Include="DeviceData\DeviceData.cs" />
     <Compile Include="DeviceData\DeviceDataBase.cs" />
-    <Compile Include="DeviceData\DeviceType.cs" />
+    <Compile Include="DeviceData\DeviceRootDeviceManager.cs" />
     <Compile Include="DeviceData\NumberDeviceData.cs" />
     <Compile Include="DeviceData\RootDeviceData.cs" />
     <Compile Include="DeviceIdentifier.cs" />
-    <Compile Include="DeviceRootDeviceManager.cs" />
     <Compile Include="ImportDeviceData.cs" />
+    <Compile Include="InfluxDBHelper.cs" />
     <Compile Include="Pages\ImportDevicesPage.cs" />
     <Compile Include="Pages\PersistencePage.cs" />
     <Compile Include="Pages\ConfigPage.cs" />

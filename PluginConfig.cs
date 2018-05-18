@@ -174,6 +174,7 @@ namespace Hspi
                 newImportDeviceData[device.Id] = device;
                 importDevicesData = newImportDeviceData;
 
+                SetValue(NameKey, device.Name, device.Id);
                 SetValue(SqlKey, device.Sql, device.Id);
                 SetValue(IntervalKey, device.Interval.TotalSeconds, device.Id);
                 SetValue(ImportDevicesIdsKey, importDevicesData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
