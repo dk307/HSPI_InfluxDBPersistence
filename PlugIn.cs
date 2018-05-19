@@ -1,18 +1,15 @@
 ﻿using HomeSeerAPI;
-using NodaTime;
-using NodaTime.Extensions;
+using Hspi.DeviceData;
 using NullGuard;
 using Scheduler.Classes;
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hspi
 {
-    using Hspi.DeviceData;
-    using Nito.AsyncEx;
-    using System.Text;
     using static System.FormattableString;
 
     /// <summary>
@@ -25,6 +22,62 @@ namespace Hspi
         public PlugIn()
             : base(PlugInData.PlugInName, supportConfigDevice: true)
         {
+        }
+
+        private InfluxDBMeasurementsCollector InfluxDBMeasurementsCollector
+        {
+            get
+            {
+                lock (influxDBMeasurementsCollectorLock)
+                {
+                    return influxDBMeasurementsCollector;
+                }
+            }
+        }
+
+        public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
+        {
+            if (newDevice)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                DeviceClass deviceClass = (DeviceClass)HS.GetDeviceByRef(deviceId);
+                var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
+
+                if (deviceIdentifier != null)
+                {
+                    foreach (var device in pluginConfig.ImportDevicesData)
+                    {
+                        if (device.Key == deviceIdentifier.DeviceId)
+                        {
+                            StringBuilder stb = new StringBuilder();
+
+                            stb.Append(@"<table style='width:100%;border-spacing:0px;'");
+                            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
+                            stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>Import Settings</td></tr>"));
+                            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{device.Value.Name ?? string.Empty}</td></tr>"));
+                            stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell' colspan=2>{device.Value.Sql ?? string.Empty}</td></tr>"));
+                            stb.Append(Invariant($"<tr><td class='tablecell'>Refresh Interval(seconds):</td><td class='tablecell' colspan=2>{device.Value.Interval.TotalSeconds}</td></tr>"));
+                            stb.Append(Invariant($"<tr><td class='tablecell'>Unit:</td><td class='tablecell' colspan=2>{device.Value.Unit ?? string.Empty}</td></tr>"));
+                            stb.Append(Invariant($"</td><td></td></tr>"));
+                            stb.Append("<tr height='5'><td colspan=3></td></tr>");
+                            stb.Append(@" </table>");
+
+                            return stb.ToString();
+                        }
+                    }
+                }
+
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                LogError(Invariant($"ConfigDevice for {deviceId} With {ex.Message}"));
+                return string.Empty;
+            }
         }
 
         public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
@@ -146,8 +199,6 @@ namespace Hspi
                 Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
 
                 DateTime lastChange = device.get_Last_Change(HS);
-                DateTimeZone hsZone = DateTimeZoneProviders.Tzdb.GetSystemDefault();
-                ZonedDateTime zonedDateTime = lastChange.ToLocalDateTime().InZoneStrictly(hsZone);
 
                 RecordData recordData = new RecordData(deviceRefId,
                                                        deviceValue,
@@ -155,17 +206,9 @@ namespace Hspi
                                                        device.get_Name(HS),
                                                        device.get_Location(HS),
                                                        device.get_Location2(HS),
-                                                       zonedDateTime.ToInstant());
+                                                       lastChange);
 
                 await collector.Record(recordData).ConfigureAwait(false);
-            }
-        }
-
-        private async Task<InfluxDBMeasurementsCollector> GetInfluxDBMeasurementsCollector()
-        {
-            using (var lock1 = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
-            {
-                return influxDBMeasurementsCollector;
             }
         }
 
@@ -182,7 +225,7 @@ namespace Hspi
 
         private async Task RecordDeviceValue(int deviceRefId)
         {
-            var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
+            var collector = InfluxDBMeasurementsCollector;
             if ((collector != null) && collector.IsTracked(deviceRefId))
             {
                 DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
@@ -192,7 +235,7 @@ namespace Hspi
 
         private async Task RecordTrackedDevices()
         {
-            var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
+            var collector = InfluxDBMeasurementsCollector;
             if (collector != null)
             {
                 var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
@@ -209,51 +252,6 @@ namespace Hspi
                     ShutdownCancellationToken.ThrowIfCancellationRequested();
                 }
                 while (!deviceEnumerator.Finished);
-            }
-        }
-
-        public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
-        {
-            if (newDevice)
-            {
-                return string.Empty;
-            }
-
-            try
-            {
-                DeviceClass deviceClass = (DeviceClass)HS.GetDeviceByRef(deviceId);
-                var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
-
-                if (deviceIdentifier != null)
-                {
-                    foreach (var device in pluginConfig.ImportDevicesData)
-                    {
-                        if (device.Key == deviceIdentifier.DeviceId)
-                        {
-                            StringBuilder stb = new StringBuilder();
-
-                            stb.Append(@"<table style='width:100%;border-spacing:0px;'");
-                            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
-                            stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>Import Settings</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{device.Value.Name ?? string.Empty}</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell' colspan=2>{device.Value.Sql ?? string.Empty}</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Refresh Interval(seconds):</td><td class='tablecell' colspan=2>{device.Value.Interval.TotalSeconds}</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Unit:</td><td class='tablecell' colspan=2>{device.Value.Unit ?? string.Empty}</td></tr>"));
-                            stb.Append(Invariant($"</td><td></td></tr>"));
-                            stb.Append("<tr height='5'><td colspan=3></td></tr>");
-                            stb.Append(@" </table>");
-
-                            return stb.ToString();
-                        }
-                    }
-                }
-
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                LogError(Invariant($"ConfigDevice for {deviceId} With {ex.Message}"));
-                return string.Empty;
             }
         }
 
@@ -279,9 +277,9 @@ namespace Hspi
             Task.Factory.StartNew(StartDeviceImport, ShutdownCancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
         }
 
-        private async Task StartDeviceImport()
+        private void StartDeviceImport()
         {
-            using (await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
+            lock (deviceRootDeviceManagerLock)
             {
                 if (deviceRootDeviceManager != null)
                 {
@@ -298,7 +296,7 @@ namespace Hspi
 
         private async Task StartInfluxDBMeasurementsCollector()
         {
-            using (var lock1 = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
+            lock (influxDBMeasurementsCollectorLock)
             {
                 bool recreate = (influxDBMeasurementsCollector == null) || (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
 
@@ -318,12 +316,12 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
 
-                await RecordTrackedDevices().ConfigureAwait(false);
+                RecordTrackedDevices();
             }
         }
 
-        private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
-        private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
+        private readonly object deviceRootDeviceManagerLock = new object();
+        private readonly object influxDBMeasurementsCollectorLock = new object();
         private CancellationTokenSource collectionShutdownToken;
         private ConfigPage configPage;
         private DeviceRootDeviceManager deviceRootDeviceManager;

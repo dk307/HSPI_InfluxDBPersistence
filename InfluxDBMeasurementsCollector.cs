@@ -89,7 +89,7 @@ namespace Hspi
                         Name = value.Measurement,
                         Fields = fields,
                         Tags = tags,
-                        Timestamp = data.TimeStamp.ToDateTimeUtc(),
+                        Timestamp = data.TimeStamp.ToUniversalTime(),
                     };
 
                     await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
