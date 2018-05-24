@@ -211,7 +211,6 @@ namespace Hspi
                 await collector.Record(recordData).ConfigureAwait(false);
             }
         }
-
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
@@ -254,7 +253,6 @@ namespace Hspi
                 while (!deviceEnumerator.Finished);
             }
         }
-
         private void RegisterConfigPage()
         {
             string link = ConfigPage.Name;

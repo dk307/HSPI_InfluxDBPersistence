@@ -16,6 +16,7 @@ namespace Hspi.DeviceData
 
         public override bool StatusDevice => true;
         public override DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI DeviceAPI => DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI.Plug_In;
+
         public override IList<VSVGPairs.VSPair> StatusPairs
         {
             get
@@ -28,12 +29,13 @@ namespace Hspi.DeviceData
                     RangeEnd = int.MaxValue,
                     IncludeValues = true,
                     RangeStatusDecimals = 3,
-                    RangeStatusSuffix = " @S@",
+                    RangeStatusSuffix = string.IsNullOrEmpty(ScaleDisplayText) ? string.Empty : " @S@",
                     HasScale = !string.IsNullOrEmpty(ScaleDisplayText),
                 });
                 return pairs;
             }
         }
+
         public override IList<VSVGPairs.VGPair> GraphicsPairs => new List<VSVGPairs.VGPair>();
         public override string ScaleDisplayText => Data.Unit;
     }
