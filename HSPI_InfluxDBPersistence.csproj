@@ -74,9 +74,6 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Afk.ZoneInfo, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Afk.ZoneInfo.2.1.0\lib\net46\Afk.ZoneInfo.dll</HintPath>
-    </Reference>
     <Reference Include="Costura, Version=2.0.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
       <HintPath>packages\Costura.Fody.2.0.0\lib\net452\Costura.dll</HintPath>
     </Reference>

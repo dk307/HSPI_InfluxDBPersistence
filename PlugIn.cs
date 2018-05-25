@@ -179,6 +179,11 @@ namespace Hspi
                 {
                     collectionShutdownToken.Dispose();
                 }
+
+                if (deviceRootDeviceManager != null)
+                {
+                    deviceRootDeviceManager.Dispose();
+                }
                 disposedValue = true;
             }
 
@@ -314,7 +319,7 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
 
-                RecordTrackedDevices();
+                RecordTrackedDevices().Wait(); 
             }
         }
 

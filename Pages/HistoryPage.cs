@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
-using Afk.ZoneInfo;
 
 namespace Hspi
 {
@@ -169,9 +168,6 @@ namespace Hspi
 
         private IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
         {
-            DateTime timeNow = DateTime.Now;
-            int secondsSinceDayStart = (int)(timeNow - timeNow.Date).TotalSeconds;
-
             List<string> fields = new List<string>();
 
             if (!string.IsNullOrWhiteSpace(data.Field))
@@ -194,31 +190,21 @@ namespace Hspi
 
             if (!string.IsNullOrWhiteSpace(data.Field))
             {
-                var timezone = TzTimeZone.CurrentTzTimeZone.Name;
                 var standardFields = Invariant($"MIN(\"{data.Field}\"), MAX(\"{data.Field}\"), MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile\"");
+                var subQuery24h = Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h GROUP BY time(1s) fill(previous)");
                 queries.Add(
-                     "Min/Max/Average/Medium/Percentile Values",
-                     $"SELECT {standardFields} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                     "Min/Max Values",
+                     $"SELECT MIN(\"{data.Field}\"), MAX(\"{data.Field}\") from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
                 );
 
                 queries.Add(
                       "Min/Max/Average/Medium/Percentile Values(24h)",
-                      $"SELECT {standardFields}  from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h"
+                      $"SELECT {standardFields} FROM ({subQuery24h})"
                  );
 
                 queries.Add(
                       "Min/Max/Average/Medium/Percentile Values By Hour(24h)",
-                      $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - 24h AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' GROUP BY time(1h) FILL(previous) TZ('{timezone}')"
-                );
-
-                queries.Add(
-                      "Min/Max/Average/Medium/Percentile Values Today",
-                       $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE time > now() - {secondsSinceDayStart}s AND {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
-                );
-
-                queries.Add(
-                    "Min/Max/Average/Medium/Percentile Values By Day(7d)",
-                    $"SELECT {standardFields} FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' and time > now() - 7d group by time(1d) fill(previous) TZ('{timezone}')"
+                      $"SELECT {standardFields} FROM ({subQuery24h}) GROUP BY time(1h)"
                 );
             }
             return queries;
