@@ -13,16 +13,8 @@ namespace Hspi
 {
     using static System.FormattableString;
 
-    [Serializable]
-    internal class RefreshDeviceAction
-    {
-        public int DeviceRefId;
-    }
-
     internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
     {
-        private const string RefreshActionUIDropDownName = "Device_";
-
         public string GetDeviceHistoryTab(DeviceClass deviceClass)
         {
             int refId = deviceClass.get_Ref(HS);
@@ -86,22 +78,6 @@ namespace Hspi
             return string.Empty;
         }
 
-        public string GetRefreshActionUI(string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            StringBuilder stb = new StringBuilder();
-            var currentDevices = GetCurrentDeviceImportDevices();
-            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-
-            string selection = string.Empty;
-            if (refreshDeviceAction != null)
-            {
-                selection = refreshDeviceAction.DeviceRefId.ToString(CultureInfo.InvariantCulture);
-            }
-
-            stb.Append(FormDropDown(RefreshActionUIDropDownName + uniqueControlId, currentDevices, selection, 400, string.Empty, true, "Events"));
-            return stb.ToString();
-        }
-
         public IPlugInAPI.strMultiReturn GetRefreshActionPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
         {
             IPlugInAPI.strMultiReturn result = default;
@@ -127,6 +103,22 @@ namespace Hspi
             }
 
             return result;
+        }
+
+        public string GetRefreshActionUI(string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
+        {
+            StringBuilder stb = new StringBuilder();
+            var currentDevices = GetCurrentDeviceImportDevices();
+            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+
+            string selection = string.Empty;
+            if (refreshDeviceAction != null)
+            {
+                selection = refreshDeviceAction.DeviceRefId.ToString(CultureInfo.InvariantCulture);
+            }
+
+            stb.Append(FormDropDown(RefreshActionUIDropDownName + uniqueControlId, currentDevices, selection, 400, string.Empty, true, "Events"));
+            return stb.ToString();
         }
 
         private NameValueCollection GetCurrentDeviceImportDevices()
@@ -158,5 +150,13 @@ namespace Hspi
 
             return currentDevices;
         }
+
+        private const string RefreshActionUIDropDownName = "Device_";
+    }
+
+    [Serializable]
+    internal class RefreshDeviceAction
+    {
+        public int DeviceRefId;
     }
 }
