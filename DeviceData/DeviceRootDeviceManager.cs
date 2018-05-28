@@ -30,11 +30,61 @@ namespace Hspi.DeviceData
             var hsDevices = GetCurrentDevices();
             CreateDevices(hsDevices);
             StartDeviceFetchFromDB(hsDevices);
+            Children = hsDevices.Children;
         }
 
         public void Cancel()
         {
             cancellationTokenSourceForUpdateDevice.Cancel();
+        }
+
+        public async Task<bool> ImportDataForDevice(int refID)
+        {
+            if (Children.TryGetValue(refID, out var data))
+            {
+                await ImportDataForDevice(refID, data).ConfigureAwait(false);
+                return true;
+            }
+
+            return false;
+        }
+
+        private async Task ImportDataForDeviceInLoop(int refID, DeviceData deviceData)
+        {
+            while (!combinedToken.Token.IsCancellationRequested)
+            {
+                ImportDeviceData importDeviceData = await ImportDataForDevice(refID, deviceData).ConfigureAwait(false);
+                await Task.Delay((int)Math.Min(importDeviceData.Interval.TotalMilliseconds, TimeSpan.FromDays(1).TotalMilliseconds),
+                                 combinedToken.Token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task<ImportDeviceData> ImportDataForDevice(int refID, DeviceData deviceData)
+        {
+            ImportDeviceData importDeviceData = deviceData.Data;
+
+            //start as task to fetch data
+            double? deviceValue = null;
+            try
+            {
+                var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
+                deviceValue = Convert.ToDouble(queryData);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(Invariant($"Failed to get value from Db for {importDeviceData.Name} with {ex.GetFullMessage()}"));
+            }
+
+            try
+            {
+                deviceData.Update(HS, refID, deviceValue);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(Invariant($"Failed to write value to HS for {importDeviceData.Name} with {ex.GetFullMessage()}"));
+            }
+
+            return importDeviceData;
         }
 
         /// <summary>
@@ -124,8 +174,6 @@ namespace Hspi.DeviceData
         /// <summary>
         /// Creates the devices based on configuration.
         /// </summary>
-        /// <param name="currentDevices">The current HS devices.</param>
-        /// <param name="token">The token.</param>
         private void CreateDevices(HSDevices hsDevices)
         {
             try
@@ -206,44 +254,14 @@ namespace Hspi.DeviceData
             };
         }
 
-        private async Task ImportDataForDevice(int refID, DeviceData deviceData)
+        private void StartDeviceFetchFromDB(in HSDevices hsDevices)
         {
-            while (!combinedToken.Token.IsCancellationRequested)
-            {
-                ImportDeviceData importDeviceData = deviceData.Data;
-
-                //start as task to fetch data
-                double? deviceValue = null;
-                try
-                {
-                    var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
-                    deviceValue = Convert.ToDouble(queryData);
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceWarning(Invariant($"Failed to get value from Db for {importDeviceData.Name} with {ex.GetFullMessage()}"));
-                }
-
-                try
-                {
-                    deviceData.Update(HS, refID, deviceValue);
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceWarning(Invariant($"Failed to write value to HS for {importDeviceData.Name} with {ex.GetFullMessage()}"));
-                }
-                await Task.Delay((int)Math.Min(importDeviceData.Interval.TotalMilliseconds, TimeSpan.FromDays(1).TotalMilliseconds), combinedToken.Token).ConfigureAwait(false);
-            }
-        }
-
-        private void StartDeviceFetchFromDB(HSDevices hSDevices)
-        {
-            foreach (var childDeviceKeyValuePair in hSDevices.Children)
+            foreach (var childDeviceKeyValuePair in hsDevices.Children)
             {
                 int refID = childDeviceKeyValuePair.Key;
                 DeviceData deviceData = childDeviceKeyValuePair.Value;
 
-                Task.Factory.StartNew(() => ImportDataForDevice(refID, deviceData),
+                Task.Factory.StartNew(() => ImportDataForDeviceInLoop(refID, deviceData),
                                       cancellationTokenSourceForUpdateDevice.Token,
                                       TaskCreationOptions.RunContinuationsAsynchronously,
                                       TaskScheduler.Current);
@@ -253,11 +271,12 @@ namespace Hspi.DeviceData
         private struct HSDevices
         {
             // RefId to DeviceData
-            public IDictionary<int, DeviceData> Children;
+            public Dictionary<int, DeviceData> Children;
 
             public int? ParentRefId;
         };
 
+        private readonly IReadOnlyDictionary<int, DeviceData> Children;
         private readonly CancellationToken cancellationToken;
         private readonly CancellationTokenSource cancellationTokenSourceForUpdateDevice = new CancellationTokenSource();
         private readonly CancellationTokenSource combinedToken;
@@ -290,11 +309,6 @@ namespace Hspi.DeviceData
         }
 
         private bool disposedValue = false; // To detect redundant calls
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~DeviceRootDeviceManager() {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
 
         #endregion IDisposable Support
     };

@@ -1,9 +1,11 @@
-﻿using System;
+﻿using NullGuard;
+using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Hspi
 {
+    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal static class ObjectSerialize
     {
         public static string SerializeToString(object obj)
@@ -33,9 +35,9 @@ namespace Hspi
             }
         }
 
-        public static object DeSerializeFromBytes(byte[] arrBytes)
+        public static object DeSerializeFromBytes([AllowNull]byte[] arrBytes)
         {
-            if (arrBytes.Length == 0)
+            if (arrBytes == null || arrBytes.Length == 0)
             {
                 return null;
             }

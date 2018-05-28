@@ -182,9 +182,17 @@ namespace Hspi
             return cb.Build();
         }
 
-        protected string FormDropDown(string name, NameValueCollection options, string selected, int width, string tooltip, bool autoPostBack = true)
+        protected string FormDropDown(string name, NameValueCollection options, string selected,
+                                      int width, string tooltip, bool autoPostBack = true)
         {
-            var dropdown = new clsJQuery.jqDropList(name, PageName, false)
+            return FormDropDown(name, options, selected,
+                                      width, tooltip, autoPostBack, PageName);
+        }
+
+        protected string FormDropDown(string name, NameValueCollection options, string selected,
+                                      int width, string tooltip, bool autoPostBack, string pageName)
+        {
+            var dropdown = new clsJQuery.jqDropList(name, pageName, false)
             {
                 selectedItemIndex = -1,
                 id = NameToIdWithPrefix(name),
@@ -299,8 +307,7 @@ namespace Hspi
 
             int i = 0;
             StringBuilder stb = new StringBuilder();
-            IncludeResourceCSS(stb, "jquery.dataTables.css");
-            IncludeResourceScript(stb, "jquery.dataTables.min.js");
+            IncludeDataTableFiles(stb);
 
             var tabs = new clsJQuery.jqTabs("tab1id", PageName);
             var tab1 = new clsJQuery.Tab();

@@ -33,8 +33,7 @@ namespace Hspi
         private string BuildHistoryPage(NameValueCollection parts, DevicePersistenceData data)
         {
             StringBuilder stb = new StringBuilder();
-            IncludeResourceCSS(stb, "jquery.dataTables.css");
-            IncludeResourceScript(stb, "jquery.dataTables.min.js");
+            IncludeDataTableFiles(stb);
 
             HSHelper hsHelper = new HSHelper(HS);
 
@@ -72,7 +71,7 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td class='tableheader'>Results</td></tr>"));
             stb.Append("<tr><td>");
             stb.Append(DivStart(HistoryResultDivId, string.Empty));
-            BuildTable(finalQuery, stb);
+            BuildTable(finalQuery, stb, 25);
             stb.Append(DivEnd());
             stb.Append("</td><tr>");
             stb.Append("<tr height='5'><td></td></tr>");
@@ -84,7 +83,13 @@ namespace Hspi
             return stb.ToString();
         }
 
-        private void BuildTable(string query, StringBuilder stb)
+        private void IncludeDataTableFiles(StringBuilder stb)
+        {
+            IncludeResourceCSS(stb, "jquery.dataTables.css");
+            IncludeResourceScript(stb, "jquery.dataTables.min.js");
+        }
+
+        private void BuildTable(string query, StringBuilder stb, int pageLength)
         {
             try
             {
@@ -161,8 +166,9 @@ namespace Hspi
                     stb.AppendLine(@"$(document).ready(function() {");
                     stb.AppendLine(@"$('#results').DataTable({
                                        'pageLength':25,
-                                        'order': [],
-                                        'columnDefs': [
+                                        'order': [],");
+                    stb.AppendLine(Invariant($"  'pageLength': {pageLength}, "));
+                    stb.AppendLine(@"   'columnDefs': [
                                             { 'className': 'dt-left', 'targets': '_all'}
                                         ]
                                     });
@@ -184,17 +190,7 @@ namespace Hspi
 
         private IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
         {
-            List<string> fields = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(data.Field))
-            {
-                fields.Add(Invariant($"\"{data.Field}\""));
-            }
-
-            if (!string.IsNullOrWhiteSpace(data.FieldString))
-            {
-                fields.Add(Invariant($"\"{data.FieldString}\""));
-            }
+            List<string> fields = GetFields(data);
 
             var queries = new Dictionary<string, FormattableString>()
             {
@@ -226,6 +222,23 @@ namespace Hspi
             return queries;
         }
 
+        private static List<string> GetFields(DevicePersistenceData data)
+        {
+            List<string> fields = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(data.Field))
+            {
+                fields.Add(Invariant($"\"{data.Field}\""));
+            }
+
+            if (!string.IsNullOrWhiteSpace(data.FieldString))
+            {
+                fields.Add(Invariant($"\"{data.FieldString}\""));
+            }
+
+            return fields;
+        }
+
         private void HandleHistoryPagePostBack(NameValueCollection parts, string form)
         {
             string finalQuery = null;
@@ -245,7 +258,7 @@ namespace Hspi
             }
 
             StringBuilder stb = new StringBuilder();
-            BuildTable(finalQuery, stb);
+            BuildTable(finalQuery, stb, 25);
             this.divToUpdate.Add(HistoryResultDivId, stb.ToString());
         }
 

@@ -4,12 +4,12 @@ using NullGuard;
 using Scheduler.Classes;
 using System;
 using System.Diagnostics;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hspi
 {
+    using System.Collections.Specialized;
     using static System.FormattableString;
 
     /// <summary>
@@ -20,7 +20,7 @@ namespace Hspi
     internal class PlugIn : HspiBase
     {
         public PlugIn()
-            : base(PlugInData.PlugInName, supportConfigDevice: true)
+            : base(PlugInData.PlugInName, supportConfigDevice: true, supportConfigDeviceAll: true)
         {
         }
 
@@ -49,29 +49,12 @@ namespace Hspi
 
                 if (deviceIdentifier != null)
                 {
-                    foreach (var device in pluginConfig.ImportDevicesData)
-                    {
-                        if (device.Key == deviceIdentifier.DeviceId)
-                        {
-                            StringBuilder stb = new StringBuilder();
-
-                            stb.Append(@"<table style='width:100%;border-spacing:0px;'");
-                            stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
-                            stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>Import Settings</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{device.Value.Name ?? string.Empty}</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell' colspan=2>{device.Value.Sql ?? string.Empty}</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Refresh Interval(seconds):</td><td class='tablecell' colspan=2>{device.Value.Interval.TotalSeconds}</td></tr>"));
-                            stb.Append(Invariant($"<tr><td class='tablecell'>Unit:</td><td class='tablecell' colspan=2>{device.Value.Unit ?? string.Empty}</td></tr>"));
-                            stb.Append(Invariant($"</td><td></td></tr>"));
-                            stb.Append("<tr height='5'><td colspan=3></td></tr>");
-                            stb.Append(@" </table>");
-
-                            return stb.ToString();
-                        }
-                    }
+                    return configPage.GetDeviceImportTab(deviceIdentifier);
                 }
-
-                return string.Empty;
+                else
+                {
+                    return configPage.GetDeviceHistoryTab(deviceClass);
+                }
             }
             catch (Exception ex)
             {
@@ -216,6 +199,7 @@ namespace Hspi
                 await collector.Record(recordData).ConfigureAwait(false);
             }
         }
+
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
@@ -258,6 +242,7 @@ namespace Hspi
                 while (!deviceEnumerator.Finished);
             }
         }
+
         private void RegisterConfigPage()
         {
             string link = ConfigPage.Name;
@@ -297,7 +282,7 @@ namespace Hspi
             }
         }
 
-        private async Task StartInfluxDBMeasurementsCollector()
+        private void StartInfluxDBMeasurementsCollector()
         {
             lock (influxDBMeasurementsCollectorLock)
             {
@@ -319,10 +304,181 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
 
-                RecordTrackedDevices().Wait(); 
+                RecordTrackedDevices().Wait();
             }
         }
 
+        #region "Action Override"
+
+        public override string ActionBuildUI([AllowNull]string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        return configPage.GetRefreshActionUI(uniqueControlId ?? string.Empty, actionInfo);
+
+                    default:
+                        return base.ActionBuildUI(uniqueControlId, actionInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to give build Action UI with {ex.GetFullMessage()}"));
+                throw;
+            }
+        }
+
+        public override bool ActionConfigured(IPlugInAPI.strTrigActInfo actionInfo)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        if (actionInfo.DataIn != null)
+                        {
+                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
+                            {
+                                return HS.GetDeviceByRef(refreshDeviceAction.DeviceRefId) != null;
+                            }
+                        }
+
+                        return false;
+
+                    default:
+                        return base.ActionConfigured(actionInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to ActionConfigured with {ex.GetFullMessage()}"));
+                return false;
+            }
+        }
+
+        public override int ActionCount()
+        {
+            return 1;
+        }
+
+        public override string ActionFormatUI(IPlugInAPI.strTrigActInfo actionInfo)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        if (actionInfo.DataIn != null)
+                        {
+                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
+                            {
+                                HSHelper hSHelper = new HSHelper(HS);
+                                return Invariant($"Refresh {hSHelper.GetName(refreshDeviceAction.DeviceRefId)} from Influx DB");
+                            }
+                        }
+                        return Invariant($"{PlugInData.PlugInName} Unknown Device Import Refresh");
+
+                    default:
+                        return base.ActionFormatUI(actionInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to ActionFormatUI with {ex.GetFullMessage()}"));
+                throw;
+            }
+        }
+
+        public override IPlugInAPI.strMultiReturn ActionProcessPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        return configPage.GetRefreshActionPostUI(postData, actionInfo);
+
+                    default:
+                        return base.ActionProcessPostUI(postData, actionInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to ActionProcessPostUI with {ex.GetFullMessage()}"));
+                throw;
+            }
+        }
+
+        public override string get_ActionName(int actionNumber)
+        {
+            try
+            {
+                switch (actionNumber)
+                {
+                    case ActionRefreshTANumber:
+                        return Invariant($"{Name}:Refresh From InfluxDB");
+
+                    default:
+                        return base.get_ActionName(actionNumber);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to give Action Name with {ex.GetFullMessage()}"));
+                throw;
+            }
+        }
+
+        public override bool HandleAction(IPlugInAPI.strTrigActInfo actionInfo)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        if (actionInfo.DataIn != null)
+                        {
+                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
+                            {
+                                if (ImportDeviceFromDB(refreshDeviceAction.DeviceRefId))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                        Trace.TraceWarning(Invariant($"Failed to execute action with Device not Found"));
+                        return false;
+
+                    default:
+                        return base.HandleAction(actionInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(Invariant($"Failed to execute action with {ex.GetFullMessage()}"));
+                return false;
+            }
+        }
+
+        private bool ImportDeviceFromDB(int deviceRefId)
+        {
+            DeviceRootDeviceManager deviceRootDeviceManagerCopy;
+            lock (deviceRootDeviceManagerLock)
+            {
+                deviceRootDeviceManagerCopy = deviceRootDeviceManager;
+            }
+
+            return deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).Result;
+        }
+
+        #endregion "Action Override"
+
+        private const int ActionRefreshTANumber = 1;
         private readonly object deviceRootDeviceManagerLock = new object();
         private readonly object influxDBMeasurementsCollectorLock = new object();
         private CancellationTokenSource collectionShutdownToken;
