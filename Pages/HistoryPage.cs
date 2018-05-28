@@ -124,7 +124,23 @@ namespace Hspi
                             }
                             else
                             {
-                                value = Convert.ToString(column, culture);
+                                switch (column)
+                                {
+                                    case double doubleValue:
+                                        value = doubleValue.ToString("N3", culture);
+                                        break;
+
+                                    case float floatValue:
+                                        value = floatValue.ToString("N3", culture);
+                                        break;
+
+                                    case null:
+                                        break;
+
+                                    default:
+                                        value = Convert.ToString(column, culture);
+                                        break;
+                                }
                             }
 
                             if (sortValue != null)
