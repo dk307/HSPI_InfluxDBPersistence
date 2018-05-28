@@ -45,16 +45,20 @@ namespace Hspi
             try
             {
                 DeviceClass deviceClass = (DeviceClass)HS.GetDeviceByRef(deviceId);
-                var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
 
-                if (deviceIdentifier != null)
+                if (deviceClass.get_Interface(HS) == PlugInData.PlugInName)
                 {
-                    return configPage.GetDeviceImportTab(deviceIdentifier);
+                    var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
+                    if (deviceIdentifier != null)
+                    {
+                        return configPage.GetDeviceImportTab(deviceIdentifier);
+                    }
                 }
                 else
                 {
                     return configPage.GetDeviceHistoryTab(deviceClass);
                 }
+                return string.Empty;
             }
             catch (Exception ex)
             {
@@ -477,6 +481,26 @@ namespace Hspi
         }
 
         #endregion "Action Override"
+
+
+        public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
+        {
+            if (ImportDeviceFromDB(deviceId))
+            {
+                var pollResult = new IPlugInAPI.PollResultInfo
+                {
+                    Result = IPlugInAPI.enumPollResult.OK,
+                    Value = HS.DeviceValueEx(deviceId),
+                };
+
+                return pollResult;
+            }
+            else
+            {
+
+                return base.PollDevice(deviceId);
+            }
+        }
 
         private const int ActionRefreshTANumber = 1;
         private readonly object deviceRootDeviceManagerLock = new object();
