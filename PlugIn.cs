@@ -3,13 +3,13 @@ using Hspi.DeviceData;
 using NullGuard;
 using Scheduler.Classes;
 using System;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hspi
 {
-    using System.Collections.Specialized;
     using static System.FormattableString;
 
     /// <summary>
@@ -181,10 +181,9 @@ namespace Hspi
         {
             if (device != null)
             {
-                
                 int deviceRefId = device.get_Ref(HS);
-                bool valid = HS.get_DeviceInvalidValue(deviceRefId);
-                if (valid)
+                bool notValid = HS.get_DeviceInvalidValue(deviceRefId);
+                if (notValid)
                 {
                     double deviceValue = device.get_devValue(HS);
                     string deviceString = HS.DeviceString(deviceRefId);
@@ -205,10 +204,10 @@ namespace Hspi
                                                            lastChange);
 
                     await collector.Record(recordData).ConfigureAwait(false);
-                } 
+                }
                 else
                 {
-                    Trace.WriteLine(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
+                    Trace.TraceWarning(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
                 }
             }
         }
@@ -491,7 +490,6 @@ namespace Hspi
 
         #endregion "Action Override"
 
-
         public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
         {
             if (ImportDeviceFromDB(deviceId))
@@ -506,7 +504,6 @@ namespace Hspi
             }
             else
             {
-
                 return base.PollDevice(deviceId);
             }
         }
