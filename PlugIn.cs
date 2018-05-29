@@ -183,7 +183,7 @@ namespace Hspi
             {
                 int deviceRefId = device.get_Ref(HS);
                 bool notValid = HS.get_DeviceInvalidValue(deviceRefId);
-                if (notValid)
+                if (!notValid)
                 {
                     double deviceValue = device.get_devValue(HS);
                     string deviceString = HS.DeviceString(deviceRefId);
