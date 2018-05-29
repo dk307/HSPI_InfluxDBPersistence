@@ -75,6 +75,7 @@ namespace Hspi
                     return stb.ToString();
                 }
             }
+
             return string.Empty;
         }
 
@@ -151,7 +152,7 @@ namespace Hspi
             return currentDevices;
         }
 
-        private const string RefreshActionUIDropDownName = "Device_";
+        private const string RefreshActionUIDropDownName = "RefreshActionUIDropDownName_";
     }
 
     [Serializable]

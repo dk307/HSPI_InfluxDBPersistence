@@ -181,26 +181,35 @@ namespace Hspi
         {
             if (device != null)
             {
+                
                 int deviceRefId = device.get_Ref(HS);
-                double deviceValue = device.get_devValue(HS);
-                string deviceString = HS.DeviceString(deviceRefId);
-                if (string.IsNullOrWhiteSpace(deviceString))
+                bool valid = HS.get_DeviceInvalidValue(deviceRefId);
+                if (valid)
                 {
-                    deviceString = HS.DeviceVSP_GetStatus(deviceRefId, deviceValue, ePairStatusControl.Status);
+                    double deviceValue = device.get_devValue(HS);
+                    string deviceString = HS.DeviceString(deviceRefId);
+                    if (string.IsNullOrWhiteSpace(deviceString))
+                    {
+                        deviceString = HS.DeviceVSP_GetStatus(deviceRefId, deviceValue, ePairStatusControl.Status);
+                    }
+                    Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
+
+                    DateTime lastChange = device.get_Last_Change(HS);
+
+                    RecordData recordData = new RecordData(deviceRefId,
+                                                           deviceValue,
+                                                           deviceString,
+                                                           device.get_Name(HS),
+                                                           device.get_Location(HS),
+                                                           device.get_Location2(HS),
+                                                           lastChange);
+
+                    await collector.Record(recordData).ConfigureAwait(false);
+                } 
+                else
+                {
+                    Trace.WriteLine(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
                 }
-                Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
-
-                DateTime lastChange = device.get_Last_Change(HS);
-
-                RecordData recordData = new RecordData(deviceRefId,
-                                                       deviceValue,
-                                                       deviceString,
-                                                       device.get_Name(HS),
-                                                       device.get_Location(HS),
-                                                       device.get_Location2(HS),
-                                                       lastChange);
-
-                await collector.Record(recordData).ConfigureAwait(false);
             }
         }
 
