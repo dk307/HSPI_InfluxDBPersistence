@@ -24,9 +24,23 @@ namespace Hspi
             }
         }
 
-        private static string ProcessInfluxDBDateTime(CultureInfo culture, string dateTimePattern, long timePoint)
+        private static string ProcessInfluxDBDateTime(DateTimeOffset today, CultureInfo culture, long timePoint)
         {
             var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
+            var dateTimeToday = dateTime.Date;
+
+            if (today == dateTimeToday)
+            {
+                return "Today " + dateTime.ToString(culture.DateTimeFormat.LongTimePattern);
+            }
+            else if (today.AddDays(-1) == dateTimeToday)
+            {
+                return "Yesterday " + dateTime.ToString(culture.DateTimeFormat.LongTimePattern);
+            }
+
+            string dateTimePattern = culture.DateTimeFormat.ShortDatePattern +
+                         " " + culture.DateTimeFormat.LongTimePattern;
+
             return dateTime.ToString(dateTimePattern, culture);
         }
 
@@ -93,7 +107,7 @@ namespace Hspi
         {
             try
             {
-                var culture = CultureInfo.InvariantCulture;
+                var culture = CultureInfo.CurrentUICulture;
                 var queryData = GetData(query).ToArray();
 
                 if (queryData.Length > 0)
@@ -109,9 +123,7 @@ namespace Hspi
                     stb.Append(@"</tr></thead>");
                     stb.Append(@"<tbody>");
 
-                    string dateTimePattern = CultureInfo.CurrentUICulture.DateTimeFormat.LongDatePattern +
-                                     " " + CultureInfo.CurrentUICulture.DateTimeFormat.LongTimePattern;
-
+                    DateTimeOffset today = DateTimeOffset.Now.Date;
                     foreach (var row in queryData[0].Values)
                     {
                         stb.Append(@"<tr>");
@@ -125,18 +137,18 @@ namespace Hspi
                             {
                                 var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
                                 sortValue = column.ToString();
-                                value = ProcessInfluxDBDateTime(culture, dateTimePattern, timePoint);
+                                value = ProcessInfluxDBDateTime(today, culture, timePoint);
                             }
                             else
                             {
                                 switch (column)
                                 {
                                     case double doubleValue:
-                                        value = doubleValue.ToString("N3", culture);
+                                        value = Math.Round(doubleValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
                                         break;
 
                                     case float floatValue:
-                                        value = floatValue.ToString("N3", culture);
+                                        value = Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
                                         break;
 
                                     case null:
