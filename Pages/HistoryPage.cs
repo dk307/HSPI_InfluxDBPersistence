@@ -123,8 +123,8 @@ namespace Hspi
                 { QueryPartId, finalQuery },
                 { TableSizeId, Invariant($"{tableSize}") },
             });
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" style=\"border:none;width:100%\" scrolling=\"no\"></iframe>"));
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
             stb.Append(@"<script>iFrameResize({log:false}, '#tableFrame')</script>");
         }
 

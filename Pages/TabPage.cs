@@ -30,14 +30,13 @@ namespace Hspi
                 IncludeResourceScript(stb, "iframeSizer.min.js");
 
                 stb.Append(@"<table style='width:100%;border-spacing:0px;'");
-                stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
-                stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>History</td></tr>"));
-                stb.Append("<tr><td class='tablecell' colspan=3>");
+                stb.Append("<tr height='5'></td></tr>");
+                stb.Append(Invariant($"<tr><td class='tableheader'>History</td></tr>"));
+                stb.Append("<tr><td class='tablecell'>");
                 BuildQueryTableIFrame(stb, lastValuesQuery, 10);
                 stb.Append("</td></tr>");
-                stb.Append(Invariant($"</td><td></td></tr>"));
-                stb.Append("<tr height='5'><td colspan=3></td></tr>");
-                stb.Append("<tr><td colspan=3>");
+                stb.Append("<tr height='5'><td></td></tr>");
+                stb.Append("<tr><td>");
                 stb.Append(PageTypeButton(Invariant($"Edit{data.Id}"), "Edit", EditDevicePageType, id: data.Id));
                 stb.Append("&nbsp;");
                 stb.Append(PageTypeButton(Invariant($"Queries{data.Id}"), "More Queries", HistoryDevicePageType, id: data.Id));
