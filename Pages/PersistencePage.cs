@@ -351,6 +351,7 @@ namespace Hspi
         private const string DescId = "desc";
         private const string DeviceRefIdId = "devicerefidid";
         private const string EditDevicePageType = "editdevice";
+        private const string DeviceDataTablePageType = "table";
         private const string EditDeviceImportPageType = "editdeviceimport";
         private const string EditPersistenceCancel = "CancelP";
         private const string EditPersistenceSave = "SaveP";

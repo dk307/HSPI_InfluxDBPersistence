@@ -99,6 +99,39 @@ namespace Hspi {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to /*! iFrame Resizer (iframeSizer.contentWindow.min.js) - v3.6.1 - 2018-04-29
+        /// *  Desc: Include this file in any page being loaded into an iframe
+        /// *        to force the iframe to resize to the content size.
+        /// *  Requires: iframeResizer.min.js on host page.
+        /// *  Copyright: (c) 2018 David J. Bradshaw - dave@bradshaw.net
+        /// *  License: MIT
+        /// */
+        ///
+        ///!function(a){&quot;use strict&quot;;function b(a,b,c){&quot;addEventListener&quot;in window?a.addEventListener(b,c,!1):&quot;attachEvent&quot;in window&amp;&amp;a.attachEvent(&quot;on&quot;+b,c)}function c(a,b,c){&quot; [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string iframeResizer_contentWindow_min_js {
+            get {
+                return ResourceManager.GetString("iframeResizer_contentWindow_min_js", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to /*! iFrame Resizer (iframeSizer.min.js ) - v3.6.1 - 2018-04-29
+        /// *  Desc: Force cross domain iframes to size to content.
+        /// *  Requires: iframeResizer.contentWindow.min.js to be loaded into the target frame.
+        /// *  Copyright: (c) 2018 David J. Bradshaw - dave@bradshaw.net
+        /// *  License: MIT
+        /// */
+        ///
+        ///!function(a){&quot;use strict&quot;;function b(a,b,c){&quot;addEventListener&quot;in window?a.addEventListener(b,c,!1):&quot;attachEvent&quot;in window&amp;&amp;a.attachEvent(&quot;on&quot;+b,c)}function c(a,b,c){&quot;removeEventListener&quot;in window?a.removeEventListene [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string iframeSizer_min_js {
+            get {
+                return ResourceManager.GetString("iframeSizer_min_js", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to /*
         /// * Table styles
         /// */

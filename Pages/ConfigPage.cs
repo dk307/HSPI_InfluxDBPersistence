@@ -37,6 +37,23 @@ namespace Hspi
         /// </summary>
         public static string Name => pageName;
 
+        public static string BuildUri(string path, NameValueCollection query)
+        {
+            var collection = HttpUtility.ParseQueryString(string.Empty);
+
+            foreach (var key in query.Cast<string>().Where(key => !string.IsNullOrEmpty(query[key])))
+            {
+                collection[HttpUtility.UrlEncode(key)] = HttpUtility.UrlEncode(query[key]);
+            }
+
+            var builder = new UriBuilder()
+            {
+                Path = HttpUtility.UrlPathEncode(path),
+                Query = collection.ToString()
+            };
+            return builder.Uri.PathAndQuery;
+        }
+
         /// <summary>
         /// Get the web page string for the configuration page.
         /// </summary>
@@ -54,27 +71,46 @@ namespace Hspi
 
                 string pageType = parts[PageTypeId];
                 StringBuilder stb = new StringBuilder();
-                stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
-                stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
 
                 switch (pageType)
                 {
                     case EditDevicePageType:
                         {
+                            stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
                             pluginConfig.DevicePersistenceData.TryGetValue(parts[RecordId], out var data);
                             stb.Append(BuildAddNewPersistenceWebPageBody(data));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            AddBody(stb.ToString());
+                            AddFooter(HS.GetPageFooter());
                         }
                         break;
 
                     case EditDeviceImportPageType:
                         {
+                            stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
                             pluginConfig.ImportDevicesData.TryGetValue(parts[RecordId], out var data);
                             stb.Append(BuildAddNewDeviceImportWebPageBody(data));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            AddBody(stb.ToString());
+                            AddFooter(HS.GetPageFooter());
+                        }
+                        break;
+
+                    case DeviceDataTablePageType:
+                        {
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("table", string.Empty));
+                            stb.Append(BuildTablePage(parts));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            AddBody(stb.ToString());
                         }
                         break;
 
                     case HistoryDevicePageType:
                         {
+                            stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
                             if (pluginConfig.DevicePersistenceData.TryGetValue(parts[RecordId], out var data))
                             {
                                 stb.Append(BuildHistoryPage(parts, data));
@@ -83,22 +119,26 @@ namespace Hspi
                             {
                                 stb.Append(BuildDefaultWebPageBody(parts));
                             }
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            AddBody(stb.ToString());
+                            AddFooter(HS.GetPageFooter());
                         }
                         break;
 
                     default:
                     case null:
                         {
+                            stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("pluginpage", string.Empty));
                             stb.Append(BuildDefaultWebPageBody(parts));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            AddBody(stb.ToString());
+                            AddFooter(HS.GetPageFooter());
                             break;
                         }
                 }
 
-                stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
-                AddBody(stb.ToString());
-                AddFooter(HS.GetPageFooter());
                 suppressDefaultFooter = true;
-
                 return BuildPage();
             }
             catch (Exception)
@@ -418,7 +458,6 @@ namespace Hspi
                 this.pluginConfig.FireConfigChanged();
             }
         }
-
         private const string DBKey = "DBId";
         private const string DBUriKey = "DBUriId";
         private const string DebugLoggingId = "DebugLoggingId";

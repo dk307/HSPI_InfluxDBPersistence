@@ -124,6 +124,12 @@
   <data name="chosen_jquery_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>html\chosen.jquery.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="iframeResizer_contentWindow_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\iframeResizer.contentWindow.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="iframeSizer_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\iframeSizer.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="jquery_dataTables_css" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>html\jquery.dataTables.css;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>

@@ -27,12 +27,13 @@ namespace Hspi
 
                 StringBuilder stb = new StringBuilder();
                 IncludeDataTableFiles(stb);
+                IncludeResourceScript(stb, "iframeSizer.min.js");
 
                 stb.Append(@"<table style='width:100%;border-spacing:0px;'");
                 stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
                 stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>History</td></tr>"));
                 stb.Append("<tr><td class='tablecell' colspan=3>");
-                BuildTable(lastValuesQuery, stb, 10);
+                BuildQueryTableIFrame(stb, lastValuesQuery, 10);
                 stb.Append("</td></tr>");
                 stb.Append(Invariant($"</td><td></td></tr>"));
                 stb.Append("<tr height='5'><td colspan=3></td></tr>");
@@ -41,7 +42,7 @@ namespace Hspi
                 stb.Append("&nbsp;");
                 stb.Append(PageTypeButton(Invariant($"Queries{data.Id}"), "More Queries", HistoryDevicePageType, id: data.Id));
                 stb.Append("</td></tr>");
-                stb.Append(@"</table>");
+                stb.Append("</table>");
 
                 return stb.ToString();
             }
@@ -69,7 +70,6 @@ namespace Hspi
                     stb.Append("<tr><td colspan=3>");
                     stb.Append(PageTypeButton(Invariant($"Edit{device.Value.Id}"), "Edit", EditDeviceImportPageType, id: device.Value.Id));
                     stb.Append("</td></tr>");
-
                     stb.Append(@" </table>");
 
                     return stb.ToString();

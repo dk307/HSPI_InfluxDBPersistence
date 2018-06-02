@@ -24,6 +24,23 @@ namespace Hspi
             }
         }
 
+        private static List<string> GetFields(DevicePersistenceData data)
+        {
+            List<string> fields = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(data.Field))
+            {
+                fields.Add(Invariant($"\"{data.Field}\""));
+            }
+
+            if (!string.IsNullOrWhiteSpace(data.FieldString))
+            {
+                fields.Add(Invariant($"\"{data.FieldString}\""));
+            }
+
+            return fields;
+        }
+
         private static string ProcessInfluxDBDateTime(DateTimeOffset today, CultureInfo culture, long timePoint)
         {
             var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
@@ -48,6 +65,7 @@ namespace Hspi
         {
             StringBuilder stb = new StringBuilder();
             IncludeDataTableFiles(stb);
+            IncludeResourceScript(stb, "iframeSizer.min.js");
 
             HSHelper hsHelper = new HSHelper(HS);
 
@@ -85,22 +103,29 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td class='tableheader'>Results</td></tr>"));
             stb.Append("<tr><td>");
             stb.Append(DivStart(HistoryResultDivId, string.Empty));
-            BuildTable(finalQuery, stb, 25);
+            BuildQueryTableIFrame(stb, finalQuery);
             stb.Append(DivEnd());
             stb.Append("</td><tr>");
             stb.Append("<tr height='5'><td></td></tr>");
             stb.Append(Invariant($"<tr><td>{HistoryBackButton()}</td></tr>"));
             stb.Append("</table>");
-            stb.Append(@"</div>");
+            stb.Append("</div>");
             stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
 
             return stb.ToString();
         }
 
-        private void IncludeDataTableFiles(StringBuilder stb)
+        private void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 25)
         {
-            IncludeResourceCSS(stb, "jquery.dataTables.css");
-            IncludeResourceScript(stb, "jquery.dataTables.min.js");
+            var iFrameUrl = BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceDataTablePageType},
+                { QueryPartId, finalQuery },
+                { TableSizeId, Invariant($"{tableSize}") },
+            });
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" style=\"border:none;width:100%\" scrolling=\"no\"></iframe>"));
+            stb.Append(@"<script>iFrameResize({log:false}, '#tableFrame')</script>");
         }
 
         private void BuildTable(string query, StringBuilder stb, int pageLength)
@@ -177,7 +202,6 @@ namespace Hspi
                     stb.AppendLine("<script type='text/javascript'>");
                     stb.AppendLine(@"$(document).ready(function() {");
                     stb.AppendLine(@"$('#results').DataTable({
-                                       'pageLength':25,
                                         'order': [],");
                     stb.AppendLine(Invariant($"  'pageLength': {pageLength}, "));
                     stb.AppendLine(@"   'columnDefs': [
@@ -192,6 +216,24 @@ namespace Hspi
             {
                 stb.Append(Invariant($"<br><div style='color:Red'>{ex.GetFullMessage()}</div><br>"));
             }
+        }
+
+        private string BuildTablePage(NameValueCollection parts)
+        {
+            StringBuilder stb = new StringBuilder();
+            var query = parts[QueryPartId] ?? string.Empty;
+
+            int size;
+            if (!int.TryParse(HttpUtility.UrlDecode(parts[TableSizeId] ?? string.Empty), out size))
+            {
+                size = 25;
+            }
+
+            IncludeDataTableFiles(stb);
+            IncludeResourceScript(stb, "iframeResizer.contentWindow.min.js");
+
+            BuildTable(HttpUtility.UrlDecode(query), stb, size);
+            return stb.ToString();
         }
 
         private IEnumerable<Serie> GetData(string query)
@@ -234,23 +276,6 @@ namespace Hspi
             return queries;
         }
 
-        private static List<string> GetFields(DevicePersistenceData data)
-        {
-            List<string> fields = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(data.Field))
-            {
-                fields.Add(Invariant($"\"{data.Field}\""));
-            }
-
-            if (!string.IsNullOrWhiteSpace(data.FieldString))
-            {
-                fields.Add(Invariant($"\"{data.FieldString}\""));
-            }
-
-            return fields;
-        }
-
         private void HandleHistoryPagePostBack(NameValueCollection parts, string form)
         {
             string finalQuery = null;
@@ -270,7 +295,7 @@ namespace Hspi
             }
 
             StringBuilder stb = new StringBuilder();
-            BuildTable(finalQuery, stb, 25);
+            BuildQueryTableIFrame(stb, finalQuery);
             this.divToUpdate.Add(HistoryResultDivId, stb.ToString());
         }
 
@@ -283,6 +308,12 @@ namespace Hspi
             };
 
             return b.Build();
+        }
+
+        private void IncludeDataTableFiles(StringBuilder stb)
+        {
+            IncludeResourceCSS(stb, "jquery.dataTables.css");
+            IncludeResourceScript(stb, "jquery.dataTables.min.js");
         }
 
         private void IncludeResourceCSS(StringBuilder stb, string scriptFile)
@@ -304,8 +335,9 @@ namespace Hspi
         private const string HistoryQueryTypeId = "historyquerytypeid";
         private const string HistoryResultDivId = "historyresultdivid";
         private const string HistoryRunQueryButtonName = "historyrunquery";
-        private const string QueryPartId = "querypart";
+        private const string QueryPartId = "query";
         private const string QueryTestDivId = "querytestdivid";
         private const string QueryTestId = "querytextid";
+        private const string TableSizeId = "rows";
     }
 }
