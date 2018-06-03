@@ -1,13 +1,10 @@
-﻿using HomeSeerAPI;
-using Hspi.DeviceData;
-using NullGuard;
+﻿using Hspi.DeviceData;
 using Scheduler;
 using Scheduler.Classes;
-using System;
 using System.Collections.Specialized;
-using System.Globalization;
 using System.Linq;
 using System.Text;
+    using System.Collections.Generic;
 
 namespace Hspi
 {
@@ -15,6 +12,61 @@ namespace Hspi
 
     internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
     {
+        private string IFrameChangeUrlButton(string name, string iframe, string pageType, string url)
+        {
+            var button = new clsJQuery.jqButton(name, name, PageName, false)
+            {
+                id = NameToIdWithPrefix(name),
+            };
+
+            button.functionToCallOnClick = Invariant($"$('#{iframe}').prop('src', '{url}')");
+            return button.Build();
+        }
+
+        private static string BuildChartUri(string finalQuery, string title)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceChartTablePageType},
+                { QueryPartId, finalQuery },
+                { TitlePartId, title },
+            });
+        }
+
+        private static string BuildTableUri(string finalQuery, int tableSize)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceDataTablePageType},
+                { QueryPartId, finalQuery },
+                { TableSizeId, Invariant($"{tableSize}") },
+            });
+        }
+
+        private IDictionary<string, string> GetDeviceHistoryTabQueries(DevicePersistenceData data)
+        {
+            var queries = new Dictionary<string, string>();
+            HSHelper hSHelper = new HSHelper(HS);
+            string deviceName = hSHelper.GetName(data.DeviceRefId);
+            var fields = string.Join(",", GetFields(data));
+            queries.Add("100 Records",
+                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"));
+
+            queries.Add("1h",
+                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 1h ORDER BY time DESC LIMIT 10000"));
+
+            queries.Add("24h",
+                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h ORDER BY time DESC LIMIT 10000"));
+
+            queries.Add("7d",
+                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 7d ORDER BY time DESC LIMIT 10000"));
+
+            queries.Add("30d",
+                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 30d ORDER BY time DESC LIMIT 10000"));
+
+            return queries;
+        }
+
         public string GetDeviceHistoryTab(DeviceClass deviceClass)
         {
             int refId = deviceClass.get_Ref(HS);
@@ -22,18 +74,32 @@ namespace Hspi
             var data = dataKeyPair.Value;
             if (data != null)
             {
-                var fields = GetFields(data);
-                string lastValuesQuery = Invariant($"SELECT {string.Join(",", fields)} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100");
+                var queries = GetDeviceHistoryTabQueries(data);
 
                 StringBuilder stb = new StringBuilder();
                 IncludeDataTableFiles(stb);
                 IncludeResourceScript(stb, "iframeSizer.min.js");
 
                 stb.Append(@"<table style='width:100%;border-spacing:0px;'");
-                stb.Append("<tr height='5'></td></tr>");
+                stb.Append("<tr height='5'><td></td></tr>");
+                stb.Append("<tr><td>");
+                foreach (var queryPair in queries)
+                {
+                    stb.Append(IFrameChangeUrlButton(Invariant($"Table - {queryPair.Key}"), TableFrameId, DeviceDataTablePageType, BuildTableUri(queryPair.Value, 10)));
+                }
+                stb.Append("<br>");
+                if (!string.IsNullOrWhiteSpace(data.Field))
+                {
+                    foreach (var queryPair in queries)
+                    {
+                        stb.Append(IFrameChangeUrlButton(Invariant($"Chart - {queryPair.Key}"), TableFrameId, DeviceChartTablePageType, BuildChartUri(queryPair.Value, string.Empty)));
+                    }
+                }
+
+                stb.Append("</td></tr>");
                 stb.Append(Invariant($"<tr><td class='tableheader'>History</td></tr>"));
                 stb.Append("<tr><td class='tablecell'>");
-                BuildQueryTableIFrame(stb, lastValuesQuery, 10);
+                BuildQueryTableIFrame(stb, queries.First().Value);
                 stb.Append("</td></tr>");
                 stb.Append("<tr height='5'><td></td></tr>");
                 stb.Append("<tr><td>");
@@ -77,86 +143,5 @@ namespace Hspi
 
             return string.Empty;
         }
-
-        public IPlugInAPI.strMultiReturn GetRefreshActionPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            IPlugInAPI.strMultiReturn result = default;
-            result.DataOut = actionInfo.DataIn;
-            result.TrigActInfo = actionInfo;
-            result.sResult = string.Empty;
-            if (postData != null && postData.Count > 0)
-            {
-                RefreshDeviceAction action = (actionInfo.DataIn != null) ?
-                                                    (RefreshDeviceAction)ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) :
-                                                    new RefreshDeviceAction();
-
-                foreach (var pair in postData)
-                {
-                    string text = Convert.ToString(pair);
-                    if (!string.IsNullOrWhiteSpace(text) && text.StartsWith(RefreshActionUIDropDownName))
-                    {
-                        action.DeviceRefId = Convert.ToInt32(postData[text]);
-                    }
-                }
-
-                result.DataOut = ObjectSerialize.SerializeToBytes(action);
-            }
-
-            return result;
-        }
-
-        public string GetRefreshActionUI(string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            StringBuilder stb = new StringBuilder();
-            var currentDevices = GetCurrentDeviceImportDevices();
-            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-
-            string selection = string.Empty;
-            if (refreshDeviceAction != null)
-            {
-                selection = refreshDeviceAction.DeviceRefId.ToString(CultureInfo.InvariantCulture);
-            }
-
-            stb.Append(FormDropDown(RefreshActionUIDropDownName + uniqueControlId, currentDevices, selection, 400, string.Empty, true, "Events"));
-            return stb.ToString();
-        }
-
-        private NameValueCollection GetCurrentDeviceImportDevices()
-        {
-            HSHelper hsHelper = new HSHelper(HS);
-            var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
-
-            var currentDevices = new NameValueCollection();
-            var importDevicesData = pluginConfig.ImportDevicesData;
-            do
-            {
-                DeviceClass device = deviceEnumerator.GetNext();
-                if ((device != null) &&
-                    (device.get_Interface(HS) != null) &&
-                    (device.get_Interface(HS).Trim() == PlugInData.PlugInName))
-                {
-                    string address = device.get_Address(HS);
-
-                    var childDeviceData = DeviceIdentifier.Identify(device);
-                    if (childDeviceData != null)
-                    {
-                        if (pluginConfig.ImportDevicesData.TryGetValue(childDeviceData.DeviceId, out var importDeviceData))
-                        {
-                            currentDevices.Add(device.get_Ref(HS).ToString(CultureInfo.CurrentCulture), hsHelper.GetName(device));
-                        }
-                    }
-                }
-            } while (!deviceEnumerator.Finished);
-
-            return currentDevices;
-        }
-
-        private const string RefreshActionUIDropDownName = "RefreshActionUIDropDownName_";
-    }
-
-    [Serializable]
-    internal class RefreshDeviceAction
-    {
-        public int DeviceRefId;
     }
 }

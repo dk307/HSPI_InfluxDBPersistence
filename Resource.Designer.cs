@@ -244,59 +244,5 @@ namespace Hspi {
                 return ResourceManager.GetString("metricsgraphics_min_js", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to .mg-brush-container {
-        ///  cursor: crosshair; }
-        ///
-        ///.mg-brush-container.mg-brushing {
-        ///  cursor: ew-resize; }
-        ///
-        ///.mg-brushed, .mg-brushed * {
-        ///  cursor: zoom-out !important; }
-        ///
-        ///.mg-brush rect.mg-extent {
-        ///  fill: rgba(0, 0, 0, 0.3); }
-        ///
-        ///.mg-brushing-in-progress {
-        ///  -webkit-touch-callout: none;
-        ///  -webkit-user-select: none;
-        ///  -khtml-user-select: none;
-        ///  -moz-user-select: none;
-        ///  -ms-user-select: none;
-        ///  user-select: none; }
-        ///.
-        /// </summary>
-        internal static string mg_line_brushing_css {
-            get {
-                return ResourceManager.GetString("mg_line_brushing_css", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to (function(root, factory) {
-        ///  if (typeof define === &apos;function&apos; &amp;&amp; define.amd) {
-        ///    define([&apos;d3&apos;, &apos;jquery&apos;, &apos;MG&apos;], factory);
-        ///  } else if (typeof exports === &apos;object&apos;) {
-        ///    module.exports = factory(require(&apos;d3&apos;), require(&apos;jquery&apos;), require(&apos;MG&apos;));
-        ///  } else {
-        ///    root.Mg_line_brushing = factory(root.d3, root.jQuery, root.MG);
-        ///  }
-        ///}(this, function(d3, $, MG) {
-        ////**
-        ///  2. accessors
-        ///*/
-        ///
-        ///MG.line_brushing = {
-        ///  set_brush_as_base: function(target) {
-        ///    var svg = d3.select(target).select(&apos;svg&apos;),
-        ///        current,
-        ///     [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string mg_line_brushing_js {
-            get {
-                return ResourceManager.GetString("mg_line_brushing_js", resourceCulture);
-            }
-        }
     }
 }
