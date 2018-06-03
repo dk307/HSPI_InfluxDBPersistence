@@ -1,10 +1,10 @@
 ﻿using Hspi.DeviceData;
 using Scheduler;
 using Scheduler.Classes;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
-    using System.Collections.Generic;
 
 namespace Hspi
 {

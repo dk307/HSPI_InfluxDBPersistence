@@ -52,8 +52,7 @@ namespace Hspi
             {
                 fields.Add(Invariant($"\"{data.Field}\""));
             }
-
-            if (!string.IsNullOrWhiteSpace(data.FieldString))
+            else if (!string.IsNullOrWhiteSpace(data.FieldString))
             {
                 fields.Add(Invariant($"\"{data.FieldString}\""));
             }
@@ -136,6 +135,7 @@ namespace Hspi
                             height: 450,
                             area: true,
                             interpolate: d3.curveStep,
+                            min_y_from_data: true,
                             right: 40,");
             stb.AppendLine(Invariant($"     title:'{title}',"));
             stb.AppendLine(Invariant($"     legend:[{string.Join(",", legands)}],"));
