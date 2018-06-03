@@ -136,7 +136,9 @@ namespace Hspi
                             area: true,
                             interpolate: d3.curveStep,
                             min_y_from_data: true,
-                            right: 40,");
+                            right: 40, 
+                            // y_rollover_format: function(d) { return ' ' + String(d.value); },
+                            x_rollover_format: function(d) { return d.date.toLocaleString() + ' '; },");
             stb.AppendLine(Invariant($"     title:'{title}',"));
             stb.AppendLine(Invariant($"     legend:[{string.Join(",", legands)}],"));
             stb.AppendLine("legend_target: document.getElementById('legend'),");
