@@ -41,7 +41,7 @@ namespace Hspi
             return fields;
         }
 
-        private static string ProcessInfluxDBDateTime(DateTimeOffset today, CultureInfo culture, long timePoint)
+        private static string ConvertInfluxDBDateTimeToString(DateTimeOffset today, CultureInfo culture, long timePoint)
         {
             var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
             var dateTimeToday = dateTime.Date;
@@ -162,7 +162,7 @@ namespace Hspi
                             {
                                 var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
                                 sortValue = column.ToString();
-                                value = ProcessInfluxDBDateTime(today, culture, timePoint);
+                                value = ConvertInfluxDBDateTimeToString(today, culture, timePoint);
                             }
                             else
                             {
@@ -233,6 +233,94 @@ namespace Hspi
             IncludeResourceScript(stb, "iframeResizer.contentWindow.min.js");
 
             BuildTable(HttpUtility.UrlDecode(query), stb, size);
+            return stb.ToString();
+        }
+
+        private string BuildChartsPage(NameValueCollection parts)
+        {
+            StringBuilder stb = new StringBuilder();
+            var query = parts[QueryPartId] ?? string.Empty;
+            var title = parts[TitlePartId] ?? string.Empty;
+
+            IncludeResourceCSS(stb, "metricsgraphics.css");
+            IncludeResourceScript(stb, "d3.min.js");
+            IncludeResourceScript(stb, "metricsgraphics.min.js");
+            IncludeResourceCSS(stb, "mg_line_brushing.css");
+            IncludeResourceScript(stb, "mg_line_brushing.js");
+
+            stb.AppendLine("<table align=\"center\" class='full_width_table'>");
+            stb.AppendLine("<tr><td id='chartGraph2' align=\"center\"></td>");
+            stb.AppendLine("<tr><td id='legend' align=\"center\"></td>");
+            stb.AppendLine("</table>");
+
+            stb.AppendLine("<script>");
+            stb.AppendLine(@"function chartData() {");
+            var queryData = GetData(HttpUtility.UrlDecode(query)).ToArray();
+
+            List<string> legands = new List<string>();
+            if (queryData.Length > 0)
+            {
+                for (var i = 1; i < queryData[0].Columns.Count; i++)
+                {
+                    var column = queryData[0].Columns[i];
+                    legands.Add(Invariant($"'{FirstCharToUpper(column)}'"));
+                }
+
+                List<StringBuilder> dataStrings = new List<StringBuilder>();
+                foreach (var row in queryData[0].Values)
+                {
+                    long jsMilliseconds = 0;
+                    for (int i = 0; i < row.Count; i++)
+                    {
+                        object column = row[i];
+
+                        if (i == 0)
+                        {
+                            var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
+                            jsMilliseconds = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime().ToUnixTimeMilliseconds();
+                        }
+                        else
+                        {
+                            if (column != null)
+                            {
+                                if (dataStrings.Count < (i))
+                                {
+                                    dataStrings.Add(new StringBuilder());
+                                }
+                                dataStrings[i - 1].AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {column}}},"));
+                            }
+                        }
+                    }
+                }
+
+                stb.AppendLine("return [");
+                foreach (var dataString in dataStrings)
+                {
+                    stb.AppendLine("[");
+                    stb.Append(dataString.ToString());
+                    stb.AppendLine("],");
+                }
+                stb.AppendLine("]");
+            }
+
+            stb.AppendLine(@"}
+                var chartDataFromDB = chartData();");
+
+            stb.AppendLine(@"MG.data_graphic({
+                            data: chartDataFromDB,
+                            target: document.getElementById('chartGraph2'),
+                            full_width: true,
+                            x_extended_ticks: true,
+                            height: 500,
+                            area: true,
+                            interpolate: d3.curveStep,
+                            right: 40,");
+            stb.AppendLine(Invariant($"     title:'{title}',"));
+            stb.AppendLine(Invariant($"     legend:[{string.Join(",", legands)}],"));
+            stb.AppendLine("legend_target: document.getElementById('legend'),");
+            stb.AppendLine("});");
+            stb.AppendLine("</script>");
+
             return stb.ToString();
         }
 
@@ -336,6 +424,7 @@ namespace Hspi
         private const string HistoryResultDivId = "historyresultdivid";
         private const string HistoryRunQueryButtonName = "historyrunquery";
         private const string QueryPartId = "query";
+        private const string TitlePartId = "title";
         private const string QueryTestDivId = "querytestdivid";
         private const string QueryTestId = "querytextid";
         private const string TableSizeId = "rows";

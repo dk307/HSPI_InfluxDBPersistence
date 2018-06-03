@@ -124,6 +124,9 @@
   <data name="chosen_jquery_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>html\chosen.jquery.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="d3_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\d3.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
   <data name="iframeResizer_contentWindow_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>html\iframeResizer.contentWindow.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
@@ -135,5 +138,17 @@
   </data>
   <data name="jquery_dataTables_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>html\jquery.dataTables.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="metricsgraphics_css" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\metricsgraphics.css;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="metricsgraphics_min_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\metricsgraphics.min.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="mg_line_brushing_css" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\mg_line_brushing.css;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="mg_line_brushing_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>html\mg_line_brushing.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
 </root>

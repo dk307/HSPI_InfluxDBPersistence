@@ -99,6 +99,16 @@ namespace Hspi {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to // https://d3js.org Version 5.4.0. Copyright 2018 Mike Bostock.
+        ///(function(t,n){&quot;object&quot;==typeof exports&amp;&amp;&quot;undefined&quot;!=typeof module?n(exports):&quot;function&quot;==typeof define&amp;&amp;define.amd?define([&quot;exports&quot;],n):n(t.d3=t.d3||{})})(this,function(t){&quot;use strict&quot;;function n(t,n){return t&lt;n?-1:t&gt;n?1:t&gt;=n?0:NaN}function e(t){return 1===t.length&amp;&amp;(t=function(t){return function(e,r){return n(t(e),r)}}(t)),{left:function(n,e,r,i){for(null==r&amp;&amp;(r=0),null==i&amp;&amp;(i=n.length);r&lt;i;){var o=r+i&gt;&gt;&gt;1;t(n[o],e)&lt;0?r=o+1:i=o}return r},ri [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string d3_min_js {
+            get {
+                return ResourceManager.GetString("d3_min_js", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to /*! iFrame Resizer (iframeSizer.contentWindow.min.js) - v3.6.1 - 2018-04-29
         /// *  Desc: Include this file in any page being loaded into an iframe
         /// *        to force the iframe to resize to the content size.
@@ -175,6 +185,117 @@ namespace Hspi {
         internal static string jquery_dataTables_min_js {
             get {
                 return ResourceManager.GetString("jquery_dataTables_min_js", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .mg-active-datapoint {
+        ///    fill: black;
+        ///    font-size: 0.9rem;
+        ///    font-weight: 400;
+        ///    opacity: 0.8;
+        ///}
+        ///
+        ///.mg-area1-color {
+        ///    fill: #0000ff;
+        ///}
+        ///
+        ///.mg-area2-color {
+        ///    fill: #05b378;
+        ///}
+        ///
+        ///.mg-area3-color {
+        ///    fill: #db4437;
+        ///}
+        ///
+        ///.mg-area4-color {
+        ///    fill: #f8b128;
+        ///}
+        ///
+        ///.mg-area5-color {
+        ///    fill: #5c5c5c;
+        ///}
+        ///
+        ///text.mg-barplot-group-label {
+        ///    font-weight:900;
+        ///}
+        ///
+        ///.mg-barplot rect.mg-bar {
+        ///    shape-rendering: auto;
+        ///}
+        ///
+        ///.mg-barplot rect.mg-bar.default-bar {
+        ///    fill: #b6b6fc;
+        ///}
+        ///
+        ///.mg-barplot rect.mg-bar.default-acti [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string metricsgraphics_css {
+            get {
+                return ResourceManager.GetString("metricsgraphics_css", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to !function(t,e){&quot;function&quot;==typeof define&amp;&amp;define.amd?define([&quot;d3&quot;],e):&quot;object&quot;==typeof exports?module.exports=e(require(&quot;d3&quot;)):t.MG=e(t.d3)}(this,function(t){function e(){return&quot;undefined&quot;!=typeof jQuery||&quot;undefined&quot;!=typeof $}function r(t){var e;switch(t.processed.x_time_frame){case&quot;millis&quot;:e=MG.time_format(t.utc_time,&quot;%b %e, %Y  %H:%M:%S.%L&quot;);break;case&quot;seconds&quot;:e=MG.time_format(t.utc_time,&quot;%b %e, %Y  %H:%M:%S&quot;);break;case&quot;less-than-a-day&quot;:e=MG.time_format(t.utc_time,&quot;%b %e, %Y  %I:%M%p&quot;);break;case&quot;four- [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string metricsgraphics_min_js {
+            get {
+                return ResourceManager.GetString("metricsgraphics_min_js", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .mg-brush-container {
+        ///  cursor: crosshair; }
+        ///
+        ///.mg-brush-container.mg-brushing {
+        ///  cursor: ew-resize; }
+        ///
+        ///.mg-brushed, .mg-brushed * {
+        ///  cursor: zoom-out !important; }
+        ///
+        ///.mg-brush rect.mg-extent {
+        ///  fill: rgba(0, 0, 0, 0.3); }
+        ///
+        ///.mg-brushing-in-progress {
+        ///  -webkit-touch-callout: none;
+        ///  -webkit-user-select: none;
+        ///  -khtml-user-select: none;
+        ///  -moz-user-select: none;
+        ///  -ms-user-select: none;
+        ///  user-select: none; }
+        ///.
+        /// </summary>
+        internal static string mg_line_brushing_css {
+            get {
+                return ResourceManager.GetString("mg_line_brushing_css", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to (function(root, factory) {
+        ///  if (typeof define === &apos;function&apos; &amp;&amp; define.amd) {
+        ///    define([&apos;d3&apos;, &apos;jquery&apos;, &apos;MG&apos;], factory);
+        ///  } else if (typeof exports === &apos;object&apos;) {
+        ///    module.exports = factory(require(&apos;d3&apos;), require(&apos;jquery&apos;), require(&apos;MG&apos;));
+        ///  } else {
+        ///    root.Mg_line_brushing = factory(root.d3, root.jQuery, root.MG);
+        ///  }
+        ///}(this, function(d3, $, MG) {
+        ////**
+        ///  2. accessors
+        ///*/
+        ///
+        ///MG.line_brushing = {
+        ///  set_brush_as_base: function(target) {
+        ///    var svg = d3.select(target).select(&apos;svg&apos;),
+        ///        current,
+        ///     [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string mg_line_brushing_js {
+            get {
+                return ResourceManager.GetString("mg_line_brushing_js", resourceCulture);
             }
         }
     }

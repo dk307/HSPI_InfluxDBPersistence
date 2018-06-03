@@ -295,6 +295,21 @@
   <ItemGroup>
     <None Include="html\iframeSizer.min.js" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="html\metricsgraphics.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="html\metricsgraphics.min.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="html\d3.min.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="html\mg_line_brushing.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="html\mg_line_brushing.js" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.3.0.3\build\Fody.targets" Condition="Exists('packages\Fody.3.0.3\build\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

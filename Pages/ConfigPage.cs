@@ -107,6 +107,15 @@ namespace Hspi
                         }
                         break;
 
+                    case DeviceChartTablePageType:
+                        {
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("chart", string.Empty));
+                            stb.Append(BuildChartsPage(parts));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            AddBody(stb.ToString());
+                        }
+                        break;
+
                     case HistoryDevicePageType:
                         {
                             stb.Append(HS.GetPageHeader(Name, "Configuration", string.Empty, string.Empty, false, false));
