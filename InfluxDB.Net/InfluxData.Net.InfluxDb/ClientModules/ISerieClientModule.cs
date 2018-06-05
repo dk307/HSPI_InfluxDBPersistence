@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using InfluxData.Net.Common.Constants;
 using InfluxData.Net.Common.Infrastructure;
-using InfluxData.Net.InfluxDb.Models.Responses;
 using InfluxData.Net.InfluxDb.ClientSubModules;
-using InfluxData.Net.Common.Constants;
+using InfluxData.Net.InfluxDb.Models.Responses;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace InfluxData.Net.InfluxDb.ClientModules
 {
@@ -80,9 +80,9 @@ namespace InfluxData.Net.InfluxDb.ClientModules
 
         /// <summary>
         /// Creates a BatchWriter instance which can then be shared by multiple threads/processes to be used
-        /// for batch Point writing in intervals (for example every five seconds). It will keep the points 
-        /// in-memory for a specified interval. After the interval times out, the collection will get 
-        /// dequeued and "batch-written" to influx. The BatchWriter will keep checking the collection 
+        /// for batch Point writing in intervals (for example every five seconds). It will keep the points
+        /// in-memory for a specified interval. After the interval times out, the collection will get
+        /// dequeued and "batch-written" to influx. The BatchWriter will keep checking the collection
         /// for new points after each interval times out until stopped.
         /// </summary>
         /// <see cref="http://www.codethinked.com/blockingcollection-and-iproducerconsumercollection"/>

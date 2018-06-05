@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
-using InfluxData.Net.InfluxDb.Models;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System;
+﻿using InfluxData.Net.Common.Constants;
 using InfluxData.Net.InfluxDb.ClientModules;
-using InfluxData.Net.Common.Constants;
+using InfluxData.Net.InfluxDb.Models;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace InfluxData.Net.InfluxDb.ClientSubModules
 {
@@ -79,7 +79,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         }
 
         /// <summary>
-        /// Adds a single point to the BatchWriter points collection (uses BlockingCollection 
+        /// Adds a single point to the BatchWriter points collection (uses BlockingCollection
         /// internally for thread safety).
         /// </summary>
         /// <see cref="http://www.codethinked.com/blockingcollection-and-iproducerconsumercollection"/>
@@ -90,7 +90,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         }
 
         /// <summary>
-        /// Adds multiple points to the BatchWriter points collection (uses BlockingCollection 
+        /// Adds multiple points to the BatchWriter points collection (uses BlockingCollection
         /// internally for thread safety).
         /// </summary>
         /// <see cref="http://www.codethinked.com/blockingcollection-and-iproducerconsumercollection"/>
@@ -112,7 +112,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         }
 
         /// <summary>
-        /// Sets the maximum size (point count) of a batch to commit to InfluxDB. If the collection currently 
+        /// Sets the maximum size (point count) of a batch to commit to InfluxDB. If the collection currently
         /// holds more than the `pointCount` points, any overflow will be commited in future requests on FIFO principle.
         /// </summary>
         /// <param name="pointCount">Max batch point count (long max by default).</param>

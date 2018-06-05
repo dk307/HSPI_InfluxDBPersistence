@@ -38,15 +38,19 @@ namespace InfluxData.Net.Common.Helpers
                 case TimeUnit.Milliseconds:
                     fractionalSpan = span.TotalMilliseconds;
                     break;
+
                 case TimeUnit.Seconds:
                     fractionalSpan = span.TotalSeconds;
                     break;
+
                 case TimeUnit.Minutes:
                     fractionalSpan = span.TotalMinutes;
                     break;
+
                 case TimeUnit.Hours:
                     fractionalSpan = span.TotalHours;
                     break;
+
                 default:
                     fractionalSpan = span.TotalMilliseconds;
                     break;
@@ -67,12 +71,16 @@ namespace InfluxData.Net.Common.Helpers
             {
                 case TimeUnit.Milliseconds:
                     return _epoch.AddMilliseconds(unixTime);
+
                 case TimeUnit.Seconds:
                     return _epoch.AddSeconds(unixTime);
+
                 case TimeUnit.Minutes:
                     return _epoch.AddMinutes(unixTime);
+
                 case TimeUnit.Hours:
                     return _epoch.AddHours(unixTime);
+
                 default:
                     return _epoch.AddMilliseconds(unixTime);
             }

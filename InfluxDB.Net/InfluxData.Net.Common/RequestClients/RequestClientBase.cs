@@ -1,15 +1,15 @@
-﻿using System;
+﻿using InfluxData.Net.Common.Constants;
+using InfluxData.Net.Common.Helpers;
+using InfluxData.Net.Common.Infrastructure;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
-using InfluxData.Net.Common.Constants;
-using InfluxData.Net.Common.Infrastructure;
-using System.Diagnostics;
-using InfluxData.Net.Common.Helpers;
 
 namespace InfluxData.Net.Common.RequestClients
 {
@@ -19,12 +19,11 @@ namespace InfluxData.Net.Common.RequestClients
 
         private readonly string _userAgent;
 
-        protected RequestClientBase(IInfluxDbClientConfiguration configuration, string userAgent) 
+        protected RequestClientBase(IInfluxDbClientConfiguration configuration, string userAgent)
             : this((IConfiguration)configuration, userAgent)
         {
         }
 
- 
         protected RequestClientBase(IConfiguration configuration, string userAgent)
         {
             this.Configuration = configuration;
@@ -114,8 +113,8 @@ namespace InfluxData.Net.Common.RequestClients
 
             if (includeAuthToQuery)
             {
-                urlBuilder.AppendFormat("?{0}={1}&{2}={3}", 
-                    QueryParams.Username, Uri.EscapeDataString(this.Configuration.Username), 
+                urlBuilder.AppendFormat("?{0}={1}&{2}={3}",
+                    QueryParams.Username, Uri.EscapeDataString(this.Configuration.Username),
                     QueryParams.Password, Uri.EscapeDataString(this.Configuration.Password)
                 );
             }

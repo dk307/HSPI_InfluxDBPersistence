@@ -1,11 +1,11 @@
+using InfluxData.Net.Common.Constants;
+using InfluxData.Net.Common.Helpers;
+using InfluxData.Net.InfluxDb.Models;
+using InfluxData.Net.InfluxDb.Models.Responses;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using InfluxData.Net.Common.Helpers;
-using InfluxData.Net.InfluxDb.Models;
-using InfluxData.Net.InfluxDb.Models.Responses;
-using InfluxData.Net.Common.Constants;
 
 namespace InfluxData.Net.InfluxDb.Formatters
 {

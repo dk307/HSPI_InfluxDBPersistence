@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using InfluxData.Net.InfluxDb.Constants;
+﻿using InfluxData.Net.InfluxDb.Constants;
 using System;
+using System.Collections.Generic;
 
 namespace InfluxData.Net.InfluxDb.Infrastructure
 {

@@ -13,7 +13,7 @@ namespace InfluxData.Net.InfluxDb.Models.Responses
         public string Error { get; set; }
 
         /// <summary>
-        /// Query response represented as an IEnumerable of <see cref="{SeriesResult}"/> objects. 
+        /// Query response represented as an IEnumerable of <see cref="{SeriesResult}"/> objects.
         /// InfluxDb returns this kind of object by convention.
         /// </summary>
         /// <remarks>NOTE: DO NOT RENAME this property (used by convention to deserialize query response)</remarks>

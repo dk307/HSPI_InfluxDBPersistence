@@ -36,7 +36,7 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td class='tableheader' colspan=2>{header}</td></tr>"));
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell'>"));
-            stb.Append(HtmlTextBox(NameId, name, @readonly: data != null ));
+            stb.Append(HtmlTextBox(NameId, name, @readonly: data != null));
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell'>"));
             stb.Append(TextArea(SqlId, sql, 6, 65));

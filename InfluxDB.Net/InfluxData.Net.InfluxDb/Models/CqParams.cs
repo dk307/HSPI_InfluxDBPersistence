@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using InfluxData.Net.InfluxDb.Enums;
+﻿using InfluxData.Net.InfluxDb.Enums;
+using System.Collections.Generic;
 
 namespace InfluxData.Net.InfluxDb.Models
 {
@@ -12,6 +12,7 @@ namespace InfluxData.Net.InfluxDb.Models
         /// Resample range (for example: FOR 60m ... GROUP BY TIME(15m) will also resample the past 60 minutes in windows of 15 minutes).
         /// </summary>
         public string For { get; set; }
+
         /// <summary>
         /// By default Influx will run the query with the GROUP BY interval. Use this to override the CQ interval.
         /// </summary>
@@ -65,7 +66,7 @@ namespace InfluxData.Net.InfluxDb.Models
         public FillType FillType { get; set; }
 
         /// <summary>
-        /// <see cref="{CqResampleParam}"/> 
+        /// <see cref="{CqResampleParam}"/>
         /// </summary>
         public CqResampleParam Resample;
     }

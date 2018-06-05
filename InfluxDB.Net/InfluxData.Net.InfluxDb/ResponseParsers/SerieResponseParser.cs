@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using InfluxData.Net.InfluxDb.Models.Responses;
+﻿using InfluxData.Net.InfluxDb.Models.Responses;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace InfluxData.Net.InfluxDb.ResponseParsers
 {
@@ -118,7 +118,8 @@ namespace InfluxData.Net.InfluxDb.ResponseParsers
             if (series == null || series.Count() == 0)
                 return tagValues;
 
-            tagValues.AddRange(series.Single().Values.Select(p => new TagValue() {
+            tagValues.AddRange(series.Single().Values.Select(p => new TagValue()
+            {
                 Name = (string)p[0],
                 Value = (string)p[1]
             }));
@@ -133,7 +134,8 @@ namespace InfluxData.Net.InfluxDb.ResponseParsers
             if (series == null || series.Count() == 0)
                 return fieldKeys;
 
-            fieldKeys.AddRange(series.Single().Values.Select(p => new FieldKey() {
+            fieldKeys.AddRange(series.Single().Values.Select(p => new FieldKey()
+            {
                 Name = (string)p[0],
                 Type = (string)p[1]
             }));

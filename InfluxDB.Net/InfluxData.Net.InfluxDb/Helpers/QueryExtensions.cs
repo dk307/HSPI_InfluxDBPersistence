@@ -21,7 +21,7 @@ namespace InfluxData.Net.InfluxDb.Helpers
             {
                 var regex = $@"@{propertyInfo.Name}(?!\w)";
 
-                if(!Regex.IsMatch(queryTemplate, regex) && Nullable.GetUnderlyingType(propertyInfo.GetType()) != null)
+                if (!Regex.IsMatch(queryTemplate, regex) && Nullable.GetUnderlyingType(propertyInfo.GetType()) != null)
                     throw new ArgumentException($"Missing parameter identifier for @{propertyInfo.Name}");
 
                 var paramValue = propertyInfo.GetValue(parameters);

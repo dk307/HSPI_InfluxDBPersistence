@@ -1,11 +1,11 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
-using InfluxData.Net.Common.Helpers;
+﻿using InfluxData.Net.Common.Helpers;
 using InfluxData.Net.InfluxDb.Constants;
 using InfluxData.Net.InfluxDb.Models.Responses;
 using InfluxData.Net.InfluxDb.QueryBuilders;
 using InfluxData.Net.InfluxDb.RequestClients;
 using InfluxData.Net.InfluxDb.ResponseParsers;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace InfluxData.Net.InfluxDb.ClientModules
 {

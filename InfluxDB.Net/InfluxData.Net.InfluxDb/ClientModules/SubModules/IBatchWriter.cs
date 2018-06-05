@@ -1,14 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using InfluxData.Net.Common.Constants;
 using InfluxData.Net.InfluxDb.Models;
 using System;
-using InfluxData.Net.Common.Constants;
+using System.Collections.Generic;
 
 namespace InfluxData.Net.InfluxDb.ClientSubModules
 {
     /// <summary>
     /// A client sub-module which can then be shared by multiple threads/processes to be used
-    /// for batch Point writing in intervals (for example every five seconds). It will keep 
-    /// the points in-memory for a specified interval. After the interval times out, the collection 
+    /// for batch Point writing in intervals (for example every five seconds). It will keep
+    /// the points in-memory for a specified interval. After the interval times out, the collection
     /// will get dequeued and "batch-written" to influx. The BatchWriter will keep checking the
     /// collection for new points after each interval times out until stopped.
     /// </summary>
@@ -24,7 +24,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         void Start(int interval = 1000, bool continueOnError = false, long maxPointsPerBatch = long.MaxValue);
 
         /// <summary>
-        /// Adds a single point to the BatchWriter points collection (uses BlockingCollection 
+        /// Adds a single point to the BatchWriter points collection (uses BlockingCollection
         /// internally for thread safety).
         /// </summary>
         /// <see cref="http://www.codethinked.com/blockingcollection-and-iproducerconsumercollection"/>
@@ -32,7 +32,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         void AddPoint(Point point);
 
         /// <summary>
-        /// Adds multiple points to the BatchWriter points collection (uses BlockingCollection 
+        /// Adds multiple points to the BatchWriter points collection (uses BlockingCollection
         /// internally for thread safety).
         /// </summary>
         /// <see cref="http://www.codethinked.com/blockingcollection-and-iproducerconsumercollection"/>
@@ -45,7 +45,7 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
         void Stop();
 
         /// <summary>
-        /// Sets the maximum size (point count) of a batch to commit to InfluxDB. If the collection currently 
+        /// Sets the maximum size (point count) of a batch to commit to InfluxDB. If the collection currently
         /// holds more than the `pointCount` points, any overflow will be commited in future requests on FIFO principle.
         /// </summary>
         /// <param name="pointCount">Max batch point count (long max by default).</param>
@@ -62,9 +62,9 @@ namespace InfluxData.Net.InfluxDb.ClientSubModules
     {
         /// <summary>
         /// Creates a BatchWriter instance which can then be shared by multiple threads/processes to be used
-        /// for batch Point writing in intervals (for example every five seconds) (for example every five seconds). 
-        /// It will keep the points in-memory for a specified interval. After the interval times out, the collection 
-        /// will get dequeued and "batch-written" to influx. The BatchWriter will keep checking the collection 
+        /// for batch Point writing in intervals (for example every five seconds) (for example every five seconds).
+        /// It will keep the points in-memory for a specified interval. After the interval times out, the collection
+        /// will get dequeued and "batch-written" to influx. The BatchWriter will keep checking the collection
         /// for new points after each interval times out until stopped.
         /// </summary>
         /// <see cref="http://www.codethinked.com/blockingcollection-and-iproducerconsumercollection"/>

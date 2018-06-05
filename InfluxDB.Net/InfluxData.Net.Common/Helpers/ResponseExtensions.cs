@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using InfluxData.Net.Common.Infrastructure;
+﻿using InfluxData.Net.Common.Infrastructure;
+using Newtonsoft.Json;
 
 namespace InfluxData.Net.InfluxData.Helpers
 {

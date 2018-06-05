@@ -1,19 +1,20 @@
-﻿using System;
-using InfluxData.Net.Common.Enums;
+﻿using InfluxData.Net.Common.Enums;
+using InfluxData.Net.Common.Infrastructure;
 using InfluxData.Net.InfluxDb.ClientModules;
+using InfluxData.Net.InfluxDb.ClientSubModules;
 using InfluxData.Net.InfluxDb.Infrastructure;
 using InfluxData.Net.InfluxDb.QueryBuilders;
 using InfluxData.Net.InfluxDb.RequestClients;
 using InfluxData.Net.InfluxDb.ResponseParsers;
-using InfluxData.Net.Common.Infrastructure;
+using System;
 using System.Net.Http;
-using InfluxData.Net.InfluxDb.ClientSubModules;
 
 namespace InfluxData.Net.InfluxDb
 {
     public class InfluxDbClient : IInfluxDbClient
     {
         private IInfluxDbRequestClient _requestClient;
+
         public IInfluxDbRequestClient RequestClient
         {
             get { return _requestClient; }
@@ -35,42 +36,49 @@ namespace InfluxData.Net.InfluxDb
         private Lazy<IUserResponseParser> _userResponseParser;
 
         private Lazy<IBasicClientModule> _basicClientModule;
+
         public IBasicClientModule Client
-        { 
+        {
             get { return _basicClientModule.Value; }
         }
 
         private Lazy<ISerieClientModule> _serieClientModule;
+
         public ISerieClientModule Serie
         {
             get { return _serieClientModule.Value; }
         }
 
         private Lazy<IDatabaseClientModule> _databaseClientModule;
+
         public IDatabaseClientModule Database
         {
             get { return _databaseClientModule.Value; }
         }
 
         private Lazy<IRetentionClientModule> _retentionClientModule;
+
         public IRetentionClientModule Retention
         {
             get { return _retentionClientModule.Value; }
         }
 
         private Lazy<ICqClientModule> _cqClientModule;
+
         public ICqClientModule ContinuousQuery
         {
             get { return _cqClientModule.Value; }
         }
 
         private Lazy<IDiagnosticsClientModule> _diagnosticsClientModule;
+
         public IDiagnosticsClientModule Diagnostics
         {
             get { return _diagnosticsClientModule.Value; }
         }
 
         private Lazy<IUserClientModule> _userClientModule;
+
         public IUserClientModule User
         {
             get { return _userClientModule.Value; }
@@ -97,14 +105,15 @@ namespace InfluxData.Net.InfluxDb
         ) : this(
             new InfluxDbClientConfiguration(
                 new Uri(endpointUri),
-                username, 
+                username,
                 password,
                 influxVersion,
                 queryLocation,
                 httpClient,
                 throwOnWarning
             )
-        ) {}
+        )
+        { }
 
         /// <summary>
         /// InfluxDb client.
@@ -118,9 +127,9 @@ namespace InfluxData.Net.InfluxDb
                 case InfluxDbVersion.v_1_3:
                     this.BootstrapInfluxDbLatest(configuration);
                     break;
-                 default:
+
+                default:
                     throw new NotImplementedException("InfluxDB Older Version is not supported by InfluxData.Net library.");
-                    
             }
         }
 

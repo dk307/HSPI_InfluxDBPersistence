@@ -18,8 +18,6 @@ namespace InfluxData.Net.InfluxDb.Models.Responses
 
         public IEnumerable<Serie> Runtime { get; set; }
 
-
-
         // Added to lib since InfluxDB v1.0.0.
 
         public IEnumerable<Serie> Database { get; set; }

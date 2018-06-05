@@ -1,5 +1,5 @@
-﻿using System;
-using InfluxData.Net.InfluxDb.Constants;
+﻿using InfluxData.Net.InfluxDb.Constants;
+using System;
 
 namespace InfluxData.Net.InfluxDb.QueryBuilders
 {

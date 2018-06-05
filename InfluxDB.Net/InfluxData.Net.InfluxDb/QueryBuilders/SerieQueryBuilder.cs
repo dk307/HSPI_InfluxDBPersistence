@@ -1,8 +1,8 @@
-﻿using System;
+﻿using InfluxData.Net.Common.Helpers;
+using InfluxData.Net.InfluxDb.Constants;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using InfluxData.Net.Common.Helpers;
-using InfluxData.Net.InfluxDb.Constants;
 
 namespace InfluxData.Net.InfluxDb.QueryBuilders
 {

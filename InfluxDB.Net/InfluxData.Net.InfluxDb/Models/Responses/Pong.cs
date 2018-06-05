@@ -10,7 +10,7 @@ namespace InfluxData.Net.InfluxDb.Models.Responses
         /// <summary>
         /// Ping request executed successfuly?
         /// </summary>
-        public bool Success{ get; set; }
+        public bool Success { get; set; }
 
         /// <summary>
         /// InfluxDb service version.

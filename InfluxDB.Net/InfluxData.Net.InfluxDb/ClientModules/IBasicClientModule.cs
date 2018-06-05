@@ -1,17 +1,17 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using InfluxData.Net.Common.Constants;
 using InfluxData.Net.Common.Infrastructure;
 using InfluxData.Net.InfluxDb.Models;
 using InfluxData.Net.InfluxDb.Models.Responses;
-using InfluxData.Net.Common.Constants;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace InfluxData.Net.InfluxDb.ClientModules
 {
     public interface IBasicClientModule
     {
         /// <summary>
-        /// Executes a query against the database. If chunkSize is specified, responses 
-        /// will be broken down by number of returned rows. 
+        /// Executes a query against the database. If chunkSize is specified, responses
+        /// will be broken down by number of returned rows.
         /// </summary>
         /// <param name="query">Query to execute.</param>
         /// <param name="dbName">Database name. (OPTIONAL)</param>
@@ -22,8 +22,8 @@ namespace InfluxData.Net.InfluxDb.ClientModules
 
         /// <summary>
         /// Executes multiple queries against the database in a single request and extracts and flattens
-        /// the series from all results into a single <see cref="Serie"/> collection. If chunkSize is specified, responses 
-        /// will be broken down by number of returned rows. 
+        /// the series from all results into a single <see cref="Serie"/> collection. If chunkSize is specified, responses
+        /// will be broken down by number of returned rows.
         /// </summary>
         /// <param name="queries">Queries to execute.</param>
         /// <param name="dbName">Database name. (OPTIONAL)</param>
@@ -33,8 +33,8 @@ namespace InfluxData.Net.InfluxDb.ClientModules
         Task<IEnumerable<Serie>> QueryAsync(IEnumerable<string> queries, string dbName = null, string epochFormat = null, long? chunkSize = null);
 
         /// <summary>
-        /// Executes a parameterized query against the database. If chunkSize is specified, responses 
-        /// will be broken down by number of returned rows. 
+        /// Executes a parameterized query against the database. If chunkSize is specified, responses
+        /// will be broken down by number of returned rows.
         /// </summary>
         /// <param name="queryTemplate">Query template to use to build a full query using params.</param>
         /// <param name="parameters">The parameters to pass, if any.</param>
@@ -45,8 +45,8 @@ namespace InfluxData.Net.InfluxDb.ClientModules
         Task<IEnumerable<Serie>> QueryAsync(string queryTemplate, object parameters, string dbName = null, string epochFormat = null, long? chunkSize = null);
 
         /// <summary>
-        /// Executes multiple queries against the database in a single request. If chunkSize is specified, responses 
-        /// will be broken down by number of returned rows. 
+        /// Executes multiple queries against the database in a single request. If chunkSize is specified, responses
+        /// will be broken down by number of returned rows.
         /// </summary>
         /// <param name="queries">Queries to execute.</param>
         /// <param name="dbName">Database name. (OPTIONAL)</param>

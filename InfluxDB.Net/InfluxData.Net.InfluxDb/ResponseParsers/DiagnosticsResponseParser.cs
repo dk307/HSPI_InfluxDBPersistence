@@ -1,9 +1,9 @@
-﻿using System;
+﻿using InfluxData.Net.InfluxDb.Helpers;
+using InfluxData.Net.InfluxDb.Models.Responses;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using InfluxData.Net.InfluxDb.Helpers;
-using InfluxData.Net.InfluxDb.Models.Responses;
 
 namespace InfluxData.Net.InfluxDb.ResponseParsers
 {
@@ -138,9 +138,9 @@ namespace InfluxData.Net.InfluxDb.ResponseParsers
                 }
 
                 return new TimeSpan(
-                    0, h > 0 ? h : 0, 
-                    m > 0 ? m : 0, 
-                    s > 0 ? s : 0, 
+                    0, h > 0 ? h : 0,
+                    m > 0 ? m : 0,
+                    s > 0 ? s : 0,
                     ms > 0 ? ms : 0
                 );
             }

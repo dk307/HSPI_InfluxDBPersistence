@@ -53,7 +53,7 @@ namespace InfluxData.Net.InfluxDb.ClientModules
 
         public virtual async Task<IInfluxDataApiResponse> WriteAsync(Point point, string dbName = null, string retentionPolicy = null, string precision = TimeUnit.Milliseconds)
         {
-            var response = await WriteAsync(new [] { point }, dbName, retentionPolicy, precision).ConfigureAwait(false);
+            var response = await WriteAsync(new[] { point }, dbName, retentionPolicy, precision).ConfigureAwait(false);
 
             return response;
         }

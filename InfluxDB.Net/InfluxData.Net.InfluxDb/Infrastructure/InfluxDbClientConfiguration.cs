@@ -1,7 +1,7 @@
-using System;
 using InfluxData.Net.Common.Enums;
 using InfluxData.Net.Common.Helpers;
 using InfluxData.Net.Common.Infrastructure;
+using System;
 using System.Net.Http;
 
 namespace InfluxData.Net.InfluxDb.Infrastructure
@@ -33,12 +33,12 @@ namespace InfluxData.Net.InfluxDb.Infrastructure
         /// <param name="httpClient">Custom HttpClient object (optional).</param>
         /// <param name="throwOnWarning">Should throw exception upon InfluxDb warning message (for debugging) (optional).</param>
         public InfluxDbClientConfiguration(
-            Uri endpointUri, 
-            string username, 
-            string password, 
+            Uri endpointUri,
+            string username,
+            string password,
             InfluxDbVersion influxVersion,
             QueryLocation queryLocation = QueryLocation.FormData,
-            HttpClient httpClient = null, 
+            HttpClient httpClient = null,
             bool throwOnWarning = false)
         {
             Validate.IsNotNull(endpointUri, "Endpoint may not be null or empty.");

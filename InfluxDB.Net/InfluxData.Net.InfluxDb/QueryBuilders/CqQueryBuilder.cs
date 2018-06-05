@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using InfluxData.Net.Common.Helpers;
+﻿using InfluxData.Net.Common.Helpers;
 using InfluxData.Net.InfluxDb.Constants;
 using InfluxData.Net.InfluxDb.Enums;
 using InfluxData.Net.InfluxDb.Models;
+using System;
+using System.Collections.Generic;
 
 namespace InfluxData.Net.InfluxDb.QueryBuilders
 {
@@ -48,7 +48,7 @@ namespace InfluxData.Net.InfluxDb.QueryBuilders
             var tags = BuildTags(backfill.Tags);
             var fillType = BuildFillType(backfill.FillType);
 
-            var query = String.Format(QueryStatements.Backfill, 
+            var query = String.Format(QueryStatements.Backfill,
                 downsamplers, backfill.DsSerieName, backfill.SourceSerieName, filters, timeFrom, timeTo, backfill.Interval, tags, fillType);
 
             return query;

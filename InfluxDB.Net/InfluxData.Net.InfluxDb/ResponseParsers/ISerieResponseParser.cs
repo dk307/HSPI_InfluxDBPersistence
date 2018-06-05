@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using InfluxData.Net.InfluxDb.Models.Responses;
+﻿using InfluxData.Net.InfluxDb.Models.Responses;
+using System.Collections.Generic;
 
 namespace InfluxData.Net.InfluxDb.ResponseParsers
 {

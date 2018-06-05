@@ -1,8 +1,8 @@
-﻿using System.Linq;
-using System.Net;
-using InfluxData.Net.Common.Infrastructure;
+﻿using InfluxData.Net.Common.Infrastructure;
 using InfluxData.Net.InfluxData.Helpers;
 using InfluxData.Net.InfluxDb.Models.Responses;
+using System.Linq;
+using System.Net;
 
 namespace InfluxData.Net.InfluxDb.Helpers
 {

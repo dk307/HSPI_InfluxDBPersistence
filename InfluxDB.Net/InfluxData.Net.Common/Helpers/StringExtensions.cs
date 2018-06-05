@@ -14,7 +14,7 @@ namespace InfluxData.Net.Common
             return stringValue
                 .RegexReplace("-{2,}", "-")
                 .RegexReplace(@"[*/]+", String.Empty)
-                .RegexReplace(@"(;|\s)(exec|execute|select|insert|update|delete|create|alter|drop|rename|truncate|backup|restore)\s", 
+                .RegexReplace(@"(;|\s)(exec|execute|select|insert|update|delete|create|alter|drop|rename|truncate|backup|restore)\s",
                     String.Empty, RegexOptions.IgnoreCase);
         }
 
@@ -27,6 +27,5 @@ namespace InfluxData.Net.Common
         {
             return Regex.Replace(stringValue, matchPattern, toReplaceWith, regexOptions);
         }
-
     }
 }

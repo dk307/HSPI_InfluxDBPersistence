@@ -1,10 +1,10 @@
-﻿using System.Threading.Tasks;
-﻿using System.Collections.Generic;
-using InfluxData.Net.Common.Infrastructure;
+﻿using InfluxData.Net.Common.Infrastructure;
 using InfluxData.Net.InfluxDb.Models.Responses;
 using InfluxData.Net.InfluxDb.QueryBuilders;
 using InfluxData.Net.InfluxDb.RequestClients;
 using InfluxData.Net.InfluxDb.ResponseParsers;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace InfluxData.Net.InfluxDb.ClientModules
 {

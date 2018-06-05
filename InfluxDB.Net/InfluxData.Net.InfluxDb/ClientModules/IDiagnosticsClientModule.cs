@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using InfluxData.Net.InfluxDb.Models.Responses;
+﻿using InfluxData.Net.InfluxDb.Models.Responses;
+using System.Threading.Tasks;
 
 namespace InfluxData.Net.InfluxDb.ClientModules
 {
@@ -18,7 +18,7 @@ namespace InfluxData.Net.InfluxDb.ClientModules
         Task<Stats> GetStatsAsync();
 
         /// <summary>
-        /// Gets node diagnostics. This returns information such as build information, uptime, 
+        /// Gets node diagnostics. This returns information such as build information, uptime,
         /// hostname, server configuration, memory usage, and Go runtime diagnostics.
         /// </summary>
         /// <returns></returns>

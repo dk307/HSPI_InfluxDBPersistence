@@ -467,6 +467,7 @@ namespace Hspi
                 this.pluginConfig.FireConfigChanged();
             }
         }
+
         private const string DBKey = "DBId";
         private const string DBUriKey = "DBUriId";
         private const string DebugLoggingId = "DebugLoggingId";
