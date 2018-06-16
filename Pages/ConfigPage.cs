@@ -188,7 +188,8 @@ namespace Hspi
                 HandleSavingDeviceImportPostBack(parts, form);
             }
             else if ((form == NameToIdWithPrefix(HistoryQueryTypeId)) ||
-                     (form == NameToIdWithPrefix(HistoryRunQueryButtonName)))
+                     (form == NameToIdWithPrefix(HistoryRunQueryButtonName)) ||
+                     (form == NameToIdWithPrefix(HistoryShowChartButtonName)))
             {
                 HandleHistoryPagePostBack(parts, form);
             }

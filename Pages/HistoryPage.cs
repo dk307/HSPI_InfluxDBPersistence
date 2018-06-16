@@ -65,69 +65,71 @@ namespace Hspi
             StringBuilder stb = new StringBuilder();
             var query = parts[QueryPartId] ?? string.Empty;
             var title = parts[TitlePartId] ?? string.Empty;
-
-            IncludeResourceCSS(stb, "metricsgraphics.css");
-            IncludeResourceScript(stb, "d3.min.js");
-            IncludeResourceScript(stb, "metricsgraphics.min.js");
-            stb.AppendLine("<table align=\"center\" ");
-            stb.AppendLine("<tr><td id='chartGraph2' align=\"center\"></td>");
-            stb.AppendLine("<tr><td id='legend' align=\"center\"></td>");
-            stb.AppendLine("</table>");
-
-            stb.AppendLine("<script>");
-            stb.AppendLine(@"function chartData() {");
-            var queryData = GetData(HttpUtility.UrlDecode(query)).ToArray();
-
-            List<string> legands = new List<string>();
-            if (queryData.Length > 0)
+            try
             {
-                for (var i = 1; i < queryData[0].Columns.Count; i++)
-                {
-                    var column = queryData[0].Columns[i];
-                    legands.Add(Invariant($"'{FirstCharToUpper(column)}'"));
-                }
+                var queryData = GetData(HttpUtility.UrlDecode(query)).ToArray();
 
-                List<StringBuilder> dataStrings = new List<StringBuilder>();
-                foreach (var row in queryData[0].Values)
+                IncludeResourceCSS(stb, "metricsgraphics.css");
+                IncludeResourceScript(stb, "d3.min.js");
+                IncludeResourceScript(stb, "metricsgraphics.min.js");
+                stb.AppendLine("<table align=\"center\" ");
+                stb.AppendLine("<tr><td id='chartGraph2' align=\"center\"></td>");
+                stb.AppendLine("<tr><td id='legend' align=\"center\"></td>");
+                stb.AppendLine("</table>");
+
+                stb.AppendLine("<script>");
+                stb.AppendLine(@"function chartData() {");
+
+                List<string> legands = new List<string>();
+                if (queryData.Length > 0)
                 {
-                    long jsMilliseconds = 0;
-                    for (int i = 0; i < row.Count; i++)
+                    for (var i = 1; i < queryData[0].Columns.Count; i++)
                     {
-                        object column = row[i];
+                        var column = queryData[0].Columns[i];
+                        legands.Add(Invariant($"'{FirstCharToUpper(column)}'"));
+                    }
 
-                        if (i == 0)
+                    List<StringBuilder> dataStrings = new List<StringBuilder>();
+                    foreach (var row in queryData[0].Values)
+                    {
+                        long jsMilliseconds = 0;
+                        for (int i = 0; i < row.Count; i++)
                         {
-                            var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
-                            jsMilliseconds = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime().ToUnixTimeMilliseconds();
-                        }
-                        else
-                        {
-                            if (column != null)
+                            object column = row[i];
+
+                            if (i == 0)
                             {
-                                if (dataStrings.Count < (i))
+                                var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
+                                jsMilliseconds = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime().ToUnixTimeMilliseconds();
+                            }
+                            else
+                            {
+                                if (column != null)
                                 {
-                                    dataStrings.Add(new StringBuilder());
+                                    if (dataStrings.Count < (i))
+                                    {
+                                        dataStrings.Add(new StringBuilder());
+                                    }
+                                    dataStrings[i - 1].AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {column}}},"));
                                 }
-                                dataStrings[i - 1].AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {column}}},"));
                             }
                         }
                     }
+
+                    stb.AppendLine("return [");
+                    foreach (var dataString in dataStrings)
+                    {
+                        stb.AppendLine("[");
+                        stb.Append(dataString.ToString());
+                        stb.AppendLine("],");
+                    }
+                    stb.AppendLine("]");
                 }
 
-                stb.AppendLine("return [");
-                foreach (var dataString in dataStrings)
-                {
-                    stb.AppendLine("[");
-                    stb.Append(dataString.ToString());
-                    stb.AppendLine("],");
-                }
-                stb.AppendLine("]");
-            }
-
-            stb.AppendLine(@"}
+                stb.AppendLine(@"}
                 var chartDataFromDB = chartData();");
 
-            stb.AppendLine(@"MG.data_graphic({
+                stb.AppendLine(@"MG.data_graphic({
                             data: chartDataFromDB,
                             target: document.getElementById('chartGraph2'),
                             width: 900,
@@ -139,14 +141,19 @@ namespace Hspi
                             right: 40,
                             // y_rollover_format: function(d) { return ' ' + String(d.value); },
                             x_rollover_format: function(d) { return d.date.toLocaleString() + ' '; },");
-            stb.AppendLine(Invariant($"     title:'{title}',"));
-            stb.AppendLine(Invariant($"     legend:[{string.Join(",", legands)}],"));
-            stb.AppendLine("legend_target: document.getElementById('legend'),");
-            stb.AppendLine("});");
-            stb.AppendLine("</script>");
-            IncludeResourceScript(stb, "iframeResizer.contentWindow.min.js");
+                stb.AppendLine(Invariant($"     title:'{title}',"));
+                stb.AppendLine(Invariant($"     legend:[{string.Join(",", legands)}],"));
+                stb.AppendLine("legend_target: document.getElementById('legend'),");
+                stb.AppendLine("});");
+                stb.AppendLine("</script>");
+                IncludeResourceScript(stb, "iframeResizer.contentWindow.min.js");
 
-            return stb.ToString();
+                return stb.ToString();
+            }
+            catch (Exception ex)
+            {
+                return Invariant($"<br><div style='color:Red'>{ex.GetFullMessage()}</div><br>");
+            }
         }
 
         private string BuildHistoryPage(NameValueCollection parts, DevicePersistenceData data)
@@ -186,7 +193,9 @@ namespace Hspi
             stb.Append(DivStart(QueryTestDivId, string.Empty));
             stb.Append(Invariant($"{TextArea(QueryTestId, finalQuery)}"));
             stb.Append(DivEnd());
-            stb.Append(Invariant($"<br>{FormButton(HistoryRunQueryButtonName, "Run Query", "Run Query")}</td></tr>"));
+            stb.Append(Invariant($"<br>{FormButton(HistoryRunQueryButtonName, "Run Query", "Run Query")}"));
+            stb.Append("&nbsp;");
+            stb.Append(Invariant($"{FormButton(HistoryShowChartButtonName, "Show Chart", "Show Chart")}</td></tr>"));
             stb.Append("<tr height='5'><td></td></tr>");
             stb.Append(Invariant($"<tr><td class='tableheader'>Results</td></tr>"));
             stb.Append("<tr><td>");
@@ -206,6 +215,14 @@ namespace Hspi
         private void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 10)
         {
             string iFrameUrl = BuildTableUri(finalQuery, tableSize);
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+        }
+
+        private void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
+        {
+            string iFrameUrl = BuildChartUri(finalQuery, title);
             stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
             stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
             stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
@@ -372,13 +389,21 @@ namespace Hspi
                 finalQuery = Invariant(queries[queryType]);
                 this.divToUpdate.Add(QueryTestDivId, TextArea(QueryTestId, finalQuery));
             }
-            else if (form == NameToIdWithPrefix(HistoryRunQueryButtonName))
+            else if ((form == NameToIdWithPrefix(HistoryRunQueryButtonName) ||
+                     (form == NameToIdWithPrefix(HistoryShowChartButtonName))))
             {
                 finalQuery = parts[QueryTestId];
             }
 
             StringBuilder stb = new StringBuilder();
-            BuildQueryTableIFrame(stb, finalQuery);
+            if (form == NameToIdWithPrefix(HistoryShowChartButtonName))
+            {
+                BuildQueryChartIFrame(stb, finalQuery);
+            }
+            else
+            {
+                BuildQueryTableIFrame(stb, finalQuery);
+            }
             this.divToUpdate.Add(HistoryResultDivId, stb.ToString());
         }
 
@@ -418,6 +443,7 @@ namespace Hspi
         private const string HistoryQueryTypeId = "historyquerytypeid";
         private const string HistoryResultDivId = "historyresultdivid";
         private const string HistoryRunQueryButtonName = "historyrunquery";
+        private const string HistoryShowChartButtonName = "historyshowchart";
         private const string QueryPartId = "query";
         private const string QueryTestDivId = "querytestdivid";
         private const string QueryTestId = "querytextid";
