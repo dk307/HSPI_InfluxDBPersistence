@@ -2,4 +2,21 @@ Homeseer InfluxDB Persistence PlugIn
 =====================================
 HomeSeer plugin to save and import data from InfluxDB.  
 
-WIP
+Needs dot.net  4.7.2.
+
+Compatibility
+------------
+Tested on the following platforms:
+* Windows 10
+
+
+Functionality
+------------
+* Store values from the Homeseer devices in InfluxDB on change.
+* Displays the history as Tab in Device Properties 
+* Basic Graph to show the history.
+* Can import values from InfluxDB periodically based on query.
+
+Build State
+-----------
+[![Build State](https://ci.appveyor.com/api/projects/status/github/dk307/HSPI_InfluxDBPersistence?branch=master&svg=true)](https://ci.appveyor.com/project/dk307/HSPI-InfluxDBPersistence/build/artifacts?branch=master)
