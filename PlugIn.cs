@@ -477,6 +477,31 @@ namespace Hspi
             }
         }
 
+        public override bool ActionReferencesDevice(IPlugInAPI.strTrigActInfo actionInfo, int deviceId)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        if (actionInfo.DataIn != null)
+                        {
+                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            return (refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId == deviceId);
+                        }
+                        return false;
+
+                    default:
+                        return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to ActionReferencesDevice with {ex.GetFullMessage()}"));
+                return false;
+            }
+        }
+
         private bool ImportDeviceFromDB(int deviceRefId)
         {
             DeviceRootDeviceManager deviceRootDeviceManagerCopy;
