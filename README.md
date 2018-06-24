@@ -9,13 +9,20 @@ Compatibility
 Tested on the following platforms:
 * Windows 10
 
-
 Functionality
 ------------
 * Store values from the Homeseer devices in InfluxDB on change.
 * Displays the history as Tab in Device Properties 
 * Basic Graph to show the history.
 * Can import values from InfluxDB periodically based on query.
+
+
+DB Setting
+------------
+![DB Settings](/asserts/dbsettings.PNG "DB Settings")
+![Peristence](/asserts/persistence.PNG "Peristence")
+
+
 
 Build State
 -----------
