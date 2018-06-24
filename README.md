@@ -17,13 +17,31 @@ Functionality
 * Can import values from InfluxDB periodically based on query.
 
 
-ScreenShots
+DB Setting
 ------------
 ![DB Settings](/asserts/dbsettings.PNG "DB Settings")
 
+Persistence Settings
+------------
 ![Peristence](/asserts/persistence.PNG "Peristence")
 
-![Edit Device Peristence](/asserts/editdevicepersistence.PNG "Edit Device Peristence") ![Edit Device Non-Numeric Peristence](/asserts/editdevicepersistencenonnumeric.PNG "Edit Device Non-Numeric Peristence")
+![Edit Device Peristence](/asserts/editdevicepersistence.PNG "Edit Device Peristence") 
+
+![Edit Device Non-Numeric Peristence](/asserts/editdevicepersistencenonnumeric.PNG "Edit Device Non-Numeric Peristence")
+
+![Device History](/asserts/history.PNG "Device History") 
+You can view history by using predefined commands or writing your own queries.
+
+![Device History Chart](/asserts/historychart.PNG "Device History Chart") 
+You can view history as basic charts too
+
+Device Tab
+------------
+If device is persistenced, then a persistence tab will show up in device details.
+
+![Device Tab Table](/asserts/tabtable.PNG "Device Tab Table") 
+![Device Tab Table](/asserts/tabtablenonnumeric.PNG "Device Tab Table") 
+
 
 
 
