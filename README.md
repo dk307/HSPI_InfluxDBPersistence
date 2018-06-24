@@ -38,7 +38,6 @@ You can view history by using predefined commands or writing your own queries.
 You can view history as basic charts too
 ![Device History Chart](/asserts/historychart.PNG "Device History Chart") 
 
-
 Device Tab
 ------------
 If device is persisted, then a persistence tab will show up in device details.
@@ -52,7 +51,16 @@ Non-Numeric:
 Basic Charts:
 ![Device Tab Chart](/asserts/tabchart.PNG "Device Tab Chart") 
 
+Device Import
+------------
+You can configure plugin to import values from Influx Db periodically in settings.
+![Device Import](/asserts/deviceimport.PNG "Device Import") 
 
+Device Import Settings 
+![Device Import Settings](/asserts/deviceimportdetails.PNG "Device Import Settings") 
+
+Imported Values as Virtual Devices
+![Device Import Devices](/asserts/virtualdevices.PNG "Device Import Devices") 
 
 Build State
 -----------
