@@ -17,10 +17,13 @@ Functionality
 * Can import values from InfluxDB periodically based on query.
 
 
-DB Setting
+ScreenShots
 ------------
 ![DB Settings](/asserts/dbsettings.PNG "DB Settings")
+
 ![Peristence](/asserts/persistence.PNG "Peristence")
+
+![Edit Device Peristence](/asserts/editdevicepersistence.PNG "Edit Device Peristence") ![Edit Device Non-Numeric Peristence](/asserts/editdevicepersistencenonnumeric.PNG "Edit Device Non-Numeric Peristence")
 
 
 
