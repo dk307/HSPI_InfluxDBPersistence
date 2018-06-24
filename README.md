@@ -23,25 +23,34 @@ DB Setting
 
 Persistence Settings
 ------------
+List of persisted devices:
 ![Peristence](/asserts/persistence.PNG "Peristence")
 
+Numeric:
 ![Edit Device Peristence](/asserts/editdevicepersistence.PNG "Edit Device Peristence") 
 
+Non-Numeric:
 ![Edit Device Non-Numeric Peristence](/asserts/editdevicepersistencenonnumeric.PNG "Edit Device Non-Numeric Peristence")
 
-![Device History](/asserts/history.PNG "Device History") 
 You can view history by using predefined commands or writing your own queries.
+![Device History](/asserts/history.PNG "Device History") 
 
-![Device History Chart](/asserts/historychart.PNG "Device History Chart") 
 You can view history as basic charts too
+![Device History Chart](/asserts/historychart.PNG "Device History Chart") 
+
 
 Device Tab
 ------------
-If device is persistenced, then a persistence tab will show up in device details.
+If device is persisted, then a persistence tab will show up in device details.
 
+Numeric:
 ![Device Tab Table](/asserts/tabtable.PNG "Device Tab Table") 
+
+Non-Numeric:
 ![Device Tab Table](/asserts/tabtablenonnumeric.PNG "Device Tab Table") 
 
+Basic Charts:
+![Device Tab Chart](/asserts/tabchart.PNG "Device Tab Chart") 
 
 
 
