@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx.Synchronous;
 
 namespace Hspi
 {
@@ -130,6 +131,24 @@ namespace Hspi
             }
         }
 
+        public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
+        {
+            if (ImportDeviceFromDB(deviceId))
+            {
+                var pollResult = new IPlugInAPI.PollResultInfo
+                {
+                    Result = IPlugInAPI.enumPollResult.OK,
+                    Value = HS.DeviceValueEx(deviceId),
+                };
+
+                return pollResult;
+            }
+            else
+            {
+                return base.PollDevice(deviceId);
+            }
+        }
+
         public override string PostBackProc(string page, string data, [AllowNull]string user, int userRights)
         {
             if (page == ConfigPage.Name)
@@ -157,20 +176,7 @@ namespace Hspi
                     configPage.Dispose();
                 }
 
-                if (pluginConfig != null)
-                {
-                    pluginConfig.Dispose();
-                }
-
-                if (collectionShutdownToken != null)
-                {
-                    collectionShutdownToken.Dispose();
-                }
-
-                if (deviceRootDeviceManager != null)
-                {
-                    deviceRootDeviceManager.Dispose();
-                }
+                Shutdown();
                 disposedValue = true;
             }
 
@@ -273,20 +279,37 @@ namespace Hspi
 
         private void RestartProcessing()
         {
-            Task.Factory.StartNew(StartInfluxDBMeasurementsCollector, ShutdownCancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
-            Task.Factory.StartNew(StartDeviceImport, ShutdownCancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+            startCollectorTask = Task.Factory.StartNew(StartInfluxDBMeasurementsCollector,
+                                  ShutdownCancellationToken,
+                                  TaskCreationOptions.DenyChildAttach,
+                                  TaskScheduler.Default);
+            startImportTask = Task.Factory.StartNew(StartDeviceImport,
+                                                    ShutdownCancellationToken,
+                                                    TaskCreationOptions.DenyChildAttach,
+                                                    TaskScheduler.Default);
+        }
+
+        private void Shutdown()
+        {
+            startCollectorTask.WaitAndUnwrapException();
+            startImportTask.WaitAndUnwrapException();
+
+            lock (influxDBMeasurementsCollectorLock)
+            {
+                influxDBMeasurementsCollector?.Dispose();
+            }
+
+            lock (deviceRootDeviceManagerLock)
+            {
+                deviceRootDeviceManager.Dispose();
+            }
         }
 
         private void StartDeviceImport()
         {
             lock (deviceRootDeviceManagerLock)
             {
-                if (deviceRootDeviceManager != null)
-                {
-                    deviceRootDeviceManager.Cancel();
-                    deviceRootDeviceManager.Dispose();
-                }
-
+                deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceRootDeviceManager(HS,
                                                                       pluginConfig.DBLoginInformation,
                                                                       pluginConfig.ImportDevicesData,
@@ -298,17 +321,16 @@ namespace Hspi
         {
             lock (influxDBMeasurementsCollectorLock)
             {
-                bool recreate = (influxDBMeasurementsCollector == null) || (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
+                bool recreate = (influxDBMeasurementsCollector == null) ||
+                                (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
 
                 if (recreate)
                 {
-                    collectionShutdownToken?.Cancel();
-                    collectionShutdownToken = new CancellationTokenSource();
                     if (pluginConfig.DBLoginInformation.IsValid)
                     {
-                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation);
-                        influxDBMeasurementsCollector.Start(pluginConfig.DevicePersistenceData.Values,
-                                          CancellationTokenSource.CreateLinkedTokenSource(collectionShutdownToken.Token, ShutdownCancellationToken).Token);
+                        influxDBMeasurementsCollector?.Dispose();
+                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation, ShutdownCancellationToken);
+                        influxDBMeasurementsCollector.Start(pluginConfig.DevicePersistenceData.Values);
                     }
                 }
                 else
@@ -425,6 +447,31 @@ namespace Hspi
             }
         }
 
+        public override bool ActionReferencesDevice(IPlugInAPI.strTrigActInfo actionInfo, int deviceId)
+        {
+            try
+            {
+                switch (actionInfo.TANumber)
+                {
+                    case ActionRefreshTANumber:
+                        if (actionInfo.DataIn != null)
+                        {
+                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            return (refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId == deviceId);
+                        }
+                        return false;
+
+                    default:
+                        return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to ActionReferencesDevice with {ex.GetFullMessage()}"));
+                return false;
+            }
+        }
+
         public override string get_ActionName(int actionNumber)
         {
             try
@@ -477,31 +524,6 @@ namespace Hspi
             }
         }
 
-        public override bool ActionReferencesDevice(IPlugInAPI.strTrigActInfo actionInfo, int deviceId)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        if (actionInfo.DataIn != null)
-                        {
-                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-                            return (refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId == deviceId);
-                        }
-                        return false;
-
-                    default:
-                        return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to ActionReferencesDevice with {ex.GetFullMessage()}"));
-                return false;
-            }
-        }
-
         private bool ImportDeviceFromDB(int deviceRefId)
         {
             DeviceRootDeviceManager deviceRootDeviceManagerCopy;
@@ -515,32 +537,15 @@ namespace Hspi
 
         #endregion "Action Override"
 
-        public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
-        {
-            if (ImportDeviceFromDB(deviceId))
-            {
-                var pollResult = new IPlugInAPI.PollResultInfo
-                {
-                    Result = IPlugInAPI.enumPollResult.OK,
-                    Value = HS.DeviceValueEx(deviceId),
-                };
-
-                return pollResult;
-            }
-            else
-            {
-                return base.PollDevice(deviceId);
-            }
-        }
-
         private const int ActionRefreshTANumber = 1;
         private readonly object deviceRootDeviceManagerLock = new object();
         private readonly object influxDBMeasurementsCollectorLock = new object();
-        private CancellationTokenSource collectionShutdownToken;
         private ConfigPage configPage;
         private DeviceRootDeviceManager deviceRootDeviceManager;
         private bool disposedValue = false;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;
+        private Task startCollectorTask;
+        private Task startImportTask;
     }
 }

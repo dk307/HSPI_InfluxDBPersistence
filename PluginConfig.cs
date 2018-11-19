@@ -6,17 +6,15 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading;
+using Nito.AsyncEx;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     /// <summary>
     /// Class to store PlugIn Configuration
     /// </summary>
-    /// <seealso cref="System.IDisposable" />
-    internal class PluginConfig : IDisposable
+    internal class PluginConfig
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PluginConfig"/> class.
@@ -39,21 +37,15 @@ namespace Hspi
         {
             get
             {
-                configLock.EnterReadLock();
-                try
+                using (var sync = configLock.ReaderLock())
                 {
                     return influxDBLoginInformation;
-                }
-                finally
-                {
-                    configLock.ExitReadLock();
                 }
             }
 
             set
             {
-                configLock.EnterWriteLock();
-                try
+                using (var sync = configLock.WriterLock())
                 {
                     influxDBLoginInformation = value;
                     SetValue(InfluxDBUriKey, value.DBUri);
@@ -61,10 +53,6 @@ namespace Hspi
                     SetValue(InfluxDBPasswordKey, HS.EncryptString(value.Password, string.Empty));
                     SetValue(InfluxDBDBKey, value.DB);
                     SetValue(RetentionKey, value.Retention);
-                }
-                finally
-                {
-                    configLock.ExitWriteLock();
                 }
             }
         }
@@ -79,27 +67,17 @@ namespace Hspi
         {
             get
             {
-                configLock.EnterReadLock();
-                try
+                using (var sync = configLock.ReaderLock())
                 {
                     return debugLogging;
-                }
-                finally
-                {
-                    configLock.ExitReadLock();
                 }
             }
 
             set
             {
-                configLock.EnterWriteLock();
-                try
+                using (var sync = configLock.WriterLock())
                 {
                     SetValue(DebugLoggingKey, value, ref debugLogging);
-                }
-                finally
-                {
-                    configLock.ExitWriteLock();
                 }
             }
         }
@@ -108,14 +86,9 @@ namespace Hspi
         {
             get
             {
-                configLock.EnterReadLock();
-                try
+                using (var sync = configLock.ReaderLock())
                 {
                     return devicePersistenceData;
-                }
-                finally
-                {
-                    configLock.ExitReadLock();
                 }
             }
         }
@@ -124,14 +97,9 @@ namespace Hspi
         {
             get
             {
-                configLock.EnterReadLock();
-                try
+                using (var sync = configLock.ReaderLock())
                 {
                     return importDevicesData;
-                }
-                finally
-                {
-                    configLock.ExitReadLock();
                 }
             }
         }
@@ -143,8 +111,7 @@ namespace Hspi
 
         public void AddDevicePersistenceData(in DevicePersistenceData device)
         {
-            configLock.EnterWriteLock();
-            try
+            using (var sync = configLock.WriterLock())
             {
                 var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
                 newdevicePersistenceData[device.Id] = device;
@@ -159,16 +126,11 @@ namespace Hspi
                 SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
                 SetValue(MinValidValueKey, device.MinValidValue, device.Id);
             }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
         }
 
         public void AddImportDeviceData(in ImportDeviceData device)
         {
-            configLock.EnterWriteLock();
-            try
+            using (var sync = configLock.WriterLock())
             {
                 var newImportDeviceData = new Dictionary<string, ImportDeviceData>(importDevicesData);
                 newImportDeviceData[device.Id] = device;
@@ -179,10 +141,6 @@ namespace Hspi
                 SetValue(IntervalKey, device.Interval.TotalSeconds, device.Id);
                 SetValue(UnitKey, device.Unit, device.Id);
                 SetValue(ImportDevicesIdsKey, importDevicesData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
             }
         }
 
@@ -200,8 +158,7 @@ namespace Hspi
 
         public void RemoveDevicePersistenceData(string id)
         {
-            configLock.EnterWriteLock();
-            try
+            using (var sync = configLock.WriterLock())
             {
                 var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
                 newdevicePersistenceData.Remove(id);
@@ -217,16 +174,11 @@ namespace Hspi
                 }
                 HS.ClearINISection(id, FileName);
             }
-            finally
-            {
-                configLock.ExitWriteLock();
-            }
         }
 
         public void RemoveImportDeviceData(string id)
         {
-            configLock.EnterWriteLock();
-            try
+            using (var sync = configLock.WriterLock())
             {
                 var newImportDeviceData = new Dictionary<string, ImportDeviceData>(importDevicesData);
                 newImportDeviceData.Remove(id);
@@ -241,10 +193,6 @@ namespace Hspi
                     SetValue(ImportDevicesIdsKey, string.Empty);
                 }
                 HS.ClearINISection(id, FileName);
-            }
-            finally
-            {
-                configLock.ExitWriteLock();
             }
         }
 
@@ -398,28 +346,6 @@ namespace Hspi
         public const string DeviceStringValueDefaultField = "valueString";
         public const string DeviceValueDefaultField = "value";
 
-        #region IDisposable Support
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    configLock.Dispose();
-                }
-                disposedValue = true;
-            }
-        }
-
-        #endregion IDisposable Support
-
         private const string DebugLoggingKey = "DebugLogging";
         private const string DefaultSection = "Settings";
         private const string DeviceRefIdKey = "DeviceRefId";
@@ -443,11 +369,10 @@ namespace Hspi
         private const string TagsKey = "Tags";
         private const string UnitKey = "Unit";
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
-        private readonly ReaderWriterLockSlim configLock = new ReaderWriterLockSlim();
+        private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
         private readonly IHSApplication HS;
         private bool debugLogging;
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;
-        private bool disposedValue = false;
         private Dictionary<string, ImportDeviceData> importDevicesData;
         private InfluxDBLoginInformation influxDBLoginInformation;
     };

@@ -11,16 +11,20 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx.Synchronous;
+using NullGuard;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
-    internal class InfluxDBMeasurementsCollector
+    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
+    internal sealed class InfluxDBMeasurementsCollector : IDisposable
     {
-        public InfluxDBMeasurementsCollector(InfluxDBLoginInformation loginInformation)
+        public InfluxDBMeasurementsCollector(InfluxDBLoginInformation loginInformation,
+                                             CancellationToken shutdownToken)
         {
             this.loginInformation = loginInformation;
+            this.tokenSource = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
             influxDBClient = new InfluxDbClient(loginInformation.DBUri.ToString(),
                                                 loginInformation.User,
                                                 loginInformation.Password,
@@ -31,13 +35,11 @@ namespace Hspi
 
         public bool IsTracked(int deviceRefId)
         {
-            Interlocked.MemoryBarrier();
-            return peristenceDataMap.ContainsKey(deviceRefId);
+            return peristenceDataMap?.ContainsKey(deviceRefId) ?? false;
         }
 
         public async Task<bool> Record(RecordData data)
         {
-            Interlocked.MemoryBarrier();
             if (peristenceDataMap == null)
             {
                 throw new HspiException("Collection not started");
@@ -92,21 +94,20 @@ namespace Hspi
                         Timestamp = data.TimeStamp.ToUniversalTime(),
                     };
 
-                    await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
+                    await queue.EnqueueAsync(point, tokenSource.Token).ConfigureAwait(false);
                 }
             }
 
             return false;
         }
 
-        public void Start(IEnumerable<DevicePersistenceData> persistenceData,
-                          CancellationToken cancellationToken)
+        public void Start(IEnumerable<DevicePersistenceData> persistenceData)
         {
-            this.cancellationToken = cancellationToken;
             UpdatePeristenceData(persistenceData);
 
-            Task.Factory.StartNew(SendPoints, cancellationToken,
-                        TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
+            sendPointsTask = Task.Factory.StartNew(SendPoints, tokenSource.Token,
+                                                   TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                                                   TaskScheduler.Current);
         }
 
         public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)
@@ -122,8 +123,7 @@ namespace Hspi
                 map[data.DeviceRefId].Add(data);
             }
 
-            Interlocked.Exchange(ref peristenceDataMap,
-                                 map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>));     //atomic swap
+            peristenceDataMap = map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>);
         }
 
         private static bool IsValidRange(DevicePersistenceData value, double deviceValue)
@@ -143,10 +143,10 @@ namespace Hspi
 
         private async Task SendPoints()
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!tokenSource.Token.IsCancellationRequested)
             {
                 List<Point> points = new List<Point>();
-                points.Add(await queue.DequeueAsync(cancellationToken).ConfigureAwait(false));
+                points.Add(await queue.DequeueAsync(tokenSource.Token).ConfigureAwait(false));
                 try
                 {
                     await influxDBClient.Client.WriteAsync(points, loginInformation.DB, loginInformation.Retention, precision: TimeUnit.Seconds).ConfigureAwait(false);
@@ -160,9 +160,9 @@ namespace Hspi
                     {
                         foreach (var point in points)
                         {
-                            await queue.EnqueueAsync(point, cancellationToken).ConfigureAwait(false);
+                            await queue.EnqueueAsync(point, tokenSource.Token).ConfigureAwait(false);
                         }
-                        await Task.Delay(30000, cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(30000, tokenSource.Token).ConfigureAwait(false);
                     }
                 }
             }
@@ -181,10 +181,17 @@ namespace Hspi
             }
         }
 
+        public void Dispose()
+        {
+            tokenSource.Cancel();
+            sendPointsTask.WaitWithoutException();
+        }
+
+        private Task sendPointsTask;
         private readonly static AsyncProducerConsumerQueue<Point> queue = new AsyncProducerConsumerQueue<Point>();
         private readonly InfluxDbClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
-        private CancellationToken cancellationToken;
-        private IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
+        private readonly CancellationTokenSource tokenSource;
+        private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
     }
 }

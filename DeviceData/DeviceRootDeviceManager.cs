@@ -8,13 +8,15 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx.Synchronous;
 
 namespace Hspi.DeviceData
 {
+    using Nito.AsyncEx;
     using static System.FormattableString;
 
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal class DeviceRootDeviceManager : IDisposable
+    internal sealed class DeviceRootDeviceManager : IDisposable
     {
         public DeviceRootDeviceManager(IHSApplication HS,
                                        InfluxDBLoginInformation dbLoginInformation,
@@ -25,17 +27,11 @@ namespace Hspi.DeviceData
             this.dbLoginInformation = dbLoginInformation;
             this.importDevicesData = importDevicesData;
             this.cancellationToken = cancellationToken;
-            this.combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                            cancellationTokenSourceForUpdateDevice.Token);
+            this.combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var hsDevices = GetCurrentDevices();
             CreateDevices(hsDevices);
             StartDeviceFetchFromDB(hsDevices);
             Children = hsDevices.Children;
-        }
-
-        public void Cancel()
-        {
-            cancellationTokenSourceForUpdateDevice.Cancel();
         }
 
         public async Task<bool> ImportDataForDevice(int refID)
@@ -257,15 +253,16 @@ namespace Hspi.DeviceData
 
         private void StartDeviceFetchFromDB(in HSDevices hsDevices)
         {
-            foreach (var childDeviceKeyValuePair in hsDevices.Children)
+            using (var sync = collectionTasksLock.Lock())
             {
-                int refID = childDeviceKeyValuePair.Key;
-                DeviceData deviceData = childDeviceKeyValuePair.Value;
+                foreach (var childDeviceKeyValuePair in hsDevices.Children)
+                {
+                    int refID = childDeviceKeyValuePair.Key;
+                    DeviceData deviceData = childDeviceKeyValuePair.Value;
 
-                Task.Factory.StartNew(() => ImportDataForDeviceInLoop(refID, deviceData),
-                                      cancellationTokenSourceForUpdateDevice.Token,
-                                      TaskCreationOptions.RunContinuationsAsynchronously,
-                                      TaskScheduler.Current);
+                    this.combinedToken.Token.ThrowIfCancellationRequested();
+                    collectionTasks.Add(ImportDataForDeviceInLoop(refID, deviceData));
+                }
             }
         }
 
@@ -279,32 +276,26 @@ namespace Hspi.DeviceData
 
         private readonly IReadOnlyDictionary<int, DeviceData> Children;
         private readonly CancellationToken cancellationToken;
-        private readonly CancellationTokenSource cancellationTokenSourceForUpdateDevice = new CancellationTokenSource();
         private readonly CancellationTokenSource combinedToken;
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHSApplication HS;
         private readonly IReadOnlyDictionary<string, ImportDeviceData> importDevicesData;
+        private readonly AsyncLock collectionTasksLock = new AsyncLock();
+        private readonly List<Task> collectionTasks = new List<Task>();
 
         #region IDisposable Support
 
         // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            // GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
             if (!disposedValue)
             {
-                if (disposing)
+                combinedToken.Cancel();
+                using (var sync = collectionTasksLock.Lock())
                 {
-                    cancellationTokenSourceForUpdateDevice.Dispose();
+                    Task.WhenAll(collectionTasks).WaitWithoutException();
                 }
-
+                combinedToken.Dispose();
                 disposedValue = true;
             }
         }
