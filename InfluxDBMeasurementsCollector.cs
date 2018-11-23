@@ -107,7 +107,7 @@ namespace Hspi
 
             sendPointsTask = Task.Factory.StartNew(SendPoints, tokenSource.Token,
                                                    TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                                                   TaskScheduler.Current);
+                                                   TaskScheduler.Current).WaitAndUnwrapException(tokenSource.Token);
         }
 
         public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)
