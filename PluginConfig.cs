@@ -2,6 +2,7 @@
 using NullGuard;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -82,24 +83,24 @@ namespace Hspi
             }
         }
 
-        public IReadOnlyDictionary<string, DevicePersistenceData> DevicePersistenceData
+        public IImmutableDictionary<string, DevicePersistenceData> DevicePersistenceData
         {
             get
             {
                 using (var sync = configLock.ReaderLock())
                 {
-                    return devicePersistenceData;
+                    return devicePersistenceData.ToImmutableDictionary();
                 }
             }
         }
 
-        public IReadOnlyDictionary<string, ImportDeviceData> ImportDevicesData
+        public IImmutableDictionary<string, ImportDeviceData> ImportDevicesData
         {
             get
             {
                 using (var sync = configLock.ReaderLock())
                 {
-                    return importDevicesData;
+                    return importDevicesData.ToImmutableDictionary();
                 }
             }
         }

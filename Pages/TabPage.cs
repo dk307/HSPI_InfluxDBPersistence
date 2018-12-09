@@ -126,10 +126,10 @@ namespace Hspi
                     stb.Append(@"<table style='width:100%;border-spacing:0px;'");
                     stb.Append("<tr height='5'><td style='width:25%'></td><td style='width:20%'></td><td style='width:55%'></td></tr>");
                     stb.Append(Invariant($"<tr><td class='tableheader' colspan=3>Import Settings</td></tr>"));
-                    stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{device.Value.Name ?? string.Empty}</td></tr>"));
-                    stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell' colspan=2>{device.Value.Sql ?? string.Empty}</td></tr>"));
-                    stb.Append(Invariant($"<tr><td class='tablecell'>Refresh Interval(seconds):</td><td class='tablecell' colspan=2>{device.Value.Interval.TotalSeconds}</td></tr>"));
-                    stb.Append(Invariant($"<tr><td class='tablecell'>Unit:</td><td class='tablecell' colspan=2>{device.Value.Unit ?? string.Empty}</td></tr>"));
+                    stb.Append(Invariant($"<tr><td class='tablecell'>Name:</td><td class='tablecell' colspan=2>{HtmlEncode(device.Value.Name)}</td></tr>"));
+                    stb.Append(Invariant($"<tr><td class='tablecell'>Sql:</td><td class='tablecell' colspan=2>{HtmlEncode(device.Value.Sql)}</td></tr>"));
+                    stb.Append(Invariant($"<tr><td class='tablecell'>Refresh Interval(seconds):</td><td class='tablecell' colspan=2>{HtmlEncode(device.Value.Interval.TotalSeconds)}</td></tr>"));
+                    stb.Append(Invariant($"<tr><td class='tablecell'>Unit:</td><td class='tablecell' colspan=2>{HtmlEncode(device.Value.Unit)}</td></tr>"));
                     stb.Append(Invariant($"</td><td></td></tr>"));
                     stb.Append("<tr height='5'><td colspan=3></td></tr>");
                     stb.Append("<tr><td colspan=3>");

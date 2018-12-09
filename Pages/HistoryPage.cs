@@ -243,7 +243,7 @@ namespace Hspi
                     stb.Append(@"<thead><tr>");
                     foreach (var column in queryData[0].Columns)
                     {
-                        stb.Append(Invariant($"<th>{ HttpUtility.HtmlEncode(FirstCharToUpper(column))}</th>"));
+                        stb.Append(Invariant($"<th>{ HtmlEncode(FirstCharToUpper(column))}</th>"));
                     }
                     stb.Append(@"</tr></thead>");
                     stb.Append(@"<tbody>");
@@ -287,11 +287,11 @@ namespace Hspi
 
                             if (sortValue != null)
                             {
-                                stb.Append(Invariant($"<td data-order='{HttpUtility.HtmlEncode(sortValue)}' class='tablecell'>{ HttpUtility.HtmlEncode(value)}</td>"));
+                                stb.Append(Invariant($"<td data-order='{HtmlEncode(sortValue)}' class='tablecell'>{HtmlEncode(value)}</td>"));
                             }
                             else
                             {
-                                stb.Append(Invariant($"<td class='tablecell'>{HttpUtility.HtmlEncode(value)}</td>"));
+                                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(value)}</td>"));
                             }
                         }
                         stb.Append(@"</tr>");

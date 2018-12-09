@@ -91,10 +91,10 @@ namespace Hspi
                 var device = pair.Value;
 
                 stb.Append(@"<tr>");
-                stb.Append(Invariant($"<td class='tablecell'>{device.Name}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Sql}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Interval}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Unit}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.Name)}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.Sql)}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.Interval)}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.Unit)}</td>"));
                 stb.Append("</td>");
                 stb.Append("<td class='tablecell'>");
                 stb.Append(PageTypeButton(Invariant($"Edit{id}"), "Edit", EditDeviceImportPageType, id: id));

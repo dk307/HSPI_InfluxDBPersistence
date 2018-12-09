@@ -54,6 +54,15 @@ namespace Hspi
             return builder.Uri.PathAndQuery;
         }
 
+        public static string HtmlEncode<T>([AllowNull]T value)
+        {
+            if (value == null)
+            {
+                return string.Empty;
+            }
+            return HttpUtility.HtmlEncode(value);
+        }
+
         /// <summary>
         /// Get the web page string for the configuration page.
         /// </summary>
@@ -199,12 +208,12 @@ namespace Hspi
 
         protected static string HtmlTextBox(string name, [AllowNull]string defaultText, int size = 25, string type = "text", bool @readonly = false)
         {
-            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{defaultText ?? string.Empty}\' {(@readonly ? "readonly" : string.Empty)}>");
+            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{HtmlEncode(defaultText)}\' {(@readonly ? "readonly" : string.Empty)}>");
         }
 
         protected static string TextArea(string name, [AllowNull]string defaultText, int rows = 6, int cols = 120, bool @readonly = false)
         {
-            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' cols=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{defaultText ?? string.Empty}</textarea>");
+            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' cols=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{HtmlEncode(defaultText)}</textarea>");
         }
 
         protected string FormButton(string name, string label, string toolTip)

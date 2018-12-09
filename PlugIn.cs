@@ -301,7 +301,7 @@ namespace Hspi
 
             lock (deviceRootDeviceManagerLock)
             {
-                deviceRootDeviceManager.Dispose();
+                deviceRootDeviceManager?.Dispose();
             }
         }
 

@@ -6,11 +6,10 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     /// <summary>
     /// Helper class to generate configuration page for plugin
     /// </summary>
@@ -144,19 +143,19 @@ namespace Hspi
 
                 stb.Append(@"<tr>");
                 string name = hsHelper.GetName(device.DeviceRefId) ?? Invariant($"Unknown(RefId:{device.DeviceRefId})");
-                stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.DeviceRefId}&edit=1'>{name}</a></td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Measurement}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.Field ?? string.Empty}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'><a href='/deviceutility?ref={device.DeviceRefId}&edit=1'>{HtmlEncode(name)}</a></td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.Measurement)}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.Field)}</td>"));
                 string rangeString = !string.IsNullOrWhiteSpace(device.Field) ?
                                         Invariant($"{device.MaxValidValue ?? double.PositiveInfinity} to {device.MinValidValue ?? double.NegativeInfinity}") : string.Empty;
-                stb.Append(Invariant($"<td class='tablecell'>{rangeString}</td>"));
-                stb.Append(Invariant($"<td class='tablecell'>{device.FieldString ?? string.Empty}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(rangeString)}</td>"));
+                stb.Append(Invariant($"<td class='tablecell'>{HtmlEncode(device.FieldString)}</td>"));
                 stb.Append("<td class='tablecell'>");
                 if (device.Tags != null)
                 {
                     foreach (var item in device.Tags)
                     {
-                        stb.Append(Invariant($"{item.Key}={item.Value}<br>"));
+                        stb.Append(Invariant($"{HtmlEncode(item.Key)}={HtmlEncode(item.Value)}<br>"));
                     }
                 }
 
