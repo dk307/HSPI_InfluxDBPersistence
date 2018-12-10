@@ -4,21 +4,11 @@ using System.Globalization;
 
 namespace Hspi
 {
-    internal class HSTraceListener : TraceListener
+    internal sealed class HSTraceListener : TraceListener
     {
         public HSTraceListener(ILogger logger)
         {
             loggerWeakReference = new WeakReference<ILogger>(logger);
-        }
-
-        public override void Write(string message)
-        {
-            LogDebug(message);
-        }
-
-        public override void WriteLine(string message)
-        {
-            LogDebug(message);
         }
 
         public override bool IsThreadSafe => true;
@@ -42,41 +32,61 @@ namespace Hspi
 
             if (loggerWeakReference.TryGetTarget(out var logger))
             {
-                switch (eventType)
+                try
                 {
-                    case TraceEventType.Critical:
-                    case TraceEventType.Error:
-                        logger.LogError(message);
-                        break;
+                    switch (eventType)
+                    {
+                        case TraceEventType.Critical:
+                        case TraceEventType.Error:
+                            logger.LogError(message);
+                            break;
 
-                    case TraceEventType.Warning:
-                        logger.LogWarning(message);
-                        break;
+                        case TraceEventType.Warning:
+                            logger.LogWarning(message);
+                            break;
 
-                    case TraceEventType.Information:
-                        logger.LogInfo(message);
-                        break;
+                        case TraceEventType.Information:
+                            logger.LogInfo(message);
+                            break;
 
-                    case TraceEventType.Verbose:
-                        logger.LogDebug(message);
-                        break;
+                        case TraceEventType.Verbose:
+                            logger.LogDebug(message);
+                            break;
 
-                    case TraceEventType.Start:
-                    case TraceEventType.Stop:
-                    case TraceEventType.Suspend:
-                    case TraceEventType.Resume:
-                    case TraceEventType.Transfer:
-                        logger.LogInfo(message);
-                        break;
+                        case TraceEventType.Start:
+                        case TraceEventType.Stop:
+                        case TraceEventType.Suspend:
+                        case TraceEventType.Resume:
+                        case TraceEventType.Transfer:
+                            logger.LogInfo(message);
+                            break;
+                    }
                 }
+                catch
+                { }
             }
+        }
+
+        public override void Write(string message)
+        {
+            LogDebug(message);
+        }
+
+        public override void WriteLine(string message)
+        {
+            LogDebug(message);
         }
 
         private void LogDebug(string message)
         {
             if (loggerWeakReference.TryGetTarget(out var logger))
             {
-                logger.LogDebug(message);
+                try
+                {
+                    logger.LogDebug(message);
+                }
+                catch
+                { }
             }
         }
 
