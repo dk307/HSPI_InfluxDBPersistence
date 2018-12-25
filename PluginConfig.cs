@@ -1,4 +1,6 @@
 ﻿using HomeSeerAPI;
+using Hspi.Utils;
+using Nito.AsyncEx;
 using NullGuard;
 using System;
 using System.Collections.Generic;
@@ -7,7 +9,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Nito.AsyncEx;
 using static System.FormattableString;
 
 namespace Hspi

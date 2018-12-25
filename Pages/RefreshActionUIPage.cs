@@ -1,5 +1,6 @@
 ﻿using HomeSeerAPI;
 using Hspi.DeviceData;
+using Hspi.Utils;
 using NullGuard;
 using Scheduler;
 using Scheduler.Classes;
@@ -86,11 +87,5 @@ namespace Hspi
         }
 
         private const string RefreshActionUIDropDownName = "RefreshActionUIDropDownName_";
-    }
-
-    [Serializable]
-    internal class RefreshDeviceAction
-    {
-        public int DeviceRefId;
     }
 }

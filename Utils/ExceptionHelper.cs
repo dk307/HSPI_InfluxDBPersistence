@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace Hspi
+namespace Hspi.Utils
 {
     internal static class ExceptionHelper
     {

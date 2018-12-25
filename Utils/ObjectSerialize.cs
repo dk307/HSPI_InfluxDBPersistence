@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
-namespace Hspi
+namespace Hspi.Utils
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal static class ObjectSerialize

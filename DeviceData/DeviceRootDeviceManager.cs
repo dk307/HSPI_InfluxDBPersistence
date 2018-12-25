@@ -1,5 +1,8 @@
 using HomeSeerAPI;
 using Hspi.Exceptions;
+using Hspi.Utils;
+using Nito.AsyncEx;
+using Nito.AsyncEx.Synchronous;
 using NullGuard;
 using Scheduler.Classes;
 using System;
@@ -8,13 +11,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Nito.AsyncEx.Synchronous;
+using static System.FormattableString;
 
 namespace Hspi.DeviceData
 {
-    using Nito.AsyncEx;
-    using static System.FormattableString;
-
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal sealed class DeviceRootDeviceManager : IDisposable
     {

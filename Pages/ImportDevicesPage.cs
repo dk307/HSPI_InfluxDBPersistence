@@ -3,11 +3,11 @@ using Scheduler;
 using System;
 using System.Collections.Specialized;
 using System.Text;
+using Hspi.Utils;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     /// <summary>
     /// Helper class to generate configuration page for plugin
     /// </summary>

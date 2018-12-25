@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Nito.AsyncEx.Synchronous;
 using NullGuard;
 using static System.FormattableString;
+using Hspi.Utils;
 
 namespace Hspi
 {
@@ -104,10 +105,7 @@ namespace Hspi
         public void Start(IEnumerable<DevicePersistenceData> persistenceData)
         {
             UpdatePeristenceData(persistenceData);
-
-            sendPointsTask = Task.Factory.StartNew(SendPoints, tokenSource.Token,
-                                                   TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                                                   TaskScheduler.Current).WaitAndUnwrapException(tokenSource.Token);
+            TaskHelper.StartAsync(SendPoints, tokenSource.Token);
         }
 
         public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)

@@ -7,11 +7,11 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
+using Hspi.Utils;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
     {
         private static string ConvertInfluxDBDateTimeToString(DateTimeOffset today, CultureInfo culture, long timePoint)

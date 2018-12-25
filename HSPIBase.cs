@@ -13,6 +13,7 @@ using System.Threading;
 
 namespace Hspi
 {
+    using Hspi.Utils;
     using static System.FormattableString;
 
     /// <summary>

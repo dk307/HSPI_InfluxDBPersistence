@@ -9,11 +9,11 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Web;
+using Hspi.Utils;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     /// <summary>
     /// Helper class to generate configuration page for plugin
     /// </summary>

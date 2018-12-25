@@ -1,18 +1,18 @@
 ﻿using HomeSeerAPI;
 using Hspi.DeviceData;
+using Hspi.Utils;
+using Nito.AsyncEx.Synchronous;
 using NullGuard;
 using Scheduler.Classes;
 using System;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Threading;
+using System.Globalization;
 using System.Threading.Tasks;
-using Nito.AsyncEx.Synchronous;
+using static System.FormattableString;
 
 namespace Hspi
 {
-    using static System.FormattableString;
-
     /// <summary>
     /// Plugin class
     /// </summary>
@@ -84,7 +84,7 @@ namespace Hspi
             {
                 if ((eventType == Enums.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
                 {
-                    int deviceRefId = Convert.ToInt32(parameters[4]);
+                    int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
                     RecordDeviceValue(deviceRefId).Wait(ShutdownCancellationToken);
                 }
             }
@@ -116,7 +116,7 @@ namespace Hspi
             }
             catch (Exception ex)
             {
-                result = Invariant($"Failed to initialize PlugIn With {ex.GetFullMessage()}");
+                result = Invariant($"Failed to initialize PlugIn with {ex.GetFullMessage()}");
                 Trace.TraceError(result);
             }
 
@@ -252,7 +252,7 @@ namespace Hspi
                     {
                         if (collector.IsTracked(device.get_Ref(HS)))
                         {
-                            await RecordDeviceValue(collector, HS, device); // keep in same thread
+                            await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
                         }
                     }
                     ShutdownCancellationToken.ThrowIfCancellationRequested();
@@ -279,14 +279,8 @@ namespace Hspi
 
         private void RestartProcessing()
         {
-            startCollectorTask = Task.Factory.StartNew(StartInfluxDBMeasurementsCollector,
-                                  ShutdownCancellationToken,
-                                  TaskCreationOptions.DenyChildAttach,
-                                  TaskScheduler.Default);
-            startImportTask = Task.Factory.StartNew(StartDeviceImport,
-                                                    ShutdownCancellationToken,
-                                                    TaskCreationOptions.DenyChildAttach,
-                                                    TaskScheduler.Default);
+            startCollectorTask = TaskHelper.StartAsync(StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
+            startImportTask = TaskHelper.StartAsync(StartDeviceImport, ShutdownCancellationToken);
         }
 
         private void Shutdown()
@@ -338,7 +332,7 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
 
-                RecordTrackedDevices().Wait();
+                RecordTrackedDevices().WaitAndUnwrapException();
             }
         }
 
