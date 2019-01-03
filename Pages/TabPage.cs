@@ -1,9 +1,6 @@
 ﻿using HomeSeerAPI;
 using Hspi.DeviceData;
-using Scheduler;
-using Scheduler.Classes;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
@@ -49,20 +46,31 @@ namespace Hspi.Pages
             //TableStats,
         }
 
-        public void GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
+        public Enums.ConfigDevicePostReturn GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
         {
             var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
+
             if (data != null)
             {
                 NameValueCollection parts = HttpUtility.ParseQueryString(queryData ?? string.Empty);
 
-                if (Enum.TryParse(parts[iFrameTypeId], true, out IFrameType frameType) &&
-                    Enum.TryParse(parts[iFrameDurationId], true, out IFrameDuration duration))
+                string id = parts["id"];
+
+                if (id == NameToIdWithPrefix(DoneButtonId))
                 {
-                    callback.ConfigDivToUpdateAdd(resultsDivPartId, GetQueryResultFrame(data, frameType, duration));
+                    return Enums.ConfigDevicePostReturn.DoneAndSave;
+                }
+                else
+                {
+                    if (Enum.TryParse(parts[IFrameTypeId], true, out IFrameType frameType) &&
+                        Enum.TryParse(parts[IFrameDurationId], true, out IFrameDuration duration))
+                    {
+                        callback.ConfigDivToUpdateAdd(resultsDivPartId, GetQueryResultFrame(data, frameType, duration));
+                    }
                 }
             }
+            return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
         }
 
         public string GetDeviceHistoryTab(int refId)
@@ -74,8 +82,6 @@ namespace Hspi.Pages
                 StringBuilder stb = new StringBuilder();
                 IncludeDataTableFiles(stb);
                 IncludeResourceScript(stb, "iframeSizer.min.js");
-
-                stb.Append(FormStart("ftmInfluxDbSettings", "InflubDbSettings", "Post"));
 
                 stb.Append(@"<table style='width:100%;border-spacing:0px;'");
                 stb.Append("<tr height='5'><td></td></tr>");
@@ -90,11 +96,11 @@ namespace Hspi.Pages
                     //AddEnumValue(iframeType, IFrameType.TableStats);
                 }
 
-                stb.Append(FormDropDown(iFrameTypeId, iframeType, iframeType[0], 150, string.Empty, true, DeviceUtiltyPageName));
+                stb.Append(FormDropDown(IFrameTypeId, iframeType, iframeType[0], 150, string.Empty, true, DeviceUtiltyPageName));
 
                 stb.Append("&nbsp;Duration:");
                 NameValueCollection duration = CreateNameValueCreation<IFrameDuration>();
-                stb.Append(FormDropDown(iFrameDurationId, duration, duration[0],
+                stb.Append(FormDropDown(IFrameDurationId, duration, duration[0],
                                         100, string.Empty, true, DeviceUtiltyPageName));
 
                 stb.Append("</td></tr>");
@@ -112,9 +118,10 @@ namespace Hspi.Pages
                 stb.Append(PageTypeButton(Invariant($"Edit{data.Id}"), "Edit", EditDevicePageType, id: data.Id));
                 stb.Append("&nbsp;");
                 stb.Append(PageTypeButton(Invariant($"Queries{data.Id}"), "More Queries", HistoryDevicePageType, id: data.Id));
+                stb.Append("&nbsp;");
+                stb.Append(FormButton(DoneButtonId, "Done", string.Empty, DeviceUtiltyPageName));
                 stb.Append("</td></tr>");
                 stb.Append("</table>");
-                stb.Append(FormEnd());
 
                 return stb.ToString();
             }
@@ -229,8 +236,9 @@ namespace Hspi.Pages
         }
 
         private const string DeviceUtiltyPageName = "deviceutility";
-        private const string iFrameDurationId = "duration";
-        private const string iFrameTypeId = "iframeType";
+        private const string IFrameDurationId = "duration";
+        private const string IFrameTypeId = "iframeType";
+        private const string DoneButtonId = "DoneButtonId";
         private const string resultsDivPartId = "resultsDivPartId";
     }
 }

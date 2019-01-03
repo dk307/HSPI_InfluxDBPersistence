@@ -91,7 +91,12 @@ namespace Hspi.Pages
 
         protected string FormButton(string name, string label, string toolTip)
         {
-            var button = new clsJQuery.jqButton(name, label, PageName, true)
+            return FormButton(name, label, toolTip, PageName);
+        }
+
+        protected string FormButton(string name, string label, string toolTip, string pageName)
+        {
+            var button = new clsJQuery.jqButton(name, label, pageName, true)
             {
                 id = NameToIdWithPrefix(name),
                 toolTip = toolTip,

@@ -62,14 +62,13 @@ namespace Hspi
         {
             try
             {
-                configPage.GetDeviceHistoryPost(Callback, deviceId, data);
+                return configPage.GetDeviceHistoryPost(Callback, deviceId, data);
             }
             catch (Exception ex)
             {
                 LogError(Invariant($"ConfigDevicePost for {deviceId} With {ex.Message}"));
+                return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
             }
-
-            return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
         }
 
         public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
