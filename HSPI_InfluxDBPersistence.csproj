@@ -45,7 +45,7 @@
     </CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -92,6 +92,8 @@
     <Compile Include="DeviceData\DeviceIdentifier.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="ImportDeviceData.cs" />
+    <Compile Include="Pages\PageHelper.cs" />
+    <Compile Include="Utils\EnumHelper.cs" />
     <Compile Include="Utils\InfluxDBHelper.cs" />
     <Compile Include="Pages\RefreshActionUIPage.cs" />
     <Compile Include="Pages\RefreshDeviceAction.cs" />

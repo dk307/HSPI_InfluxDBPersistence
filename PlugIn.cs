@@ -1,5 +1,6 @@
 ﻿using HomeSeerAPI;
 using Hspi.DeviceData;
+using Hspi.Pages;
 using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
@@ -34,7 +35,7 @@ namespace Hspi
 
             try
             {
-                DeviceClass deviceClass = (DeviceClass)HS.GetDeviceByRef(deviceId);
+                var deviceClass = (DeviceClass)HS.GetDeviceByRef(deviceId);
 
                 if (deviceClass.get_Interface(HS) == PlugInData.PlugInName)
                 {
@@ -46,7 +47,7 @@ namespace Hspi
                 }
                 else
                 {
-                    return configPage.GetDeviceHistoryTab(deviceClass);
+                    return configPage.GetDeviceHistoryTab(deviceId);
                 }
                 return string.Empty;
             }
@@ -55,6 +56,20 @@ namespace Hspi
                 LogError(Invariant($"ConfigDevice for {deviceId} With {ex.Message}"));
                 return string.Empty;
             }
+        }
+
+        public override Enums.ConfigDevicePostReturn ConfigDevicePost(int deviceId, [AllowNull] string data, [AllowNull] string user, int userRights)
+        {
+            try
+            {
+                configPage.GetDeviceHistoryPost(Callback, deviceId, data);
+            }
+            catch (Exception ex)
+            {
+                LogError(Invariant($"ConfigDevicePost for {deviceId} With {ex.Message}"));
+            }
+
+            return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
         }
 
         public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
@@ -231,7 +246,7 @@ namespace Hspi
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if ((collector != null) && collector.IsTracked(deviceRefId))
             {
-                DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
+                var device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
                 await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
             }
         }
@@ -394,7 +409,7 @@ namespace Hspi
                     case ActionRefreshTANumber:
                         if (actionInfo.DataIn != null)
                         {
-                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
                             if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
                             {
                                 HSHelper hSHelper = new HSHelper(HS);
@@ -443,7 +458,7 @@ namespace Hspi
                     case ActionRefreshTANumber:
                         if (actionInfo.DataIn != null)
                         {
-                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
                             return (refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId == deviceId);
                         }
                         return false;
@@ -488,7 +503,7 @@ namespace Hspi
                     case ActionRefreshTANumber:
                         if (actionInfo.DataIn != null)
                         {
-                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+                            var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
                             if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
                             {
                                 if (ImportDeviceFromDB(refreshDeviceAction.DeviceRefId))

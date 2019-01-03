@@ -10,9 +10,9 @@ using System.Web;
 using Hspi.Utils;
 using static System.FormattableString;
 
-namespace Hspi
+namespace Hspi.Pages
 {
-    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageHelper
     {
         private static string ConvertInfluxDBDateTimeToString(DateTimeOffset today, CultureInfo culture, long timePoint)
         {
@@ -166,7 +166,7 @@ namespace Hspi
 
             string header = Invariant($"History - {hsHelper.GetName(data.DeviceRefId)}");
 
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmDeviceHistory", "IdHistory", "Post"));
+            stb.Append(FormStart("ftmDeviceHistory", "IdHistory", "Post"));
             stb.Append(@"<div>");
 
             stb.Append(@"<table class='full_width_table'>");
@@ -207,7 +207,7 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td>{HistoryBackButton()}</td></tr>"));
             stb.Append("</table>");
             stb.Append("</div>");
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
+            stb.Append(FormEnd());
 
             return stb.ToString();
         }
@@ -409,7 +409,7 @@ namespace Hspi
 
         private string HistoryBackButton()
         {
-            var b = new clsJQuery.jqButton("Back", "Back", PageName, false)
+            var b = new clsJQuery.jqButton("Back", "Back", DeviceUtiltyPageName, false)
             {
                 id = NameToIdWithPrefix("Back"),
                 url = Invariant($"/{pageUrl}?{TabId}=1"),

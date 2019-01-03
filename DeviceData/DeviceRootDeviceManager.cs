@@ -2,7 +2,6 @@ using HomeSeerAPI;
 using Hspi.Exceptions;
 using Hspi.Utils;
 using Nito.AsyncEx;
-using Nito.AsyncEx.Synchronous;
 using NullGuard;
 using Scheduler.Classes;
 using System;

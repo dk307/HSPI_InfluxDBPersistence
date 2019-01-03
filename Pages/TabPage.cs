@@ -1,105 +1,111 @@
-﻿using Hspi.DeviceData;
+﻿using HomeSeerAPI;
+using Hspi.DeviceData;
 using Scheduler;
 using Scheduler.Classes;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Web;
+using static System.FormattableString;
 
-namespace Hspi
+namespace Hspi.Pages
 {
-    using static System.FormattableString;
-
-    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageHelper
     {
-        private string IFrameChangeUrlButton(string name, string iframe, string pageType, string url)
+        public enum IFrameDuration
         {
-            var button = new clsJQuery.jqButton(name, name, PageName, false)
-            {
-                id = NameToIdWithPrefix(name),
-            };
+            [Description("100 Records")]
+            D100Records,
 
-            button.functionToCallOnClick = Invariant($"$('#{iframe}').prop('src', '{url}')");
-            return button.Build();
+            [Description("1 hour")]
+            D1h,
+
+            [Description("12 hours")]
+            D12h,
+
+            [Description("24 hours")]
+            D24h,
+
+            [Description("7 days")]
+            D7d,
+
+            [Description("30 days")]
+            D30d
+        };
+
+        [Flags]
+        public enum IFrameType
+        {
+            [Description("Table")]
+            TableHistory,
+
+            [Description("Charts")]
+            ChartHistory,
+
+            //[Description("Stats")]
+            //TableStats,
         }
 
-        private static string BuildChartUri(string finalQuery, string title)
+        public void GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
         {
-            return BuildUri(pageUrl, new NameValueCollection()
-            {
-                { PageTypeId, DeviceChartTablePageType},
-                { QueryPartId, finalQuery },
-                { TitlePartId, title },
-            });
-        }
-
-        private static string BuildTableUri(string finalQuery, int tableSize)
-        {
-            return BuildUri(pageUrl, new NameValueCollection()
-            {
-                { PageTypeId, DeviceDataTablePageType},
-                { QueryPartId, finalQuery },
-                { TableSizeId, Invariant($"{tableSize}") },
-            });
-        }
-
-        private IDictionary<string, string> GetDeviceHistoryTabQueries(DevicePersistenceData data)
-        {
-            var queries = new Dictionary<string, string>();
-            HSHelper hSHelper = new HSHelper(HS);
-            string deviceName = hSHelper.GetName(data.DeviceRefId);
-            var fields = string.Join(",", GetFields(data));
-            queries.Add("100 Records",
-                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"));
-
-            queries.Add("1h",
-                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 1h ORDER BY time DESC LIMIT 10000"));
-
-            queries.Add("24h",
-                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h ORDER BY time DESC LIMIT 10000"));
-
-            queries.Add("7d",
-                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 7d ORDER BY time DESC LIMIT 10000"));
-
-            queries.Add("30d",
-                        Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 30d ORDER BY time DESC LIMIT 10000"));
-
-            return queries;
-        }
-
-        public string GetDeviceHistoryTab(DeviceClass deviceClass)
-        {
-            int refId = deviceClass.get_Ref(HS);
             var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
             if (data != null)
             {
-                var queries = GetDeviceHistoryTabQueries(data);
+                NameValueCollection parts = HttpUtility.ParseQueryString(queryData ?? string.Empty);
 
+                if (Enum.TryParse(parts[iFrameTypeId], true, out IFrameType frameType) &&
+                    Enum.TryParse(parts[iFrameDurationId], true, out IFrameDuration duration))
+                {
+                    callback.ConfigDivToUpdateAdd(resultsDivPartId, GetQueryResultFrame(data, frameType, duration));
+                }
+            }
+        }
+
+        public string GetDeviceHistoryTab(int refId)
+        {
+            var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
+            var data = dataKeyPair.Value;
+            if (data != null)
+            {
                 StringBuilder stb = new StringBuilder();
                 IncludeDataTableFiles(stb);
                 IncludeResourceScript(stb, "iframeSizer.min.js");
 
+                stb.Append(FormStart("ftmInfluxDbSettings", "InflubDbSettings", "Post"));
+
                 stb.Append(@"<table style='width:100%;border-spacing:0px;'");
                 stb.Append("<tr height='5'><td></td></tr>");
                 stb.Append("<tr><td>");
-                foreach (var queryPair in queries)
-                {
-                    stb.Append(IFrameChangeUrlButton(Invariant($"Table - {queryPair.Key}"), TableFrameId, DeviceDataTablePageType, BuildTableUri(queryPair.Value, 10)));
-                }
-                stb.Append("<br>");
+                stb.Append("Type:");
+
+                NameValueCollection iframeType = new NameValueCollection();
+                AddEnumValue(iframeType, IFrameType.TableHistory);
                 if (!string.IsNullOrWhiteSpace(data.Field))
                 {
-                    foreach (var queryPair in queries)
-                    {
-                        stb.Append(IFrameChangeUrlButton(Invariant($"Chart - {queryPair.Key}"), TableFrameId, DeviceChartTablePageType, BuildChartUri(queryPair.Value, string.Empty)));
-                    }
+                    AddEnumValue(iframeType, IFrameType.ChartHistory);
+                    //AddEnumValue(iframeType, IFrameType.TableStats);
                 }
 
+                stb.Append(FormDropDown(iFrameTypeId, iframeType, iframeType[0], 150, string.Empty, true, DeviceUtiltyPageName));
+
+                stb.Append("&nbsp;Duration:");
+                NameValueCollection duration = CreateNameValueCreation<IFrameDuration>();
+                stb.Append(FormDropDown(iFrameDurationId, duration, duration[0],
+                                        100, string.Empty, true, DeviceUtiltyPageName));
+
                 stb.Append("</td></tr>");
-                stb.Append(Invariant($"<tr><td class='tableheader'>History</td></tr>"));
+                stb.Append("<tr height='5'><td></td></tr>");
+
+                //stb.Append(Invariant($"<tr><td class='tableheader'>History</td></tr>"));
                 stb.Append("<tr><td class='tablecell'>");
-                BuildQueryTableIFrame(stb, queries.First().Value);
+                stb.Append(DivStart(resultsDivPartId, string.Empty));
+                stb.Append(GetQueryResultFrame(data, IFrameType.TableHistory, IFrameDuration.D100Records));
+                stb.Append(DivEnd());
+
                 stb.Append("</td></tr>");
                 stb.Append("<tr height='5'><td></td></tr>");
                 stb.Append("<tr><td>");
@@ -108,6 +114,7 @@ namespace Hspi
                 stb.Append(PageTypeButton(Invariant($"Queries{data.Id}"), "More Queries", HistoryDevicePageType, id: data.Id));
                 stb.Append("</td></tr>");
                 stb.Append("</table>");
+                stb.Append(FormEnd());
 
                 return stb.ToString();
             }
@@ -143,5 +150,87 @@ namespace Hspi
 
             return string.Empty;
         }
+
+        private static string BuildChartUri(string finalQuery, string title)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceChartTablePageType},
+                { QueryPartId, finalQuery },
+                { TitlePartId, title },
+            });
+        }
+
+        private static string BuildTableUri(string finalQuery, int tableSize)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceDataTablePageType},
+                { QueryPartId, finalQuery },
+                { TableSizeId, Invariant($"{tableSize}") },
+            });
+        }
+
+        private string GetDeviceHistoryTabQuery(DevicePersistenceData data, IFrameDuration duration)
+        {
+            HSHelper hSHelper = new HSHelper(HS);
+            string deviceName = hSHelper.GetName(data.DeviceRefId);
+            var fields = string.Join(",", GetFields(data));
+
+            switch (duration)
+            {
+                case IFrameDuration.D100Records:
+                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100");
+
+                case IFrameDuration.D1h:
+                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 1h ORDER BY time DESC");
+
+                case IFrameDuration.D12h:
+                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 12h ORDER BY time DESC");
+
+                case IFrameDuration.D24h:
+                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h ORDER BY time DESC");
+
+                case IFrameDuration.D7d:
+                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 7d ORDER BY time DESC");
+
+                case IFrameDuration.D30d:
+                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 30d ORDER BY time DESC");
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(duration));
+            }
+        }
+
+        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType, IFrameDuration duration)
+        {
+            StringBuilder stb = new StringBuilder();
+            string iFrameUrl = null;
+            switch (frameType)
+            {
+                case IFrameType.TableHistory:
+                case IFrameType.ChartHistory:
+                    var query = GetDeviceHistoryTabQuery(data, duration);
+                    iFrameUrl = frameType == IFrameType.TableHistory ?
+                                           BuildTableUri(query, 10) : BuildChartUri(query, string.Empty);
+                    break;
+
+                //case IFrameType.TableStats:
+                //    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(frameType));
+            }
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+
+            return stb.ToString();
+        }
+
+        private const string DeviceUtiltyPageName = "deviceutility";
+        private const string iFrameDurationId = "duration";
+        private const string iFrameTypeId = "iframeType";
+        private const string resultsDivPartId = "resultsDivPartId";
     }
 }

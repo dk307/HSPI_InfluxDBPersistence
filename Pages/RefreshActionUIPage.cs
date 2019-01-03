@@ -2,16 +2,15 @@
 using Hspi.DeviceData;
 using Hspi.Utils;
 using NullGuard;
-using Scheduler;
 using Scheduler.Classes;
 using System;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Text;
 
-namespace Hspi
+namespace Hspi.Pages
 {
-    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageHelper
     {
         public IPlugInAPI.strMultiReturn GetRefreshActionPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
         {

@@ -6,13 +6,13 @@ using System.Text;
 using Hspi.Utils;
 using static System.FormattableString;
 
-namespace Hspi
+namespace Hspi.Pages
 {
     /// <summary>
     /// Helper class to generate configuration page for plugin
     /// </summary>
     /// <seealso cref="Scheduler.PageBuilderAndMenu.clsPageBuilder" />
-    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageHelper
     {
         private string BuildAddNewDeviceImportWebPageBody([AllowNull]ImportDeviceData data)
         {

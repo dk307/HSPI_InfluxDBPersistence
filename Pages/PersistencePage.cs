@@ -8,14 +8,14 @@ using System.Linq;
 using System.Text;
 using static System.FormattableString;
 
-namespace Hspi
+namespace Hspi.Pages
 {
     /// <summary>
     /// Helper class to generate configuration page for plugin
     /// </summary>
     /// <seealso cref="Scheduler.PageBuilderAndMenu.clsPageBuilder" />
     //[NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageHelper
     {
         private string BuildAddNewPersistenceWebPageBody([AllowNull]DevicePersistenceData data)
         {
@@ -367,7 +367,6 @@ namespace Hspi
         private const string MeasurementId = "MeasurementId";
         private const string MinValidValueDivId = "MinValidValueDivId";
         private const string MinValidValueId = "MinValidValueId";
-        private const string RecordId = "RecordId";
         private const string TagsId = "TagsId";
         private const string UseDefaultsId = "UseDefaultsId";
         private const string SqlId = "sqlid";

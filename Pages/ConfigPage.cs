@@ -12,30 +12,28 @@ using System.Web;
 using Hspi.Utils;
 using static System.FormattableString;
 
-namespace Hspi
+namespace Hspi.Pages
 {
     /// <summary>
     /// Helper class to generate configuration page for plugin
     /// </summary>
     /// <seealso cref="Scheduler.PageBuilderAndMenu.clsPageBuilder" />
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal partial class ConfigPage : PageBuilderAndMenu.clsPageBuilder
+    internal partial class ConfigPage : PageHelper
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigPage" /> class.
         /// </summary>
         /// <param name="HS">The hs.</param>
         /// <param name="pluginConfig">The plugin configuration.</param>
-        public ConfigPage(IHSApplication HS, PluginConfig pluginConfig) : base(pageName)
+        public ConfigPage(IHSApplication HS, PluginConfig pluginConfig) : base(HS, pluginConfig, Name)
         {
-            this.HS = HS;
-            this.pluginConfig = pluginConfig;
         }
 
         /// <summary>
         /// Gets the name of the web page.
         /// </summary>
-        public static string Name => pageName;
+        public static string Name => Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
 
         public static string BuildUri(string path, NameValueCollection query)
         {
@@ -52,15 +50,6 @@ namespace Hspi
                 Query = collection.ToString()
             };
             return builder.Uri.PathAndQuery;
-        }
-
-        public static string HtmlEncode<T>([AllowNull]T value)
-        {
-            if (value == null)
-            {
-                return string.Empty;
-            }
-            return HttpUtility.HtmlEncode(value);
         }
 
         /// <summary>
@@ -206,74 +195,6 @@ namespace Hspi
             return base.postBackProc(Name, data, user, userRights);
         }
 
-        protected static string HtmlTextBox(string name, [AllowNull]string defaultText, int size = 25, string type = "text", bool @readonly = false)
-        {
-            return Invariant($"<input type=\'{type}\' id=\'{NameToIdWithPrefix(name)}\' size=\'{size}\' name=\'{name}\' value=\'{HtmlEncode(defaultText)}\' {(@readonly ? "readonly" : string.Empty)}>");
-        }
-
-        protected static string TextArea(string name, [AllowNull]string defaultText, int rows = 6, int cols = 120, bool @readonly = false)
-        {
-            return Invariant($"<textarea form_id=\'{NameToIdWithPrefix(name)}\' rows=\'{rows}\' cols=\'{cols}\' name=\'{name}\'  {(@readonly ? "readonly" : string.Empty)}>{HtmlEncode(defaultText)}</textarea>");
-        }
-
-        protected string FormButton(string name, string label, string toolTip)
-        {
-            var button = new clsJQuery.jqButton(name, label, PageName, true)
-            {
-                id = NameToIdWithPrefix(name),
-                toolTip = toolTip,
-            };
-            button.toolTip = toolTip;
-            button.enabled = true;
-
-            return button.Build();
-        }
-
-        protected string FormCheckBox(string name, string label, bool @checked, bool autoPostBack = false)
-        {
-            this.UsesjqCheckBox = true;
-            var cb = new clsJQuery.jqCheckBox(name, label, PageName, true, true)
-            {
-                id = NameToIdWithPrefix(name),
-                @checked = @checked,
-                autoPostBack = autoPostBack,
-            };
-            return cb.Build();
-        }
-
-        protected string FormDropDown(string name, NameValueCollection options, string selected,
-                                      int width, string tooltip, bool autoPostBack = true)
-        {
-            return FormDropDown(name, options, selected,
-                                      width, tooltip, autoPostBack, PageName);
-        }
-
-        protected string FormDropDown(string name, NameValueCollection options, string selected,
-                                      int width, string tooltip, bool autoPostBack, string pageName)
-        {
-            var dropdown = new clsJQuery.jqDropList(name, pageName, false)
-            {
-                selectedItemIndex = -1,
-                id = NameToIdWithPrefix(name),
-                autoPostBack = autoPostBack,
-                toolTip = tooltip,
-                style = Invariant($"width: {width}px;"),
-                enabled = true,
-                submitForm = autoPostBack,
-            };
-
-            if (options != null)
-            {
-                for (var i = 0; i < options.Count; i++)
-                {
-                    var sel = options.GetKey(i) == selected;
-                    dropdown.AddItem(options.Get(i), options.GetKey(i), sel);
-                }
-            }
-
-            return dropdown.Build();
-        }
-
         protected string FormDropDownChosen(string name, IDictionary<int, string> options, int selected)
         {
             string id = NameToIdWithPrefix(name);
@@ -293,43 +214,12 @@ namespace Hspi
             return stb.ToString();
         }
 
-        protected string FormPageButton(string name, string label)
-        {
-            var b = new clsJQuery.jqButton(name, label, PageName, true)
-            {
-                id = NameToIdWithPrefix(name),
-            };
-
-            return b.Build();
-        }
-
-        protected string PageTypeButton(string name, string label, string type, string id = null)
-        {
-            var b = new clsJQuery.jqButton(name, label, PageName, false)
-            {
-                id = NameToIdWithPrefix(name),
-                url = Invariant($"/{pageUrl}?{PageTypeId}={HttpUtility.UrlEncode(type)}&{RecordId}={HttpUtility.UrlEncode(id ?? string.Empty)}"),
-            };
-
-            return b.Build();
-        }
-
-        private static string NameToId(string name)
-        {
-            return name.Replace(' ', '_');
-        }
-
-        private static string NameToIdWithPrefix(string name)
-        {
-            return Invariant($"{ IdPrefix}{NameToId(name)}");
-        }
-
         private string BuildDBSettingTab()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
 
             StringBuilder stb = new StringBuilder();
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormStart("ftmSettings", "IdSettings", "Post"));
+            stb.Append(FormStart("ftmSettings", "IdSettings", "Post"));
 
             stb.Append(@"<br>");
             stb.Append(@"<div>");
@@ -346,9 +236,9 @@ namespace Hspi
             stb.Append(Invariant($"<tr><td colspan=2><div id='{ErrorDivId}' style='color:Red'></div></td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2>{FormButton(SettingSaveButtonName, "Save", "Save Settings")}</td></tr>"));
             stb.Append("<tr height='5'><td colspan=2></td></tr>");
-            stb.Append(@" </table>");
-            stb.Append(@"</div>");
-            stb.Append(PageBuilderAndMenu.clsPageBuilder.FormEnd());
+            stb.Append("</table>");
+            stb.Append("</div>");
+            stb.Append(FormEnd());
 
             return stb.ToString();
         }
@@ -368,7 +258,7 @@ namespace Hspi
             StringBuilder stb = new StringBuilder();
             IncludeDataTableFiles(stb);
 
-            var tabs = new clsJQuery.jqTabs("tab1id", PageName);
+            var tabs = new clsJQuery.jqTabs("tab1id", DeviceUtiltyPageName);
             var tab1 = new clsJQuery.Tab();
             tab1.tabTitle = "DB Settings";
             tab1.tabDIVID = Invariant($"tabs{i++}");
@@ -483,16 +373,12 @@ namespace Hspi
         private const string DebugLoggingId = "DebugLoggingId";
         private const string ErrorDivId = "message_id";
         private const string IdPrefix = "id_";
-        private const string PageTypeId = "type";
         private const string PasswordKey = "PasswordId";
         private const string RetentionKey = "RetentionId";
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TabId = "tab";
         private const string UserKey = "UserId";
-        private static readonly string pageName = Invariant($"{PlugInData.PlugInName} Configuration").Replace(' ', '_');
-        private static readonly string pageUrl = HttpUtility.UrlEncode(pageName);
-        private readonly IHSApplication HS;
-        private readonly PluginConfig pluginConfig;
+        private static readonly string pageUrl = HttpUtility.UrlEncode(Name);
     }
 }
