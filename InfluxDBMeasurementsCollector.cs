@@ -1,9 +1,11 @@
 ﻿using Hspi.Exceptions;
+using Hspi.Utils;
 using InfluxData.Net.Common.Constants;
 using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
 using Nito.AsyncEx;
+using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,10 +13,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Nito.AsyncEx.Synchronous;
-using NullGuard;
 using static System.FormattableString;
-using Hspi.Utils;
 
 namespace Hspi
 {
@@ -141,10 +140,11 @@ namespace Hspi
 
         private async Task SendPoints()
         {
-            while (!tokenSource.Token.IsCancellationRequested)
+            CancellationToken token = tokenSource.Token;
+            while (!token.IsCancellationRequested)
             {
                 List<Point> points = new List<Point>();
-                points.Add(await queue.DequeueAsync(tokenSource.Token).ConfigureAwait(false));
+                points.Add(await queue.DequeueAsync(token).ConfigureAwait(false));
                 try
                 {
                     await influxDBClient.Client.WriteAsync(points, loginInformation.DB, loginInformation.Retention, precision: TimeUnit.Seconds).ConfigureAwait(false);
@@ -158,9 +158,9 @@ namespace Hspi
                     {
                         foreach (var point in points)
                         {
-                            await queue.EnqueueAsync(point, tokenSource.Token).ConfigureAwait(false);
+                            await queue.EnqueueAsync(point, token).ConfigureAwait(false);
                         }
-                        await Task.Delay(30000, tokenSource.Token).ConfigureAwait(false);
+                        await Task.Delay(30000, token).ConfigureAwait(false);
                     }
                 }
             }
@@ -182,10 +182,8 @@ namespace Hspi
         public void Dispose()
         {
             tokenSource.Cancel();
-            sendPointsTask.WaitWithoutException();
         }
 
-        private Task sendPointsTask;
         private readonly static AsyncProducerConsumerQueue<Point> queue = new AsyncProducerConsumerQueue<Point>();
         private readonly InfluxDbClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;

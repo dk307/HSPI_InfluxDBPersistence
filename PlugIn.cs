@@ -1,7 +1,7 @@
 ﻿using HomeSeerAPI;
 using Hspi.DeviceData;
 using Hspi.Utils;
-using Nito.AsyncEx.Synchronous;
+using Nito.AsyncEx;
 using NullGuard;
 using Scheduler.Classes;
 using System;
@@ -23,17 +23,6 @@ namespace Hspi
         public PlugIn()
             : base(PlugInData.PlugInName, supportConfigDevice: true, supportConfigDeviceAll: true)
         {
-        }
-
-        private InfluxDBMeasurementsCollector InfluxDBMeasurementsCollector
-        {
-            get
-            {
-                lock (influxDBMeasurementsCollectorLock)
-                {
-                    return influxDBMeasurementsCollector;
-                }
-            }
         }
 
         public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
@@ -218,6 +207,14 @@ namespace Hspi
             }
         }
 
+        private async Task<InfluxDBMeasurementsCollector> GetInfluxDBMeasurementsCollector()
+        {
+            using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync().ConfigureAwait(false))
+            {
+                return influxDBMeasurementsCollector;
+            }
+        }
+
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
@@ -231,7 +228,7 @@ namespace Hspi
 
         private async Task RecordDeviceValue(int deviceRefId)
         {
-            var collector = InfluxDBMeasurementsCollector;
+            var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if ((collector != null) && collector.IsTracked(deviceRefId))
             {
                 DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
@@ -241,7 +238,7 @@ namespace Hspi
 
         private async Task RecordTrackedDevices()
         {
-            var collector = InfluxDBMeasurementsCollector;
+            var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if (collector != null)
             {
                 var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
@@ -279,29 +276,26 @@ namespace Hspi
 
         private void RestartProcessing()
         {
-            startCollectorTask = TaskHelper.StartAsync(StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
-            startImportTask = TaskHelper.StartAsync(StartDeviceImport, ShutdownCancellationToken);
+            TaskHelper.StartAsync(StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
+            TaskHelper.StartAsync(StartDeviceImport, ShutdownCancellationToken);
         }
 
         private void Shutdown()
         {
-            startCollectorTask.WaitAndUnwrapException();
-            startImportTask.WaitAndUnwrapException();
-
-            lock (influxDBMeasurementsCollectorLock)
+            using (var sync = influxDBMeasurementsCollectorLock.Enter())
             {
                 influxDBMeasurementsCollector?.Dispose();
             }
 
-            lock (deviceRootDeviceManagerLock)
+            using (var sync = deviceRootDeviceManagerLock.Enter())
             {
                 deviceRootDeviceManager?.Dispose();
             }
         }
 
-        private void StartDeviceImport()
+        private async Task StartDeviceImport()
         {
-            lock (deviceRootDeviceManagerLock)
+            using (var sync = await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
             {
                 deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceRootDeviceManager(HS,
@@ -311,9 +305,9 @@ namespace Hspi
             }
         }
 
-        private void StartInfluxDBMeasurementsCollector()
+        private async Task StartInfluxDBMeasurementsCollector()
         {
-            lock (influxDBMeasurementsCollectorLock)
+            using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
             {
                 bool recreate = (influxDBMeasurementsCollector == null) ||
                                 (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
@@ -331,9 +325,8 @@ namespace Hspi
                 {
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
-
-                RecordTrackedDevices().WaitAndUnwrapException();
             }
+            await RecordTrackedDevices().ConfigureAwait(false);
         }
 
         #region "Action Override"
@@ -521,7 +514,7 @@ namespace Hspi
         private bool ImportDeviceFromDB(int deviceRefId)
         {
             DeviceRootDeviceManager deviceRootDeviceManagerCopy;
-            lock (deviceRootDeviceManagerLock)
+            using (var sync = deviceRootDeviceManagerLock.Enter())
             {
                 deviceRootDeviceManagerCopy = deviceRootDeviceManager;
             }
@@ -532,14 +525,12 @@ namespace Hspi
         #endregion "Action Override"
 
         private const int ActionRefreshTANumber = 1;
-        private readonly object deviceRootDeviceManagerLock = new object();
-        private readonly object influxDBMeasurementsCollectorLock = new object();
+        private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
+        private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
         private ConfigPage configPage;
         private DeviceRootDeviceManager deviceRootDeviceManager;
         private bool disposedValue = false;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;
-        private Task startCollectorTask;
-        private Task startImportTask;
     }
 }

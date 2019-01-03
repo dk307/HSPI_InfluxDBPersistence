@@ -2,7 +2,7 @@
 
 namespace Hspi
 {
-    internal class ImportDeviceData
+    internal sealed class ImportDeviceData
     {
         public ImportDeviceData(string id, string name, string sql, in TimeSpan interval, string unit)
         {

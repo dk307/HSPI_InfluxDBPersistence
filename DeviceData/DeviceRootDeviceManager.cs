@@ -291,11 +291,6 @@ namespace Hspi.DeviceData
             if (!disposedValue)
             {
                 combinedToken.Cancel();
-                using (var sync = collectionTasksLock.Lock())
-                {
-                    Task.WhenAll(collectionTasks).WaitWithoutException();
-                }
-                combinedToken.Dispose();
                 disposedValue = true;
             }
         }
