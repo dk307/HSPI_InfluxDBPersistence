@@ -98,28 +98,22 @@ namespace Hspi.Pages
 
                     case DeviceDataTablePageType:
                         {
-                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("tablepage", string.Empty));
-                            stb.Append(BuildTablePage(parts));
-                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
-                            AddBody(stb.ToString());
+                            string pageDivId = "tablepage";
+                            CreatePageWithAjaxLoad(parts, stb, pageDivId, BuildTablePage);
                         }
                         break;
 
                     case DeviceChartTablePageType:
                         {
-                            stb.Append(DivStart("chartpage", string.Empty));
-                            stb.Append(BuildChartsPage(parts));
-                            stb.Append(DivEnd());
-                            AddBody(stb.ToString());
+                            string pageDivId = "chartPage";
+                            CreatePageWithAjaxLoad(parts, stb, pageDivId, BuildChartsPage);
                         }
                         break;
 
                     case DeviceStatsPageType:
                         {
-                            stb.Append(DivStart("statspage", string.Empty));
-                            stb.Append(BuildStatsPage(parts));
-                            stb.Append(DivEnd());
-                            AddBody(stb.ToString());
+                            string pageDivId = "statspage";
+                            CreatePageWithAjaxLoad(parts, stb, pageDivId, BuildStatsPage);
                         }
                         break;
 
@@ -161,6 +155,42 @@ namespace Hspi.Pages
             {
                 return "error";
             }
+        }
+
+        private void CreatePageWithAjaxLoad(NameValueCollection parts, StringBuilder stb,
+                                            string pageDivId, Func<NameValueCollection, string> func)
+        {
+            stb.Append(DivStart(pageDivId, string.Empty));
+
+            if (!string.IsNullOrWhiteSpace(parts[RealLoadId]))
+            {
+                stb.Append(func(parts));
+            }
+            else
+            {
+                stb.Append("<div id=\"loading\">Please wait ...</div>");
+
+                stb.Append(@"<script>
+                                           var $loading = $('#loading').hide();
+                                           $(document)
+                                             .ajaxStart(function () {$loading.show();})
+                                             .ajaxStop(function () {$loading.hide();});");
+                stb.AppendLine("$( document ).ready(function() {");
+
+                var newParts = new NameValueCollection();
+                foreach (var key in parts.AllKeys)
+                {
+                    newParts.Add(key, HttpUtility.UrlDecode(parts[key]));
+                }
+
+                newParts.Add(RealLoadId, "1");
+                stb.AppendFormat("$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
+                stb.AppendLine("});");
+                stb.AppendLine("</script>");
+            }
+            stb.Append(DivEnd());
+
+            AddBody(stb.ToString());
         }
 
         /// <summary>
@@ -387,6 +417,7 @@ namespace Hspi.Pages
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TabId = "tab";
+        private const string RealLoadId = "realload";
         private const string UserKey = "UserId";
         private static readonly string pageUrl = HttpUtility.UrlEncode(Name);
     }
