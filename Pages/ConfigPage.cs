@@ -98,7 +98,7 @@ namespace Hspi.Pages
 
                     case DeviceDataTablePageType:
                         {
-                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("table", string.Empty));
+                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("tablepage", string.Empty));
                             stb.Append(BuildTablePage(parts));
                             stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
                             AddBody(stb.ToString());
@@ -107,9 +107,18 @@ namespace Hspi.Pages
 
                     case DeviceChartTablePageType:
                         {
-                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivStart("chart", string.Empty));
+                            stb.Append(DivStart("chartpage", string.Empty));
                             stb.Append(BuildChartsPage(parts));
-                            stb.Append(PageBuilderAndMenu.clsPageBuilder.DivEnd());
+                            stb.Append(DivEnd());
+                            AddBody(stb.ToString());
+                        }
+                        break;
+
+                    case DeviceStatsPageType:
+                        {
+                            stb.Append(DivStart("statspage", string.Empty));
+                            stb.Append(BuildStatsPage(parts));
+                            stb.Append(DivEnd());
                             AddBody(stb.ToString());
                         }
                         break;

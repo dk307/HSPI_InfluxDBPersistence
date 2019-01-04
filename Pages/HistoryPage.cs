@@ -60,6 +60,29 @@ namespace Hspi.Pages
             return fields;
         }
 
+        private static string GetSerieValue(CultureInfo culture, object column)
+        {
+            switch (column)
+            {
+                case double doubleValue:
+                    return RoundDoubleValue(culture, doubleValue);
+
+                case float floatValue:
+                    return RoundDoubleValue(culture, floatValue);
+
+                case null:
+                    return null;
+
+                default:
+                    return Convert.ToString(column, culture);
+            }
+        }
+
+        private static string RoundDoubleValue(CultureInfo culture, double floatValue)
+        {
+            return Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
+        }
+
         private string BuildChartsPage(NameValueCollection parts)
         {
             StringBuilder stb = new StringBuilder();
@@ -212,6 +235,14 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
+        private void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
+        {
+            string iFrameUrl = BuildChartUri(finalQuery, title);
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+        }
+
         private void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 10)
         {
             string iFrameUrl = BuildTableUri(finalQuery, tableSize);
@@ -220,12 +251,45 @@ namespace Hspi.Pages
             stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
         }
 
-        private void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
+        private string BuildStatsPage(NameValueCollection parts)
         {
-            string iFrameUrl = BuildChartUri(finalQuery, title);
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
-            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+            StringBuilder stb = new StringBuilder();
+            IncludeResourceScript(stb, "iframeResizer.contentWindow.min.js");
+
+            var culture = CultureInfo.CurrentUICulture;
+
+            var query = parts[QueryPartId] ?? string.Empty;
+            try
+            {
+                var queryData = GetData(HttpUtility.UrlDecode(query)).ToArray();
+                if (queryData.Length > 0)
+                {
+                    //Display the first row/column only
+                    stb.Append("<table id=\"results\" class=\"cell-border compact\" style=\"width:100%\">");
+
+                    var count = queryData[0].Columns.Count;
+                    for (var i = 1; i < count; i++)
+                    {
+                        stb.Append(@"<tr class='tablecell'>");
+                        stb.Append(@"<td>");
+                        stb.Append(HtmlEncode(queryData[0].Columns[i]));
+                        stb.Append(@"</td>");
+
+                        stb.Append(@"<td>");
+                        stb.Append(HtmlEncode(GetSerieValue(culture, queryData[0].Values[0][i])));
+                        stb.Append(@"</td>");
+
+                        stb.Append(@"</tr>");
+                    }
+                    stb.AppendLine(@"</table>");
+                }
+
+                return stb.ToString();
+            }
+            catch (Exception ex)
+            {
+                return Invariant($"<br><div style='color:Red'>{ex.GetFullMessage()}</div><br>");
+            }
         }
 
         private void BuildTable(string query, StringBuilder stb, int pageLength)
@@ -266,23 +330,7 @@ namespace Hspi.Pages
                             }
                             else
                             {
-                                switch (column)
-                                {
-                                    case double doubleValue:
-                                        value = Math.Round(doubleValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
-                                        break;
-
-                                    case float floatValue:
-                                        value = Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
-                                        break;
-
-                                    case null:
-                                        break;
-
-                                    default:
-                                        value = Convert.ToString(column, culture);
-                                        break;
-                                }
+                                value = GetSerieValue(culture, column);
                             }
 
                             if (sortValue != null)

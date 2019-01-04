@@ -3,6 +3,7 @@ using Hspi.DeviceData;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
@@ -14,11 +15,11 @@ namespace Hspi.Pages
     {
         public enum IFrameDuration
         {
-            [Description("100 Records")]
-            D100Records,
-
             [Description("1 hour")]
             D1h,
+
+            [Description("6 hour")]
+            D6h,
 
             [Description("12 hours")]
             D12h,
@@ -42,8 +43,8 @@ namespace Hspi.Pages
             [Description("Charts")]
             ChartHistory,
 
-            //[Description("Stats")]
-            //TableStats,
+            [Description("Max/Min Stats")]
+            MaxMinStats,
         }
 
         public Enums.ConfigDevicePostReturn GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
@@ -75,6 +76,9 @@ namespace Hspi.Pages
 
         public string GetDeviceHistoryTab(int refId)
         {
+            const IFrameType DefaultFrameType = IFrameType.TableHistory;
+            const IFrameDuration DefaultDuration = IFrameDuration.D12h;
+
             var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
             if (data != null)
@@ -93,14 +97,15 @@ namespace Hspi.Pages
                 if (!string.IsNullOrWhiteSpace(data.Field))
                 {
                     AddEnumValue(iframeType, IFrameType.ChartHistory);
-                    //AddEnumValue(iframeType, IFrameType.TableStats);
+                    AddEnumValue(iframeType, IFrameType.MaxMinStats);
                 }
 
-                stb.Append(FormDropDown(IFrameTypeId, iframeType, iframeType[0], 150, string.Empty, true, DeviceUtiltyPageName));
+                stb.Append(FormDropDown(IFrameTypeId, iframeType, DefaultFrameType.ToString(),
+                                        150, string.Empty, true, DeviceUtiltyPageName));
 
                 stb.Append("&nbsp;Duration:");
                 NameValueCollection duration = CreateNameValueCreation<IFrameDuration>();
-                stb.Append(FormDropDown(IFrameDurationId, duration, duration[0],
+                stb.Append(FormDropDown(IFrameDurationId, duration, DefaultDuration.ToString(),
                                         100, string.Empty, true, DeviceUtiltyPageName));
 
                 stb.Append("</td></tr>");
@@ -109,7 +114,7 @@ namespace Hspi.Pages
                 //stb.Append(Invariant($"<tr><td class='tableheader'>History</td></tr>"));
                 stb.Append("<tr><td class='tablecell'>");
                 stb.Append(DivStart(resultsDivPartId, string.Empty));
-                stb.Append(GetQueryResultFrame(data, IFrameType.TableHistory, IFrameDuration.D100Records));
+                stb.Append(GetQueryResultFrame(data, DefaultFrameType, DefaultDuration));
                 stb.Append(DivEnd());
 
                 stb.Append("</td></tr>");
@@ -178,35 +183,112 @@ namespace Hspi.Pages
             });
         }
 
+        private static string BuildStatsUri(string finalQuery)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceStatsPageType},
+                { QueryPartId, finalQuery },
+            });
+        }
+
         private string GetDeviceHistoryTabQuery(DevicePersistenceData data, IFrameDuration duration)
         {
             HSHelper hSHelper = new HSHelper(HS);
             string deviceName = hSHelper.GetName(data.DeviceRefId);
             var fields = string.Join(",", GetFields(data));
 
+            StringBuilder stb = new StringBuilder();
+            stb.Append("SELECT ");
+            stb.Append(fields);
+            stb.Append("AS \"");
+            stb.Append(deviceName);
+            stb.Append("\" from \"");
+            stb.Append(data.Measurement);
+            stb.Append("\" WHERE ");
+            stb.Append(PluginConfig.DeviceRefIdTag);
+            stb.Append("='");
+            stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
+            stb.Append("'");
+
             switch (duration)
             {
-                case IFrameDuration.D100Records:
-                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100");
-
                 case IFrameDuration.D1h:
-                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 1h ORDER BY time DESC");
+                    stb.Append(" AND time > now() - 1h ORDER BY time DESC");
+                    break;
+
+                case IFrameDuration.D6h:
+                    stb.Append(" AND time > now() - 6h ORDER BY time DESC");
+                    break;
 
                 case IFrameDuration.D12h:
-                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 12h ORDER BY time DESC");
+                    stb.Append(" AND time > now() - 12h ORDER BY time DESC");
+                    break;
 
                 case IFrameDuration.D24h:
-                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h ORDER BY time DESC");
+                    stb.Append(" AND time > now() - 24h ORDER BY time DESC");
+                    break;
 
                 case IFrameDuration.D7d:
-                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 7d ORDER BY time DESC");
+                    stb.Append(" AND time > now() - 7d ORDER BY time DESC");
+                    break;
 
                 case IFrameDuration.D30d:
-                    return Invariant($"SELECT {fields} AS \"{ deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 30d ORDER BY time DESC");
+                    stb.Append(" AND time > now() - 30d ORDER BY time DESC");
+                    break;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(duration));
             }
+
+            return stb.ToString();
+        }
+
+        private string GetMaxMinStatsQuery(DevicePersistenceData data, IFrameDuration duration)
+        {
+            StringBuilder stb = new StringBuilder();
+            stb.Append("SELECT");
+            stb.AppendFormat(CultureInfo.InvariantCulture, " MAX(\"{0}\") as Max", data.Field);
+            stb.AppendFormat(CultureInfo.InvariantCulture, ",MIN(\"{0}\") as Min", data.Field);
+            stb.Append(" from \"");
+            stb.Append(data.Measurement);
+            stb.Append("\" WHERE ");
+            stb.Append(PluginConfig.DeviceRefIdTag);
+            stb.Append("='");
+            stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
+            stb.Append("'");
+
+            switch (duration)
+            {
+                case IFrameDuration.D1h:
+                    stb.Append(" AND time > now() - 1h ORDER BY time DESC");
+                    break;
+
+                case IFrameDuration.D6h:
+                    stb.Append(" AND time > now() - 6h ORDER BY time DESC");
+                    break;
+
+                case IFrameDuration.D12h:
+                    stb.Append(" AND time > now() - 12h ORDER BY time DESC");
+                    break;
+
+                case IFrameDuration.D24h:
+                    stb.Append(" AND time > now() - 24h ORDER BY time DESC");
+                    break;
+
+                case IFrameDuration.D7d:
+                    stb.Append(" AND time > now() - 7d ORDER BY time DESC");
+                    break;
+
+                case IFrameDuration.D30d:
+                    stb.Append(" AND time > now() - 30d ORDER BY time DESC");
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(duration));
+            }
+
+            return stb.ToString();
         }
 
         private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType, IFrameDuration duration)
@@ -218,12 +300,14 @@ namespace Hspi.Pages
                 case IFrameType.TableHistory:
                 case IFrameType.ChartHistory:
                     var query = GetDeviceHistoryTabQuery(data, duration);
-                    iFrameUrl = frameType == IFrameType.TableHistory ?
+                    iFrameUrl = (frameType == IFrameType.TableHistory) ?
                                            BuildTableUri(query, 10) : BuildChartUri(query, string.Empty);
                     break;
 
-                //case IFrameType.TableStats:
-                //    break;
+                case IFrameType.MaxMinStats:
+                    var statsQuery = GetMaxMinStatsQuery(data, duration);
+                    iFrameUrl = BuildStatsUri(statsQuery);
+                    break;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(frameType));
