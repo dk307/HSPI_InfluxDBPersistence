@@ -92,6 +92,7 @@
     <Compile Include="DeviceData\DeviceIdentifier.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="ImportDeviceData.cs" />
+    <Compile Include="Pages\InfluxDbQueryBuilder.cs" />
     <Compile Include="Pages\PageHelper.cs" />
     <Compile Include="Utils\EnumHelper.cs" />
     <Compile Include="Utils\InfluxDBHelper.cs" />

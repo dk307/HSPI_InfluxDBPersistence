@@ -44,22 +44,6 @@ namespace Hspi.Pages
             }
         }
 
-        private static List<string> GetFields(DevicePersistenceData data)
-        {
-            List<string> fields = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(data.Field))
-            {
-                fields.Add(Invariant($"\"{data.Field}\""));
-            }
-            else if (!string.IsNullOrWhiteSpace(data.FieldString))
-            {
-                fields.Add(Invariant($"\"{data.FieldString}\""));
-            }
-
-            return fields;
-        }
-
         private static string GetSerieValue(CultureInfo culture, object column)
         {
             switch (column)
@@ -272,7 +256,7 @@ namespace Hspi.Pages
                     {
                         stb.Append(@"<tr class='tablecell'>");
                         stb.Append(@"<td>");
-                        stb.Append(HtmlEncode(queryData[0].Columns[i]));
+                        stb.Append(HtmlEncode(FirstCharToUpper(queryData[0].Columns[i])));
                         stb.Append(@"</td>");
 
                         stb.Append(@"<td>");
@@ -392,7 +376,7 @@ namespace Hspi.Pages
 
         private IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
         {
-            List<string> fields = GetFields(data);
+            List<string> fields = InfluxDbQueryBuilder.GetFields(data);
 
             var queries = new Dictionary<string, FormattableString>()
             {

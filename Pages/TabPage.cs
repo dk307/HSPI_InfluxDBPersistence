@@ -13,27 +13,6 @@ namespace Hspi.Pages
 {
     internal partial class ConfigPage : PageHelper
     {
-        public enum IFrameDuration
-        {
-            [Description("1 hour")]
-            D1h,
-
-            [Description("6 hour")]
-            D6h,
-
-            [Description("12 hours")]
-            D12h,
-
-            [Description("24 hours")]
-            D24h,
-
-            [Description("7 days")]
-            D7d,
-
-            [Description("30 days")]
-            D30d
-        };
-
         [Flags]
         public enum IFrameType
         {
@@ -43,8 +22,8 @@ namespace Hspi.Pages
             [Description("Charts")]
             ChartHistory,
 
-            [Description("Max/Min Stats")]
-            MaxMinStats,
+            [Description("Average Statistics")]
+            AverageStats,
         }
 
         public Enums.ConfigDevicePostReturn GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
@@ -97,7 +76,7 @@ namespace Hspi.Pages
                 if (!string.IsNullOrWhiteSpace(data.Field))
                 {
                     AddEnumValue(iframeType, IFrameType.ChartHistory);
-                    AddEnumValue(iframeType, IFrameType.MaxMinStats);
+                    AddEnumValue(iframeType, IFrameType.AverageStats);
                 }
 
                 stb.Append(FormDropDown(IFrameTypeId, iframeType, DefaultFrameType.ToString(),
@@ -173,6 +152,15 @@ namespace Hspi.Pages
             });
         }
 
+        private static string BuildStatsUri(string finalQuery)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceStatsPageType},
+                { QueryPartId, finalQuery },
+            });
+        }
+
         private static string BuildTableUri(string finalQuery, int tableSize)
         {
             return BuildUri(pageUrl, new NameValueCollection()
@@ -183,114 +171,6 @@ namespace Hspi.Pages
             });
         }
 
-        private static string BuildStatsUri(string finalQuery)
-        {
-            return BuildUri(pageUrl, new NameValueCollection()
-            {
-                { PageTypeId, DeviceStatsPageType},
-                { QueryPartId, finalQuery },
-            });
-        }
-
-        private string GetDeviceHistoryTabQuery(DevicePersistenceData data, IFrameDuration duration)
-        {
-            HSHelper hSHelper = new HSHelper(HS);
-            string deviceName = hSHelper.GetName(data.DeviceRefId);
-            var fields = string.Join(",", GetFields(data));
-
-            StringBuilder stb = new StringBuilder();
-            stb.Append("SELECT ");
-            stb.Append(fields);
-            stb.Append("AS \"");
-            stb.Append(deviceName);
-            stb.Append("\" from \"");
-            stb.Append(data.Measurement);
-            stb.Append("\" WHERE ");
-            stb.Append(PluginConfig.DeviceRefIdTag);
-            stb.Append("='");
-            stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
-            stb.Append("'");
-
-            switch (duration)
-            {
-                case IFrameDuration.D1h:
-                    stb.Append(" AND time > now() - 1h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D6h:
-                    stb.Append(" AND time > now() - 6h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D12h:
-                    stb.Append(" AND time > now() - 12h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D24h:
-                    stb.Append(" AND time > now() - 24h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D7d:
-                    stb.Append(" AND time > now() - 7d ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D30d:
-                    stb.Append(" AND time > now() - 30d ORDER BY time DESC");
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(duration));
-            }
-
-            return stb.ToString();
-        }
-
-        private string GetMaxMinStatsQuery(DevicePersistenceData data, IFrameDuration duration)
-        {
-            StringBuilder stb = new StringBuilder();
-            stb.Append("SELECT");
-            stb.AppendFormat(CultureInfo.InvariantCulture, " MAX(\"{0}\") as Max", data.Field);
-            stb.AppendFormat(CultureInfo.InvariantCulture, ",MIN(\"{0}\") as Min", data.Field);
-            stb.Append(" from \"");
-            stb.Append(data.Measurement);
-            stb.Append("\" WHERE ");
-            stb.Append(PluginConfig.DeviceRefIdTag);
-            stb.Append("='");
-            stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
-            stb.Append("'");
-
-            switch (duration)
-            {
-                case IFrameDuration.D1h:
-                    stb.Append(" AND time > now() - 1h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D6h:
-                    stb.Append(" AND time > now() - 6h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D12h:
-                    stb.Append(" AND time > now() - 12h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D24h:
-                    stb.Append(" AND time > now() - 24h ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D7d:
-                    stb.Append(" AND time > now() - 7d ORDER BY time DESC");
-                    break;
-
-                case IFrameDuration.D30d:
-                    stb.Append(" AND time > now() - 30d ORDER BY time DESC");
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(duration));
-            }
-
-            return stb.ToString();
-        }
-
         private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType, IFrameDuration duration)
         {
             StringBuilder stb = new StringBuilder();
@@ -299,13 +179,16 @@ namespace Hspi.Pages
             {
                 case IFrameType.TableHistory:
                 case IFrameType.ChartHistory:
-                    var query = GetDeviceHistoryTabQuery(data, duration);
+                    HSHelper hSHelper = new HSHelper(HS);
+                    string deviceName = hSHelper.GetName(data.DeviceRefId);
+
+                    var query = InfluxDbQueryBuilder.GetDeviceHistoryTabQuery(data, deviceName, duration);
                     iFrameUrl = (frameType == IFrameType.TableHistory) ?
                                            BuildTableUri(query, 10) : BuildChartUri(query, string.Empty);
                     break;
 
-                case IFrameType.MaxMinStats:
-                    var statsQuery = GetMaxMinStatsQuery(data, duration);
+                case IFrameType.AverageStats:
+                    var statsQuery = InfluxDbQueryBuilder.GetMaxMinStatsQuery(data, duration, pluginConfig.DBLoginInformation).Result;
                     iFrameUrl = BuildStatsUri(statsQuery);
                     break;
 
@@ -320,9 +203,9 @@ namespace Hspi.Pages
         }
 
         private const string DeviceUtiltyPageName = "deviceutility";
+        private const string DoneButtonId = "DoneButtonId";
         private const string IFrameDurationId = "duration";
         private const string IFrameTypeId = "iframeType";
-        private const string DoneButtonId = "DoneButtonId";
         private const string resultsDivPartId = "resultsDivPartId";
     }
 }
