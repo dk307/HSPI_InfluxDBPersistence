@@ -1,4 +1,6 @@
-﻿using InfluxData.Net.InfluxDb.Models.Responses;
+﻿using Hspi.Utils;
+using InfluxData.Net.InfluxDb.Models.Responses;
+using NullGuard;
 using Scheduler;
 using System;
 using System.Collections.Generic;
@@ -7,7 +9,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
-using Hspi.Utils;
 using static System.FormattableString;
 
 namespace Hspi.Pages
@@ -44,7 +45,7 @@ namespace Hspi.Pages
             }
         }
 
-        private static string GetSerieValue(CultureInfo culture, object column)
+        private static string GetSerieValue(CultureInfo culture, [AllowNull]object column)
         {
             switch (column)
             {
@@ -74,7 +75,7 @@ namespace Hspi.Pages
             var title = parts[TitlePartId] ?? string.Empty;
             try
             {
-                var queryData = GetData(HttpUtility.UrlDecode(query)).ToArray();
+                var queryData = GetData(HttpUtility.UrlDecode(query));
 
                 IncludeResourceCSS(stb, "metricsgraphics.css");
                 IncludeResourceScript(stb, "d3.min.js");
@@ -88,16 +89,16 @@ namespace Hspi.Pages
                 stb.AppendLine(@"function chartData() {");
 
                 List<string> legands = new List<string>();
-                if (queryData.Length > 0)
+                if (queryData != null)
                 {
-                    for (var i = 1; i < queryData[0].Columns.Count; i++)
+                    for (var i = 1; i < queryData.Columns.Count; i++)
                     {
-                        var column = queryData[0].Columns[i];
+                        var column = queryData.Columns[i];
                         legands.Add(Invariant($"'{FirstCharToUpper(column)}'"));
                     }
 
                     List<StringBuilder> dataStrings = new List<StringBuilder>();
-                    foreach (var row in queryData[0].Values)
+                    foreach (var row in queryData.Values)
                     {
                         long jsMilliseconds = 0;
                         for (int i = 0; i < row.Count; i++)
@@ -245,22 +246,22 @@ namespace Hspi.Pages
             var query = parts[QueryPartId] ?? string.Empty;
             try
             {
-                var queryData = GetData(HttpUtility.UrlDecode(query)).ToArray();
-                if (queryData.Length > 0)
+                var queryData = GetData(HttpUtility.UrlDecode(query));
+                if (queryData != null)
                 {
                     //Display the first row/column only
                     stb.Append("<table id=\"results\" class=\"cell-border compact\" style=\"width:100%\">");
 
-                    var count = queryData[0].Columns.Count;
+                    var count = queryData.Columns.Count;
                     for (var i = 1; i < count; i++)
                     {
                         stb.Append(@"<tr class='tablecell'>");
                         stb.Append(@"<td>");
-                        stb.Append(HtmlEncode(FirstCharToUpper(queryData[0].Columns[i])));
+                        stb.Append(HtmlEncode(FirstCharToUpper(queryData.Columns[i])));
                         stb.Append(@"</td>");
 
                         stb.Append(@"<td>");
-                        stb.Append(HtmlEncode(GetSerieValue(culture, queryData[0].Values[0][i])));
+                        stb.Append(HtmlEncode(GetSerieValue(culture, queryData.Values[0][i])));
                         stb.Append(@"</td>");
 
                         stb.Append(@"</tr>");
@@ -281,15 +282,15 @@ namespace Hspi.Pages
             try
             {
                 var culture = CultureInfo.CurrentUICulture;
-                var queryData = GetData(query).ToArray();
+                var queryData = GetData(query);
 
-                if (queryData.Length > 0)
+                if (queryData != null)
                 {
-                    int columns = queryData[0].Columns.Count;
+                    int columns = queryData.Columns.Count;
 
                     stb.Append("<table id=\"results\" class=\"cell-border compact\" style=\"width:100%\">");
                     stb.Append(@"<thead><tr>");
-                    foreach (var column in queryData[0].Columns)
+                    foreach (var column in queryData.Columns)
                     {
                         stb.Append(Invariant($"<th>{ HtmlEncode(FirstCharToUpper(column))}</th>"));
                     }
@@ -297,7 +298,7 @@ namespace Hspi.Pages
                     stb.Append(@"<tbody>");
 
                     DateTimeOffset today = DateTimeOffset.Now.Date;
-                    foreach (var row in queryData[0].Values)
+                    foreach (var row in queryData.Values)
                     {
                         stb.Append(@"<tr>");
                         for (int i = 0; i < row.Count; i++)
@@ -368,7 +369,7 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
-        private IEnumerable<Serie> GetData(string query)
+        private Serie GetData(string query)
         {
             var loginInformation = pluginConfig.DBLoginInformation;
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).Result;
@@ -472,6 +473,7 @@ namespace Hspi.Pages
             this.AddScript(stb.ToString());
         }
 
+        private const string DurationTypeId = "durationtypeid";
         private const string HistoryQueryTypeId = "historyquerytypeid";
         private const string HistoryResultDivId = "historyresultdivid";
         private const string HistoryRunQueryButtonName = "historyrunquery";

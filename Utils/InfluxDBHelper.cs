@@ -12,15 +12,21 @@ namespace Hspi.Utils
 {
     internal static class InfluxDBHelper
     {
-        public static async Task<IEnumerable<Serie>> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
+        public static async Task<Serie> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
         {
             var influxDbClient = new InfluxDbClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password, InfluxDbVersion.v_1_3);
-            return await influxDbClient.Client.QueryAsync(query, loginInformation.DB, TimeUnit.Seconds).ConfigureAwait(false);
+            return (await influxDbClient.Client.QueryAsync(query, loginInformation.DB, TimeUnit.Seconds).ConfigureAwait(false)).FirstOrDefault();
+        }
+
+        public static async Task<IEnumerable<Serie>> ExecuteInfluxDBQuery(IEnumerable<string> queries, InfluxDBLoginInformation loginInformation)
+        {
+            var influxDbClient = new InfluxDbClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password, InfluxDbVersion.v_1_3);
+            return await influxDbClient.Client.QueryAsync(queries, loginInformation.DB, TimeUnit.Seconds).ConfigureAwait(false);
         }
 
         public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
         {
-            var queryData = (await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false)).FirstOrDefault();
+            var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
 
             if (queryData != null)
             {
@@ -39,7 +45,7 @@ namespace Hspi.Utils
 
         public static async Task<DateTimeOffset?> GetTimeValueForQuery(string query, InfluxDBLoginInformation loginInformation)
         {
-            var queryData = (await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false)).FirstOrDefault();
+            var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
             if (queryData != null)
             {
                 if (queryData.Values.Count > 0)

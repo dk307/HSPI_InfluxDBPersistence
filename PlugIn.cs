@@ -309,7 +309,7 @@ namespace Hspi
 
         private async Task StartDeviceImport()
         {
-            using (var sync = await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
+            using (var sync = await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken))
             {
                 deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceRootDeviceManager(HS,
@@ -321,7 +321,7 @@ namespace Hspi
 
         private async Task StartInfluxDBMeasurementsCollector()
         {
-            using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken).ConfigureAwait(false))
+            using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken))
             {
                 bool recreate = (influxDBMeasurementsCollector == null) ||
                                 (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
@@ -340,7 +340,7 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
             }
-            await RecordTrackedDevices().ConfigureAwait(false);
+            await RecordTrackedDevices();   // do not eave thread to avoid leaving thread as it delays startup
         }
 
         #region "Action Override"
