@@ -10,7 +10,7 @@ using static System.FormattableString;
 
 namespace Hspi.Pages
 {
-    public enum IFrameDuration
+    public enum QueryDuration
     {
         [Description("1 hour")]
         D1h,
@@ -43,7 +43,7 @@ namespace Hspi.Pages
     internal static class InfluxDbQueryBuilder
     {
         public static async Task<string> CreateRegularTimeSeries(DevicePersistenceData data,
-                                         IFrameDuration queryDuration,
+                                         QueryDuration queryDuration,
                                          InfluxDBLoginInformation loginInformation,
                                          TimeSpan groupByInterval,
                                          bool fileLinear = false)
@@ -60,7 +60,7 @@ namespace Hspi.Pages
             return Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupByInterval.TotalSeconds}s) fill({fillOption})");
         }
 
-        public static string GetDeviceHistoryTabQuery(DevicePersistenceData data, string deviceName, IFrameDuration duration)
+        public static string GetDeviceHistoryTabQuery(DevicePersistenceData data, string deviceName, QueryDuration duration)
         {
             var fields = string.Join(",", GetFields(data));
 
@@ -97,8 +97,8 @@ namespace Hspi.Pages
             return fields;
         }
 
-        public static async Task<string> GetMaxMinStatsQuery(DevicePersistenceData data,
-                                             IFrameDuration queryDuration,
+        public static async Task<string> GetStatsQuery(DevicePersistenceData data,
+                                             QueryDuration queryDuration,
                                              InfluxDBLoginInformation loginInformation)
         {
             string subquery = await CreateRegularTimeSeries(data, queryDuration,
@@ -121,19 +121,19 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
-        private static string GetInfluxDBDuration(IFrameDuration duration)
+        private static string GetInfluxDBDuration(QueryDuration duration)
         {
             switch (duration)
             {
-                case IFrameDuration.D1h: return "1h";
-                case IFrameDuration.D6h: return "6h";
-                case IFrameDuration.D12h: return "12h";
-                case IFrameDuration.D24h: return "24h";
-                case IFrameDuration.D7d: return "7d";
-                case IFrameDuration.D30d: return "30d";
-                case IFrameDuration.D60d: return "60d";
-                case IFrameDuration.D180d: return "180d";
-                case IFrameDuration.D365d: return "365d";
+                case QueryDuration.D1h: return "1h";
+                case QueryDuration.D6h: return "6h";
+                case QueryDuration.D12h: return "12h";
+                case QueryDuration.D24h: return "24h";
+                case QueryDuration.D7d: return "7d";
+                case QueryDuration.D30d: return "30d";
+                case QueryDuration.D60d: return "60d";
+                case QueryDuration.D180d: return "180d";
+                case QueryDuration.D365d: return "365d";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(duration));
             }

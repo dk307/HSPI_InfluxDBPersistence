@@ -44,7 +44,7 @@ namespace Hspi.Pages
                 else
                 {
                     if (Enum.TryParse(parts[IFrameTypeId], true, out IFrameType frameType) &&
-                        Enum.TryParse(parts[IFrameDurationId], true, out IFrameDuration duration))
+                        Enum.TryParse(parts[IFrameDurationId], true, out QueryDuration duration))
                     {
                         callback.ConfigDivToUpdateAdd(resultsDivPartId, GetQueryResultFrame(data, frameType, duration));
                     }
@@ -56,7 +56,7 @@ namespace Hspi.Pages
         public string GetDeviceHistoryTab(int refId)
         {
             const IFrameType DefaultFrameType = IFrameType.TableHistory;
-            const IFrameDuration DefaultDuration = IFrameDuration.D12h;
+            const QueryDuration DefaultDuration = QueryDuration.D12h;
 
             var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
@@ -83,7 +83,7 @@ namespace Hspi.Pages
                                         150, string.Empty, true, DeviceUtiltyPageName));
 
                 stb.Append("&nbsp;Duration:");
-                NameValueCollection duration = CreateNameValueCreation<IFrameDuration>();
+                NameValueCollection duration = CreateNameValueCreation<QueryDuration>();
                 stb.Append(FormDropDown(IFrameDurationId, duration, DefaultDuration.ToString(),
                                         100, string.Empty, true, DeviceUtiltyPageName));
 
@@ -171,7 +171,7 @@ namespace Hspi.Pages
             });
         }
 
-        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType, IFrameDuration duration)
+        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType, QueryDuration duration)
         {
             StringBuilder stb = new StringBuilder();
             string iFrameUrl = null;
@@ -188,7 +188,7 @@ namespace Hspi.Pages
                     break;
 
                 case IFrameType.AverageStats:
-                    var statsQuery = InfluxDbQueryBuilder.GetMaxMinStatsQuery(data, duration, pluginConfig.DBLoginInformation).Result;
+                    var statsQuery = InfluxDbQueryBuilder.GetStatsQuery(data, duration, pluginConfig.DBLoginInformation).Result;
                     iFrameUrl = BuildStatsUri(statsQuery);
                     break;
 
