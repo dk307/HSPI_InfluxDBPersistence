@@ -44,7 +44,8 @@ namespace Hspi.Pages
         }
 
         protected static string FormDropDown(string name, NameValueCollection options, string selected,
-                                      int width, string tooltip, bool autoPostBack, string pageName)
+                                      int width, string tooltip, bool autoPostBack, string pageName,
+                                      bool enabled = true)
         {
             var dropdown = new clsJQuery.jqDropList(name, pageName, false)
             {
@@ -53,7 +54,7 @@ namespace Hspi.Pages
                 autoPostBack = autoPostBack,
                 toolTip = tooltip,
                 style = Invariant($"width: {width}px;"),
-                enabled = true,
+                enabled = enabled,
                 submitForm = autoPostBack,
             };
 

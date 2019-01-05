@@ -300,6 +300,21 @@ namespace Hspi.Pages
                     DateTimeOffset today = DateTimeOffset.Now.Date;
                     foreach (var row in queryData.Values)
                     {
+                        bool anyValue = false;
+                        for (int i = 1; i < row.Count; i++)
+                        {
+                            if (row[i] != null)
+                            {
+                                anyValue = true;
+                                break;
+                            }
+                        }
+
+                        if (!anyValue)
+                        {
+                            continue;
+                        }
+
                         stb.Append(@"<tr>");
                         for (int i = 0; i < row.Count; i++)
                         {

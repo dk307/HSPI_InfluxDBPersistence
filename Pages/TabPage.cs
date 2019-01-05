@@ -26,6 +26,40 @@ namespace Hspi.Pages
             AverageStats,
         }
 
+        [Flags]
+        public enum IFrameGrouping
+        {
+            [Description("Auto")]
+            Auto,
+
+            [Description("1 second")]
+            I1s,
+
+            [Description("5 seconds")]
+            I5s,
+
+            [Description("15 seconds")]
+            I15s,
+
+            [Description("1 minute")]
+            I1m,
+
+            [Description("5 minute")]
+            I5m,
+
+            [Description("30 minute")]
+            I30m,
+
+            [Description("1 hour")]
+            I1h,
+
+            [Description("12 hours")]
+            I12h,
+
+            [Description("1 day")]
+            I1d,
+        }
+
         public Enums.ConfigDevicePostReturn GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
         {
             var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
@@ -46,7 +80,8 @@ namespace Hspi.Pages
                     if (Enum.TryParse(parts[IFrameTypeId], true, out IFrameType frameType) &&
                         Enum.TryParse(parts[IFrameDurationId], true, out QueryDuration duration))
                     {
-                        callback.ConfigDivToUpdateAdd(resultsDivPartId, GetQueryResultFrame(data, frameType, duration));
+                        Enum.TryParse(parts[IFrameGroupingId], true, out IFrameGrouping grouping);
+                        callback.ConfigDivToUpdateAdd(resultsDivPartId, GetQueryResultFrame(data, frameType, duration, grouping));
                     }
                 }
             }
@@ -55,11 +90,14 @@ namespace Hspi.Pages
 
         public string GetDeviceHistoryTab(int refId)
         {
-            const IFrameType DefaultFrameType = IFrameType.TableHistory;
-            const QueryDuration DefaultDuration = QueryDuration.D12h;
-
             var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
+            bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
+
+            IFrameType DefaultFrameType = hasNumericData ? IFrameType.ChartHistory : IFrameType.TableHistory;
+            QueryDuration DefaultDuration = QueryDuration.D6h;
+            IFrameGrouping DefaultGrouping = IFrameGrouping.Auto;
+
             if (data != null)
             {
                 StringBuilder stb = new StringBuilder();
@@ -73,7 +111,7 @@ namespace Hspi.Pages
 
                 NameValueCollection iframeType = new NameValueCollection();
                 AddEnumValue(iframeType, IFrameType.TableHistory);
-                if (!string.IsNullOrWhiteSpace(data.Field))
+                if (hasNumericData)
                 {
                     AddEnumValue(iframeType, IFrameType.ChartHistory);
                     AddEnumValue(iframeType, IFrameType.AverageStats);
@@ -87,13 +125,17 @@ namespace Hspi.Pages
                 stb.Append(FormDropDown(IFrameDurationId, duration, DefaultDuration.ToString(),
                                         100, string.Empty, true, DeviceUtiltyPageName));
 
+                stb.Append("&nbsp;Grouping:");
+                NameValueCollection grouping = CreateNameValueCreation<IFrameGrouping>();
+                stb.Append(FormDropDown(IFrameGroupingId, grouping, DefaultGrouping.ToString(),
+                                        100, string.Empty, true, DeviceUtiltyPageName, hasNumericData));
+
                 stb.Append("</td></tr>");
                 stb.Append("<tr height='5'><td></td></tr>");
 
-                //stb.Append(Invariant($"<tr><td class='tableheader'>History</td></tr>"));
                 stb.Append("<tr><td class='tablecell'>");
                 stb.Append(DivStart(resultsDivPartId, string.Empty));
-                stb.Append(GetQueryResultFrame(data, DefaultFrameType, DefaultDuration));
+                stb.Append(GetQueryResultFrame(data, DefaultFrameType, DefaultDuration, DefaultGrouping));
                 stb.Append(DivEnd());
 
                 stb.Append("</td></tr>");
@@ -171,41 +213,90 @@ namespace Hspi.Pages
             });
         }
 
-        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType, QueryDuration duration)
+        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType,
+                                           QueryDuration duration, IFrameGrouping grouping)
         {
             StringBuilder stb = new StringBuilder();
             string iFrameUrl = null;
+
+            HSHelper hSHelper = new HSHelper(HS);
+            string deviceName = hSHelper.GetName(data.DeviceRefId);
+
             switch (frameType)
             {
                 case IFrameType.TableHistory:
-                case IFrameType.ChartHistory:
-                    HSHelper hSHelper = new HSHelper(HS);
-                    string deviceName = hSHelper.GetName(data.DeviceRefId);
-
                     var query = InfluxDbQueryBuilder.GetDeviceHistoryTabQuery(data, deviceName, duration);
-                    iFrameUrl = (frameType == IFrameType.TableHistory) ?
-                                           BuildTableUri(query, 10) : BuildChartUri(query, string.Empty);
+                    iFrameUrl = BuildTableUri(query, 10);
+                    break;
+
+                case IFrameType.ChartHistory:
+                    var chartQuery = InfluxDbQueryBuilder.GetGroupedDeviceHistoryTabQuery(data, deviceName, duration,
+                                                                              pluginConfig.DBLoginInformation,
+                                                                              GetTimeSpan(grouping)).Result;
+                    iFrameUrl = BuildChartUri(chartQuery, string.Empty);
                     break;
 
                 case IFrameType.AverageStats:
-                    var statsQuery = InfluxDbQueryBuilder.GetStatsQuery(data, duration, pluginConfig.DBLoginInformation).Result;
+                    var statsQuery = InfluxDbQueryBuilder.GetStatsQuery(data, duration,
+                                                                        pluginConfig.DBLoginInformation,
+                                                                        GetTimeSpan(grouping)).Result;
                     iFrameUrl = BuildStatsUri(statsQuery);
                     break;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(frameType));
             }
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
             stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
             stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
 
             return stb.ToString();
         }
 
+        private static TimeSpan? GetTimeSpan(IFrameGrouping grouping)
+        {
+            switch (grouping)
+            {
+                case IFrameGrouping.Auto:
+                    return null;
+
+                case IFrameGrouping.I1s:
+                    return TimeSpan.FromSeconds(1);
+
+                case IFrameGrouping.I5s:
+                    return TimeSpan.FromSeconds(5);
+
+                case IFrameGrouping.I15s:
+                    return TimeSpan.FromSeconds(15);
+
+                case IFrameGrouping.I1m:
+                    return TimeSpan.FromMinutes(1);
+
+                case IFrameGrouping.I5m:
+                    return TimeSpan.FromMinutes(5);
+
+                case IFrameGrouping.I30m:
+                    return TimeSpan.FromMinutes(30);
+
+                case IFrameGrouping.I1h:
+                    return TimeSpan.FromHours(1);
+
+                case IFrameGrouping.I12h:
+                    return TimeSpan.FromHours(12);
+
+                case IFrameGrouping.I1d:
+                    return TimeSpan.FromDays(1);
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(grouping));
+            }
+        }
+
         private const string DeviceUtiltyPageName = "deviceutility";
         private const string DoneButtonId = "DoneButtonId";
         private const string IFrameDurationId = "duration";
         private const string IFrameTypeId = "iframeType";
+        private const string IFrameGroupingId = "iframeGroup";
         private const string resultsDivPartId = "resultsDivPartId";
     }
 }

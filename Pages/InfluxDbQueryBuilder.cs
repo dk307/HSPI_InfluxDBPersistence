@@ -1,7 +1,6 @@
 ﻿using Hspi.Utils;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,36 +8,6 @@ using static System.FormattableString;
 
 namespace Hspi.Pages
 {
-    public enum QueryDuration
-    {
-        [Description("1 hour")]
-        D1h,
-
-        [Description("6 hour")]
-        D6h,
-
-        [Description("12 hours")]
-        D12h,
-
-        [Description("24 hours")]
-        D24h,
-
-        [Description("7 days")]
-        D7d,
-
-        [Description("30 days")]
-        D30d,
-
-        [Description("60 days")]
-        D60d,
-
-        [Description("180 days")]
-        D180d,
-
-        [Description("365 days")]
-        D365d,
-    };
-
     internal static class InfluxDbQueryBuilder
     {
         public static async Task<string> CreateRegularTimeSeries(DevicePersistenceData data,
@@ -59,14 +28,14 @@ namespace Hspi.Pages
             return Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupByInterval.TotalSeconds}s) fill({fillOption})");
         }
 
-        public static string GetDeviceHistoryTabQuery(DevicePersistenceData data, string deviceName, QueryDuration duration)
+        public static string GetDeviceHistoryTabQuery(DevicePersistenceData data,
+                                                                  string deviceName,
+                                                                  QueryDuration queryDuration)
         {
-            var fields = string.Join(",", GetFields(data));
-
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
-            stb.Append(fields);
-            stb.Append("AS \"");
+            stb.Append(GetFields(data)[0]);
+            stb.Append(" AS \"");
             stb.Append(deviceName);
             stb.Append("\" from \"");
             stb.Append(data.Measurement);
@@ -75,7 +44,7 @@ namespace Hspi.Pages
             stb.Append("='");
             stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
             stb.Append("'");
-            stb.AppendFormat(CultureInfo.InvariantCulture, "  AND time > now() - {0} ORDER BY time DESC", GetInfluxDBDuration(duration));
+            stb.AppendFormat(CultureInfo.InvariantCulture, "  AND time > now() - {0} ORDER BY time DESC", GetInfluxDBDuration(queryDuration));
 
             return stb.ToString();
         }
@@ -96,12 +65,35 @@ namespace Hspi.Pages
             return fields;
         }
 
+        public static async Task<string> GetGroupedDeviceHistoryTabQuery(DevicePersistenceData data,
+                                                          string deviceName,
+                                                  QueryDuration queryDuration,
+                                                  InfluxDBLoginInformation loginInformation,
+                                                  TimeSpan? groupInterval)
+        {
+            groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
+
+            string subquery = await CreateRegularTimeSeries(data, queryDuration,
+                                            loginInformation, groupInterval.Value);
+
+            StringBuilder stb = new StringBuilder();
+            stb.Append("SELECT ");
+            stb.Append(Invariant($"\"{data.Field}\" as \"{deviceName}\""));
+
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM ({0}) WHERE time > now() - {1} ", subquery, GetInfluxDBDuration(queryDuration));
+            stb.Append(" LIMIT 10000");
+
+            return stb.ToString();
+        }
+
         public static async Task<string> GetStatsQuery(DevicePersistenceData data,
                                              QueryDuration queryDuration,
-                                             InfluxDBLoginInformation loginInformation)
+                                             InfluxDBLoginInformation loginInformation,
+                                             TimeSpan? groupInterval)
         {
+            groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
             string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                                            loginInformation, TimeSpan.FromSeconds(1));
+                                                            loginInformation, groupInterval.Value);
 
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
@@ -114,10 +106,26 @@ namespace Hspi.Pages
             stb.Append(Invariant($",STDDEV(\"{data.Field}\") as \"Standard Deviation\""));
 
             stb.AppendFormat(CultureInfo.InvariantCulture, "FROM ({0}) WHERE time > now() - {1} ", subquery, GetInfluxDBDuration(queryDuration));
-            stb.AppendFormat(CultureInfo.InvariantCulture, "ORDER BY time DESC", subquery, GetInfluxDBDuration(queryDuration));
 
-            //InfluxDBHelper.ExecuteInfluxDBQuery(stb.ToString(), loginInformation);
             return stb.ToString();
+        }
+
+        private static TimeSpan GetDefaultInfluxDBGroupInterval(QueryDuration duration)
+        {
+            switch (duration)
+            {
+                case QueryDuration.D1h: return TimeSpan.FromSeconds(1);
+                case QueryDuration.D6h: return TimeSpan.FromSeconds(5);
+                case QueryDuration.D12h: return TimeSpan.FromSeconds(15);
+                case QueryDuration.D24h: return TimeSpan.FromMinutes(1);
+                case QueryDuration.D7d: return TimeSpan.FromMinutes(5);
+                case QueryDuration.D30d: return TimeSpan.FromMinutes(30);
+                case QueryDuration.D60d: return TimeSpan.FromHours(1);
+                case QueryDuration.D180d: return TimeSpan.FromHours(12);
+                case QueryDuration.D365d: return TimeSpan.FromHours(24);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(duration));
+            }
         }
 
         private static string GetInfluxDBDuration(QueryDuration duration)
