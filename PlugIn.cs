@@ -340,7 +340,7 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
             }
-            await RecordTrackedDevices();   // do not eave thread to avoid leaving thread as it delays startup
+            await RecordTrackedDevices();   // do not leave thread to avoid leaving thread as it delays startup
         }
 
         #region "Action Override"

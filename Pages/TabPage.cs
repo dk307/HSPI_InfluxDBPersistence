@@ -62,7 +62,7 @@ namespace Hspi.Pages
 
         public Enums.ConfigDevicePostReturn GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
         {
-            var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
+            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
 
             if (data != null)
@@ -90,7 +90,7 @@ namespace Hspi.Pages
 
         public string GetDeviceHistoryTab(int refId)
         {
-            var dataKeyPair = pluginConfig.DevicePersistenceData.SingleOrDefault(x => x.Value.DeviceRefId == refId);
+            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
             bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
 
