@@ -92,14 +92,13 @@ namespace Hspi.Pages
         {
             var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
-            bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
-
-            IFrameType DefaultFrameType = hasNumericData ? IFrameType.ChartHistory : IFrameType.TableHistory;
-            QueryDuration DefaultDuration = QueryDuration.D6h;
-            IFrameGrouping DefaultGrouping = IFrameGrouping.Auto;
 
             if (data != null)
             {
+                bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
+                IFrameType DefaultFrameType = hasNumericData ? IFrameType.ChartHistory : IFrameType.TableHistory;
+                QueryDuration DefaultDuration = QueryDuration.D6h;
+                IFrameGrouping DefaultGrouping = IFrameGrouping.Auto;
                 StringBuilder stb = new StringBuilder();
                 IncludeDataTableFiles(stb);
                 IncludeResourceScript(stb, "iframeSizer.min.js");
