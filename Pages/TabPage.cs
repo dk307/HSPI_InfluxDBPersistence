@@ -3,7 +3,7 @@ using Hspi.DeviceData;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
+using Hspi.Utils;
 using System.Linq;
 using System.Text;
 using System.Web;
@@ -231,14 +231,14 @@ namespace Hspi.Pages
                 case IFrameType.ChartHistory:
                     var chartQuery = InfluxDbQueryBuilder.GetGroupedDeviceHistoryTabQuery(data, deviceName, duration,
                                                                               pluginConfig.DBLoginInformation,
-                                                                              GetTimeSpan(grouping)).Result;
+                                                                              GetTimeSpan(grouping)).ResultForSync();
                     iFrameUrl = BuildChartUri(chartQuery, string.Empty);
                     break;
 
                 case IFrameType.AverageStats:
                     var statsQuery = InfluxDbQueryBuilder.GetStatsQuery(data, duration,
                                                                         pluginConfig.DBLoginInformation,
-                                                                        GetTimeSpan(grouping)).Result;
+                                                                        GetTimeSpan(grouping)).ResultForSync();
                     iFrameUrl = BuildStatsUri(statsQuery);
                     break;
 

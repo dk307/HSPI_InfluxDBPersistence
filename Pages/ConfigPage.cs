@@ -365,7 +365,7 @@ namespace Hspi.Pages
             {
                 var influxDbClient = new InfluxDbClient(dbUri.ToString(), username, password, InfluxDbVersion.v_1_3);
 
-                var databases = influxDbClient.Database.GetDatabasesAsync().Result;
+                var databases = influxDbClient.Database.GetDatabasesAsync().ResultForSync();
 
                 var selectedDb = databases.Where((db) => { return db.Name == database; }).FirstOrDefault();
                 if (selectedDb == null)
@@ -376,7 +376,7 @@ namespace Hspi.Pages
                 {
                     if (!string.IsNullOrWhiteSpace(retention))
                     {
-                        var retentionPolcies = influxDbClient.Retention.GetRetentionPoliciesAsync(selectedDb.Name).Result;
+                        var retentionPolcies = influxDbClient.Retention.GetRetentionPoliciesAsync(selectedDb.Name).ResultForSync();
                         if (!retentionPolcies.Any(r => r.Name == retention))
                         {
                             results.AppendLine("Retention policy not found for database.<br>");

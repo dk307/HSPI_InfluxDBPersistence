@@ -277,7 +277,7 @@ namespace Hspi
             string link = ConfigPage.Name;
             HS.RegisterPage(link, Name, string.Empty);
 
-            HomeSeerAPI.WebPageDesc wpd = new HomeSeerAPI.WebPageDesc()
+            var wpd = new HomeSeerAPI.WebPageDesc()
             {
                 plugInName = Name,
                 link = link,
@@ -340,7 +340,9 @@ namespace Hspi
                     influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
                 }
             }
-            await RecordTrackedDevices();   // do not leave thread to avoid leaving thread as it delays startup
+
+            // do not leave thread to avoid leaving thread as it can delay startup
+            await RecordTrackedDevices();
         }
 
         #region "Action Override"
@@ -533,7 +535,7 @@ namespace Hspi
                 deviceRootDeviceManagerCopy = deviceRootDeviceManager;
             }
 
-            return deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).Result;
+            return deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ResultForSync();
         }
 
         #endregion "Action Override"

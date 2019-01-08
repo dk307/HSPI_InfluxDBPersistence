@@ -387,7 +387,7 @@ namespace Hspi.Pages
         private Serie GetData(string query)
         {
             var loginInformation = pluginConfig.DBLoginInformation;
-            return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).Result;
+            return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
         }
 
         private IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
