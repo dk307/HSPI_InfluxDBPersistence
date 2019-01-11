@@ -118,7 +118,7 @@ namespace Hspi.Pages
                                     {
                                         dataStrings.Add(new StringBuilder());
                                     }
-                                    dataStrings[i - 1].AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {column}}},"));
+                                    dataStrings[i - 1].AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {GetSerieValue(CultureInfo.InvariantCulture, column)}}},"));
                                 }
                             }
                         }

@@ -80,8 +80,7 @@ namespace Hspi.Pages
             stb.Append("SELECT ");
             stb.Append(Invariant($"\"{data.Field}\" as \"{deviceName}\""));
 
-            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM ({0}) WHERE time > now() - {1} ", subquery, GetInfluxDBDuration(queryDuration));
-            stb.Append(" LIMIT 10000");
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time > now() - {1})", subquery, GetInfluxDBDuration(queryDuration));
 
             return stb.ToString();
         }
@@ -105,7 +104,8 @@ namespace Hspi.Pages
             stb.Append(Invariant($",PERCENTILE(\"{data.Field}\", 95) as \"95 Percentile\""));
             stb.Append(Invariant($",STDDEV(\"{data.Field}\") as \"Standard Deviation\""));
 
-            stb.AppendFormat(CultureInfo.InvariantCulture, " FROM ({0}) WHERE time > now() - {1} ", subquery, GetInfluxDBDuration(queryDuration));
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time > now() - {1})", subquery, GetInfluxDBDuration(queryDuration));
+            stb.Append(" LIMIT 50000");
 
             return stb.ToString();
         }
