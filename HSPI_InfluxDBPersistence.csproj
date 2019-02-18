@@ -292,6 +292,9 @@
     <PackageReference Include="homeseer">
       <Version>1.2.8</Version>
     </PackageReference>
+    <PackageReference Include="ILMerge">
+      <Version>3.0.21</Version>
+    </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>11.0.2</Version>
     </PackageReference>
@@ -333,6 +336,20 @@
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- ILRepack -->
+  <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
+      <InputAssemblies Include="$(OutputPath)\Newtonsoft.Json.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Coordination.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Tasks.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.Collections.Deque.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.Disposables.dll" />
+      <InputAssemblies Include="$(OutputPath)\System.Collections.Immutable.dll" />
+    </ItemGroup>
+    <Message Importance="high" Text="Executing ILMerge in $(ProjectDir)..." />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(ILMergeConsolePath)&quot; /ndebug /target:winexe /out:@(MainAssembly) /internalize /targetplatform:v4 @(InputAssemblies->'&quot;%(FullPath)&quot;', ' ')" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

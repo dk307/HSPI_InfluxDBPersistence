@@ -1,15 +1,4 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
   <NullGuard />
-  <Costura>
-    <ExcludeAssemblies>
-      Scheduler
-      HomeSeerAPI
-      HSCF
-      ADODB
-      Interop.hsrecord2
-      NullGuard
-      Costura
-    </ExcludeAssemblies>
-  </Costura>
 </Weavers>
