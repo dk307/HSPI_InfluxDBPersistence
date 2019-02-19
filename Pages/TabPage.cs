@@ -1,9 +1,9 @@
 ﻿using HomeSeerAPI;
 using Hspi.DeviceData;
+using Hspi.Utils;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Hspi.Utils;
 using System.Linq;
 using System.Text;
 using System.Web;
@@ -93,7 +93,7 @@ namespace Hspi.Pages
             var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
 
-            if (data != null)
+            if ((data != null) && !string.IsNullOrWhiteSpace(pluginConfig.DBLoginInformation.DB))
             {
                 bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
                 IFrameType DefaultFrameType = hasNumericData ? IFrameType.ChartHistory : IFrameType.TableHistory;
