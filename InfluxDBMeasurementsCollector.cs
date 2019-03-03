@@ -24,7 +24,7 @@ namespace Hspi
                                              CancellationToken shutdownToken)
         {
             this.loginInformation = loginInformation;
-            this.tokenSource = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
+            tokenSource = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
             influxDBClient = new InfluxDbClient(loginInformation.DBUri.ToString(),
                                                 loginInformation.User,
                                                 loginInformation.Password,
@@ -143,8 +143,11 @@ namespace Hspi
             CancellationToken token = tokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                List<Point> points = new List<Point>();
-                points.Add(await queue.DequeueAsync(token).ConfigureAwait(false));
+                var points = new List<Point>
+                {
+                    await queue.DequeueAsync(token).ConfigureAwait(false)
+                };
+
                 try
                 {
                     await influxDBClient.Client.WriteAsync(points, loginInformation.DB, loginInformation.Retention, precision: TimeUnit.Seconds).ConfigureAwait(false);
@@ -156,11 +159,13 @@ namespace Hspi
 
                     if (!connected)
                     {
+                        Trace.TraceWarning(Invariant($"Waiting for {connectFailureDelay} before sending message"));
+
                         foreach (var point in points)
                         {
                             await queue.EnqueueAsync(point, token).ConfigureAwait(false);
                         }
-                        await Task.Delay(30000, token).ConfigureAwait(false);
+                        await Task.Delay(connectFailureDelay, token).ConfigureAwait(false);
                     }
                 }
             }
@@ -184,10 +189,11 @@ namespace Hspi
             tokenSource.Cancel();
         }
 
-        private readonly static AsyncProducerConsumerQueue<Point> queue = new AsyncProducerConsumerQueue<Point>();
+        private static readonly AsyncProducerConsumerQueue<Point> queue = new AsyncProducerConsumerQueue<Point>();
         private readonly InfluxDbClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
         private readonly CancellationTokenSource tokenSource;
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
+        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
     }
 }
