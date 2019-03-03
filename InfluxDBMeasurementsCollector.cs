@@ -159,7 +159,7 @@ namespace Hspi
 
                     if (!connected)
                     {
-                        Trace.TraceWarning(Invariant($"Waiting for {connectFailureDelay} before sending message"));
+                        Trace.TraceWarning(Invariant($"DB is down. Waiting for {connectFailureDelay} before sending message"));
 
                         foreach (var point in points)
                         {
