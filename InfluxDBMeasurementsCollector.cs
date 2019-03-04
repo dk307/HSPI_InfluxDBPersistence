@@ -104,7 +104,7 @@ namespace Hspi
         public void Start(IEnumerable<DevicePersistenceData> persistenceData)
         {
             UpdatePeristenceData(persistenceData);
-            TaskHelper.StartAsync(SendPoints, tokenSource.Token);
+            TaskHelper.StartAsyncWithErrorChecking("DB Send Points", SendPoints, tokenSource.Token);
         }
 
         public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)

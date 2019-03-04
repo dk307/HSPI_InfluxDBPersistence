@@ -290,8 +290,8 @@ namespace Hspi
 
         private void RestartProcessing()
         {
-            TaskHelper.StartAsync(StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
-            TaskHelper.StartAsync(StartDeviceImport, ShutdownCancellationToken);
+            TaskHelper.StartAsyncWithErrorChecking("Measurements Collector", StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
+            TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
         }
 
         private void Shutdown()

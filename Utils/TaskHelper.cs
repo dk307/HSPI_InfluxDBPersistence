@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.FormattableString;
 
 namespace Hspi.Utils
 {
@@ -12,18 +14,31 @@ namespace Hspi.Utils
             return Task.Run(() => @this).Result;
         }
 
-        public static void StartAsync(Func<Task> taskAction, CancellationToken token)
+        public static void StartAsyncWithErrorChecking(string taskName, Func<Task> taskAction, CancellationToken token)
         {
-            var task = Task.Factory.StartNew(() => taskAction(), token,
-                                          TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                                          TaskScheduler.Current);
+            var task = Task.Factory.StartNew(() => RunInLoop(taskName, taskAction, token), token,
+                                         TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                                         TaskScheduler.Current);
         }
 
-        public static void StartAsync(Action action, CancellationToken token)
+        private static async Task RunInLoop(string taskName, Func<Task> taskAction, CancellationToken token)
         {
-            var task = Task.Factory.StartNew(action, token,
-                                          TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                                          TaskScheduler.Current);
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await taskAction().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    if (ex.IsCancelException())
+                    {
+                        throw;
+                    }
+
+                    Trace.TraceError(Invariant($"{taskName} failed with {ex.GetFullMessage()}. Restarting ..."));
+                }
+            }
         }
     }
 }
