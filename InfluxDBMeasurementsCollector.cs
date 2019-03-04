@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
@@ -154,6 +153,11 @@ namespace Hspi
                 }
                 catch (Exception ex)
                 {
+                    if (ex.IsCancelException())
+                    {
+                        throw;
+                    }
+
                     Trace.TraceWarning(Invariant($"Failed to update {influxDBClient.Database} with {ExceptionHelper.GetFullMessage(ex)}"));
                     bool connected = await IsConnectedToServer().ConfigureAwait(false);
 
@@ -178,7 +182,7 @@ namespace Hspi
                 var pong = await influxDBClient.Diagnostics.PingAsync().ConfigureAwait(false);
                 return pong.Success;
             }
-            catch (HttpRequestException)
+            catch
             {
                 return false;
             }
