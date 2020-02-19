@@ -1,7 +1,6 @@
 ﻿using AdysTech.InfluxDB.Client.Net;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,17 +12,18 @@ namespace Hspi.Utils
 
         public static async Task<IList<IDictionary<string, object>>> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
         {
-            var influxDbClient = new InfluxDBClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password);
-            var series = await influxDbClient.QueryMultiSeriesAsync(loginInformation.DB, query, precision: TimePrecision.Seconds).ConfigureAwait(false);
-
-            var accumatedList = new List<IDictionary<string, object>>();
-
-            foreach(var serie in series)
+            using (var influxDbClient = new InfluxDBClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password))
             {
-                accumatedList.AddRange(serie.Entries.Select(x => (IDictionary<string, object>)x));
-            }
+                var series = await influxDbClient.QueryMultiSeriesAsync(loginInformation.DB, query, precision: TimePrecision.Seconds).ConfigureAwait(false);
 
-            return accumatedList;
+                var accumatedList = new List<IDictionary<string, object>>();
+
+                foreach (var serie in series)
+                {
+                    accumatedList.AddRange(serie.Entries.Select(x => (IDictionary<string, object>)x));
+                }
+                return accumatedList;
+            }
         }
 
          public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)

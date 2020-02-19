@@ -110,7 +110,7 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
-        private string BuildPersistenceTab(NameValueCollection parts)
+        private string BuildPersistenceTab()
         {
             StringBuilder stb = new StringBuilder();
             IncludeResourceCSS(stb, "jquery.dataTables.css");
@@ -347,7 +347,6 @@ namespace Hspi.Pages
 
         private const string AddNewName = "Add New";
         private const string DeletePersistenceSave = "DeleteP";
-        private const string DescId = "desc";
         private const string DeviceRefIdId = "devicerefidid";
         private const string EditDevicePageType = "editdevice";
         private const string DeviceDataTablePageType = "table";
@@ -361,7 +360,6 @@ namespace Hspi.Pages
         private const string FieldStringId = "FieldStringId";
         private const string FillDefaultValuesButtonName = "FillDefaultValues";
         private const string HistoryDevicePageType = "history";
-        private const string ImageDivId = "image_id";
         private const string MaxValidValueDivId = "MaxValidValueDivId";
         private const string MaxValidValueId = "MaxValidValueId";
         private const string MeasurementDivId = "MeasurementDivId";
@@ -369,7 +367,6 @@ namespace Hspi.Pages
         private const string MinValidValueDivId = "MinValidValueDivId";
         private const string MinValidValueId = "MinValidValueId";
         private const string TagsId = "TagsId";
-        private const string UseDefaultsId = "UseDefaultsId";
         private const string SqlId = "sqlid";
         private const string IntervalId = "intervalid";
         private const string UnitId = "unitid";

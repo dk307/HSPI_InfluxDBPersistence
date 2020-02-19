@@ -74,7 +74,7 @@ namespace Hspi.Pages
             groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
 
             string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                            loginInformation, groupInterval.Value);
+                                            loginInformation, groupInterval.Value).ConfigureAwait(false);
 
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");

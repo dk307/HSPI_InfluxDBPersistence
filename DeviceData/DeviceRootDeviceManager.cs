@@ -7,6 +7,7 @@ using Scheduler.Classes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,7 +64,7 @@ namespace Hspi.DeviceData
             try
             {
                 var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
-                deviceValue = Convert.ToDouble(queryData);
+                deviceValue = Convert.ToDouble(queryData, CultureInfo.InvariantCulture);
             }
             catch (Exception ex)
             {

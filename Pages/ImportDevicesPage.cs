@@ -67,7 +67,7 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
-        private string BuildImportDevicesTab(NameValueCollection parts)
+        private string BuildImportDevicesTab()
         {
             StringBuilder stb = new StringBuilder();
 

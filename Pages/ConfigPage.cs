@@ -1,15 +1,16 @@
-﻿using HomeSeerAPI;
+﻿using AdysTech.InfluxDB.Client.Net;
+using HomeSeerAPI;
+using Hspi.Utils;
 using NullGuard;
 using Scheduler;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
-using Hspi.Utils;
 using static System.FormattableString;
-using AdysTech.InfluxDB.Client.Net;
 
 namespace Hspi.Pages
 {
@@ -183,7 +184,7 @@ namespace Hspi.Pages
                 }
 
                 newParts.Add(RealLoadId, "1");
-                stb.AppendFormat("$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
+                stb.AppendFormat(CultureInfo.InvariantCulture, "$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
                 stb.AppendLine("});");
                 stb.AppendLine("</script>");
             }
@@ -233,7 +234,7 @@ namespace Hspi.Pages
             return base.postBackProc(Name, data, user, userRights);
         }
 
-        protected string FormDropDownChosen(string name, IDictionary<int, string> options, int selected)
+        protected static string FormDropDownChosen(string name, IDictionary<int, string> options, int selected)
         {
             string id = NameToIdWithPrefix(name);
             StringBuilder stb = new StringBuilder();
@@ -290,7 +291,7 @@ namespace Hspi.Pages
             this.UsesJqTabs = true;
             string tab = parts[TabId] ?? "0";
             int defaultTab = 0;
-            int.TryParse(tab, out defaultTab);
+            int.TryParse(tab, NumberStyles.Integer, CultureInfo.InvariantCulture, out defaultTab);
 
             int i = 0;
             StringBuilder stb = new StringBuilder();
@@ -306,13 +307,13 @@ namespace Hspi.Pages
             var tab2 = new clsJQuery.Tab();
             tab2.tabTitle = "Persistence";
             tab2.tabDIVID = Invariant($"tabs{i++}");
-            tab2.tabContent = BuildPersistenceTab(parts);
+            tab2.tabContent = BuildPersistenceTab();
             tabs.tabs.Add(tab2);
 
             var tab3 = new clsJQuery.Tab();
             tab3.tabTitle = "Devices Import";
             tab3.tabDIVID = Invariant($"tabs{i++}");
-            tab3.tabContent = BuildImportDevicesTab(parts);
+            tab3.tabContent = BuildImportDevicesTab();
             tabs.tabs.Add(tab3);
 
             switch (defaultTab)
@@ -362,23 +363,24 @@ namespace Hspi.Pages
 
             try
             {
-                var influxDbClient = new InfluxDBClient(dbUri.ToString(), username, password);
+                using (var influxDbClient = new InfluxDBClient(dbUri.ToString(), username, password))
+                { 
+                    var databases = influxDbClient.GetInfluxDBNamesAsync().ResultForSync();
 
-                var databases = influxDbClient.GetInfluxDBNamesAsync().ResultForSync();
-
-                var selectedDb = databases.Where((db) => { return db == database; }).FirstOrDefault();
-                if (selectedDb == null)
-                {
-                    results.AppendLine("Database not found on server.<br>");
-                }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(retention))
+                    var selectedDb = databases.Where((db) => { return db == database; }).FirstOrDefault();
+                    if (selectedDb == null)
                     {
-                        var retentionPolcies = influxDbClient.GetRetentionPoliciesAsync(selectedDb).ResultForSync();
-                        if (!retentionPolcies.Any(r => r.Name == retention))
+                        results.AppendLine("Database not found on server.<br>");
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(retention))
                         {
-                            results.AppendLine("Retention policy not found for database.<br>");
+                            var retentionPolcies = influxDbClient.GetRetentionPoliciesAsync(selectedDb).ResultForSync();
+                            if (!retentionPolcies.Any(r => r.Name == retention))
+                            {
+                                results.AppendLine("Retention policy not found for database.<br>");
+                            }
                         }
                     }
                 }
@@ -410,7 +412,6 @@ namespace Hspi.Pages
         private const string DBUriKey = "DBUriId";
         private const string DebugLoggingId = "DebugLoggingId";
         private const string ErrorDivId = "message_id";
-        private const string IdPrefix = "id_";
         private const string PasswordKey = "PasswordId";
         private const string RetentionKey = "RetentionId";
         private const string SaveErrorDivId = "SaveErrorDivId";
