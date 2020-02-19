@@ -372,7 +372,7 @@ namespace Hspi.Pages
 
                             if (string.CompareOrdinal(columnName, InfluxDBHelper.TimeColumn) == 0)
                             {
-                                DateTime timePoint = (DateTime)column;
+                                DateTime timePoint = ((DateTime)column).ToLocalTime();
                                 sortValue = (new DateTimeOffset(timePoint)).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
                                 value = ConvertInfluxDBDateTimeToString(today, culture, timePoint);
                             }
@@ -406,6 +406,10 @@ namespace Hspi.Pages
                                     });
                                 });");
                     stb.AppendLine("</script>");
+                } 
+                else
+                {
+                    stb.AppendLine("No data");
                 }
             }
             catch (Exception ex)
