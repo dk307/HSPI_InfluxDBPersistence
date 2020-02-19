@@ -26,17 +26,17 @@ namespace Hspi.Utils
             }
         }
 
-         public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
-         {
+        public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
+        {
             var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
             if (queryData.Count > 0)
             {
                 var firstRow = queryData[0];
-                return firstRow.FirstOrDefault( x => x.Key != TimeColumn).Value;
+                return firstRow.FirstOrDefault(x => x.Key != TimeColumn).Value;
             }
 
             return null;
-         }
+        }
 
         public static async Task<DateTime?> GetTimeValueForQuery(string query, InfluxDBLoginInformation loginInformation)
         {

@@ -76,8 +76,8 @@ namespace Hspi
                         continue;
                     }
 
-                    influxDatapoint.Tags.Add(PluginConfig.DeviceNameTag, data.Name); 
-                    influxDatapoint.Tags.Add(PluginConfig.DeviceRefIdTag, Convert.ToString(data.DeviceRefId, CultureInfo.InvariantCulture)); 
+                    influxDatapoint.Tags.Add(PluginConfig.DeviceNameTag, data.Name);
+                    influxDatapoint.Tags.Add(PluginConfig.DeviceRefIdTag, Convert.ToString(data.DeviceRefId, CultureInfo.InvariantCulture));
 
                     AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation1Tag, data.Location1);
                     AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation2Tag, data.Location2);
@@ -123,7 +123,7 @@ namespace Hspi
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
 
-        private void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
+        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
         {
             if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
             {
@@ -137,7 +137,7 @@ namespace Hspi
             while (!token.IsCancellationRequested)
             {
                 var point = await queue.DequeueAsync(token).ConfigureAwait(false);
-                
+
                 try
                 {
                     if (!await influxDBClient.PostPointAsync(loginInformation.DB, point).ConfigureAwait(false))
@@ -184,7 +184,7 @@ namespace Hspi
             tokenSource.Cancel();
         }
 
-        private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue 
+        private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue
             = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;

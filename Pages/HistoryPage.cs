@@ -95,14 +95,14 @@ namespace Hspi.Pages
                 stb.AppendLine("<script>");
                 stb.AppendLine(@"function chartData() {");
 
-               var legands = new List<string>();
+                var legands = new List<string>();
                 if (queryData.Count > 0)
                 {
-                    var nonTimeColumns = queryData.First().Keys.Where( x => (0 != string.CompareOrdinal(x, InfluxDBHelper.TimeColumn)));
+                    var nonTimeColumns = queryData.First().Keys.Where(x => (0 != string.CompareOrdinal(x, InfluxDBHelper.TimeColumn)));
 
                     foreach (var nonTimeColumn in nonTimeColumns)
                     {
-                         legands.Add(Invariant($"'{FirstCharToUpper(nonTimeColumn, cultureInfo)}'"));
+                        legands.Add(Invariant($"'{FirstCharToUpper(nonTimeColumn, cultureInfo)}'"));
                     }
 
                     var dataStrings = new Dictionary<string, StringBuilder>();
@@ -113,16 +113,15 @@ namespace Hspi.Pages
                         {
                             if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) == 0)
                             {
-                                var timePoint = (DateTime)pair.Value ;
+                                var timePoint = (DateTime)pair.Value;
                                 jsMilliseconds = (new DateTimeOffset(timePoint)).ToLocalTime().ToUnixTimeMilliseconds();
                             }
                             else
                             {
                                 if (pair.Value != null)
                                 {
-                                    StringBuilder stringBuilder;
-                                    if (!dataStrings.TryGetValue(pair.Key, out stringBuilder))
-                                    { 
+                                    if (!dataStrings.TryGetValue(pair.Key, out StringBuilder stringBuilder))
+                                    {
                                         stringBuilder = new StringBuilder();
                                         dataStrings.Add(pair.Key, stringBuilder);
                                     }
@@ -228,7 +227,7 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
-        private void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
+        private static void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
         {
             string iFrameUrl = BuildChartUri(finalQuery, title);
             stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
@@ -236,7 +235,7 @@ namespace Hspi.Pages
             stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
         }
 
-        private void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 10)
+        private static void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 10)
         {
             string iFrameUrl = BuildTableUri(finalQuery, tableSize);
             stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
@@ -279,7 +278,7 @@ namespace Hspi.Pages
                         }
                     }
                     stb.AppendLine(@"</table>");
-                } 
+                }
 
                 return stb.ToString();
             }
@@ -312,7 +311,7 @@ namespace Hspi.Pages
                     DateTimeOffset today = DateTimeOffset.Now.Date;
                     foreach (var row in queryData)
                     {
-                        bool anyValue = row.Any(x => (string.CompareOrdinal(x.Key, InfluxDBHelper.TimeColumn) != 0) && (x.Value != null)); 
+                        bool anyValue = row.Any(x => (string.CompareOrdinal(x.Key, InfluxDBHelper.TimeColumn) != 0) && (x.Value != null));
 
                         if (!anyValue)
                         {
@@ -376,8 +375,7 @@ namespace Hspi.Pages
             StringBuilder stb = new StringBuilder();
             var query = parts[QueryPartId] ?? string.Empty;
 
-            int size;
-            if (!int.TryParse(HttpUtility.UrlDecode(parts[TableSizeId] ?? string.Empty), out size))
+            if (!int.TryParse(HttpUtility.UrlDecode(parts[TableSizeId] ?? string.Empty), out int size))
             {
                 size = 25;
             }
@@ -395,7 +393,7 @@ namespace Hspi.Pages
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
         }
 
-        private static  IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
+        private static IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
         {
             List<string> fields = InfluxDbQueryBuilder.GetFields(data);
 

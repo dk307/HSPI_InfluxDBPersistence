@@ -174,10 +174,8 @@ namespace Hspi
                 {
                     pluginConfig.ConfigChanged -= PluginConfig_ConfigChanged;
                 }
-                if (configPage != null)
-                {
-                    configPage.Dispose();
-                }
+
+                configPage?.Dispose();
 
                 Shutdown();
                 disposedValue = true;

@@ -290,8 +290,7 @@ namespace Hspi.Pages
         {
             this.UsesJqTabs = true;
             string tab = parts[TabId] ?? "0";
-            int defaultTab = 0;
-            int.TryParse(tab, NumberStyles.Integer, CultureInfo.InvariantCulture, out defaultTab);
+            int.TryParse(tab, NumberStyles.Integer, CultureInfo.InvariantCulture, out int defaultTab);
 
             int i = 0;
             StringBuilder stb = new StringBuilder();
@@ -343,9 +342,8 @@ namespace Hspi.Pages
 
             // Validate
 
-            System.Uri dbUri;
 
-            if (!System.Uri.TryCreate(parts[DBUriKey], UriKind.Absolute, out dbUri))
+            if (!System.Uri.TryCreate(parts[DBUriKey], UriKind.Absolute, out Uri dbUri))
             {
                 results.AppendLine("Url is not Valid.<br>");
             }
@@ -364,7 +362,7 @@ namespace Hspi.Pages
             try
             {
                 using (var influxDbClient = new InfluxDBClient(dbUri.ToString(), username, password))
-                { 
+                {
                     var databases = influxDbClient.GetInfluxDBNamesAsync().ResultForSync();
 
                     var selectedDb = databases.Where((db) => { return db == database; }).FirstOrDefault();
