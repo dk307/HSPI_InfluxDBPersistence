@@ -157,42 +157,6 @@ namespace Hspi.Pages
             }
         }
 
-        private void CreatePageWithAjaxLoad(NameValueCollection parts, StringBuilder stb,
-                                            string pageDivId, Func<NameValueCollection, string> func)
-        {
-            stb.Append(DivStart(pageDivId, string.Empty));
-
-            if (!string.IsNullOrWhiteSpace(parts[RealLoadId]))
-            {
-                stb.Append(func(parts));
-            }
-            else
-            {
-                stb.Append("<div id=\"loading\">Please wait ...</div>");
-
-                stb.Append(@"<script>
-                                           var $loading = $('#loading').hide();
-                                           $(document)
-                                             .ajaxStart(function () {$loading.show();})
-                                             .ajaxStop(function () {$loading.hide();});");
-                stb.AppendLine("$( document ).ready(function() {");
-
-                var newParts = new NameValueCollection();
-                foreach (var key in parts.AllKeys)
-                {
-                    newParts.Add(key, HttpUtility.UrlDecode(parts[key]));
-                }
-
-                newParts.Add(RealLoadId, "1");
-                stb.AppendFormat(CultureInfo.InvariantCulture, "$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
-                stb.AppendLine("});");
-                stb.AppendLine("</script>");
-            }
-            stb.Append(DivEnd());
-
-            AddBody(stb.ToString());
-        }
-
         /// <summary>
         /// The user has selected a control on the configuration web page.
         /// The post data is provided to determine the control that initiated the post and the state of the other controls.
@@ -336,12 +300,46 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
+        private void CreatePageWithAjaxLoad(NameValueCollection parts, StringBuilder stb,
+                                                                            string pageDivId, Func<NameValueCollection, string> func)
+        {
+            stb.Append(DivStart(pageDivId, string.Empty));
+
+            if (!string.IsNullOrWhiteSpace(parts[RealLoadId]))
+            {
+                stb.Append(func(parts));
+            }
+            else
+            {
+                stb.Append("<div id=\"loading\">Please wait ...</div>");
+
+                stb.Append(@"<script>
+                                           var $loading = $('#loading').hide();
+                                           $(document)
+                                             .ajaxStart(function () {$loading.show();})
+                                             .ajaxStop(function () {$loading.hide();});");
+                stb.AppendLine("$( document ).ready(function() {");
+
+                var newParts = new NameValueCollection();
+                foreach (var key in parts.AllKeys)
+                {
+                    newParts.Add(key, HttpUtility.UrlDecode(parts[key]));
+                }
+
+                newParts.Add(RealLoadId, "1");
+                stb.AppendFormat(CultureInfo.InvariantCulture, "$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
+                stb.AppendLine("});");
+                stb.AppendLine("</script>");
+            }
+            stb.Append(DivEnd());
+
+            AddBody(stb.ToString());
+        }
         private void HandleSaveDBSettingPostBack(NameValueCollection parts)
         {
             StringBuilder results = new StringBuilder();
 
             // Validate
-
 
             if (!System.Uri.TryCreate(parts[DBUriKey], UriKind.Absolute, out Uri dbUri))
             {
@@ -411,11 +409,11 @@ namespace Hspi.Pages
         private const string DebugLoggingId = "DebugLoggingId";
         private const string ErrorDivId = "message_id";
         private const string PasswordKey = "PasswordId";
+        private const string RealLoadId = "realload";
         private const string RetentionKey = "RetentionId";
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TabId = "tab";
-        private const string RealLoadId = "realload";
         private const string UserKey = "UserId";
         private static readonly string pageUrl = HttpUtility.UrlEncode(Name);
     }

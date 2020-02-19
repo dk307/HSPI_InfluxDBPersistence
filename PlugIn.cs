@@ -340,7 +340,9 @@ namespace Hspi
             }
 
             // do not leave thread to avoid leaving thread as it can delay startup
+#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
             await RecordTrackedDevices();
+#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
         }
 
         #region "Action Override"

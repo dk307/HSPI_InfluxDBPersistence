@@ -41,15 +41,24 @@ namespace Hspi.DeviceData
             {
                 return false;
             }
+            if (this == other)
+            {
+                return true;
+            }
             return Address == other.Address;
         }
 
-        public override bool Equals(object other)
+        public override bool Equals([AllowNull] object other)
         {
             if (other == null)
             {
                 return false;
             }
+            if (this == other)
+            {
+                return true;
+            }
+
             return Equals(other as DeviceIdentifier);
         }
 

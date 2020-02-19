@@ -14,6 +14,22 @@ namespace Hspi.Pages
 {
     internal partial class ConfigPage : PageHelper
     {
+        private static void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
+        {
+            string iFrameUrl = BuildChartUri(finalQuery, title);
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+        }
+
+        private static void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 10)
+        {
+            string iFrameUrl = BuildTableUri(finalQuery, tableSize);
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+        }
+
         private static string ConvertInfluxDBDateTimeToString(DateTimeOffset today, CultureInfo culture, DateTime dateTime)
         {
             var dateTimeToday = dateTime.Date;
@@ -43,6 +59,40 @@ namespace Hspi.Pages
             }
         }
 
+        private static IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
+        {
+            List<string> fields = InfluxDbQueryBuilder.GetFields(data);
+
+            var queries = new Dictionary<string, FormattableString>()
+            {
+                {
+                    "Last 100 stored values",
+                    $"SELECT {string.Join(",", fields)} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"
+                },
+            };
+
+            if (!string.IsNullOrWhiteSpace(data.Field))
+            {
+                var standardFields = Invariant($"MIN(\"{data.Field}\"), MAX(\"{data.Field}\"), MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile\"");
+                var subQuery24h = Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h GROUP BY time(1s) fill(previous)");
+                queries.Add(
+                     "Min/Max Values",
+                     $"SELECT MIN(\"{data.Field}\"), MAX(\"{data.Field}\") from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
+                );
+
+                queries.Add(
+                      "Min/Max/Average/Medium/Percentile Values(24h)",
+                      $"SELECT {standardFields} FROM ({subQuery24h})"
+                 );
+
+                queries.Add(
+                      "Min/Max/Average/Medium/Percentile Values By Hour(24h)",
+                      $"SELECT {standardFields} FROM ({subQuery24h}) GROUP BY time(1h)"
+                );
+            }
+            return queries;
+        }
+
         private static string GetSerieValue(CultureInfo culture, [AllowNull]object column)
         {
             switch (column)
@@ -68,6 +118,17 @@ namespace Hspi.Pages
             }
         }
 
+        private static string HistoryBackButton()
+        {
+            var b = new clsJQuery.jqButton("Back", "Back", DeviceUtiltyPageName, false)
+            {
+                id = NameToIdWithPrefix("Back"),
+                url = Invariant($"/{pageUrl}?{TabId}=1"),
+            };
+
+            return b.Build();
+        }
+
         private static string RoundDoubleValue(CultureInfo culture, double floatValue)
         {
             return Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
@@ -81,7 +142,6 @@ namespace Hspi.Pages
             var title = parts[TitlePartId] ?? string.Empty;
             try
             {
-
                 var queryData = GetData(HttpUtility.UrlDecode(query));
 
                 IncludeResourceCSS(stb, "metricsgraphics.css");
@@ -225,22 +285,6 @@ namespace Hspi.Pages
             stb.Append(FormEnd());
 
             return stb.ToString();
-        }
-
-        private static void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
-        {
-            string iFrameUrl = BuildChartUri(finalQuery, title);
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
-            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
-        }
-
-        private static void BuildQueryTableIFrame(StringBuilder stb, string finalQuery, int tableSize = 10)
-        {
-            string iFrameUrl = BuildTableUri(finalQuery, tableSize);
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 600px}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
-            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
         }
 
         private string BuildStatsPage(NameValueCollection parts)
@@ -393,40 +437,6 @@ namespace Hspi.Pages
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
         }
 
-        private static IDictionary<string, FormattableString> GetDefaultValueQueries(DevicePersistenceData data)
-        {
-            List<string> fields = InfluxDbQueryBuilder.GetFields(data);
-
-            var queries = new Dictionary<string, FormattableString>()
-            {
-                {
-                    "Last 100 stored values",
-                    $"SELECT {string.Join(",", fields)} from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' ORDER BY time DESC LIMIT 100"
-                },
-            };
-
-            if (!string.IsNullOrWhiteSpace(data.Field))
-            {
-                var standardFields = Invariant($"MIN(\"{data.Field}\"), MAX(\"{data.Field}\"), MEAN(\"{data.Field}\"), MEDIAN(\"{data.Field}\"), PERCENTILE(\"{data.Field}\", 95) AS \"95 percentile\"");
-                var subQuery24h = Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" FROM \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' AND time > now() - 24h GROUP BY time(1s) fill(previous)");
-                queries.Add(
-                     "Min/Max Values",
-                     $"SELECT MIN(\"{data.Field}\"), MAX(\"{data.Field}\") from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}'"
-                );
-
-                queries.Add(
-                      "Min/Max/Average/Medium/Percentile Values(24h)",
-                      $"SELECT {standardFields} FROM ({subQuery24h})"
-                 );
-
-                queries.Add(
-                      "Min/Max/Average/Medium/Percentile Values By Hour(24h)",
-                      $"SELECT {standardFields} FROM ({subQuery24h}) GROUP BY time(1h)"
-                );
-            }
-            return queries;
-        }
-
         private void HandleHistoryPagePostBack(NameValueCollection parts, string form)
         {
             string finalQuery = null;
@@ -456,17 +466,6 @@ namespace Hspi.Pages
                 BuildQueryTableIFrame(stb, finalQuery);
             }
             this.divToUpdate.Add(HistoryResultDivId, stb.ToString());
-        }
-
-        private static string HistoryBackButton()
-        {
-            var b = new clsJQuery.jqButton("Back", "Back", DeviceUtiltyPageName, false)
-            {
-                id = NameToIdWithPrefix("Back"),
-                url = Invariant($"/{pageUrl}?{TabId}=1"),
-            };
-
-            return b.Build();
         }
 
         private void IncludeDataTableFiles(StringBuilder stb)
