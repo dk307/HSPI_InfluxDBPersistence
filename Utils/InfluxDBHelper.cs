@@ -1,7 +1,4 @@
-﻿using InfluxData.Net.Common.Constants;
-using InfluxData.Net.Common.Enums;
-using InfluxData.Net.InfluxDb;
-using InfluxData.Net.InfluxDb.Models.Responses;
+﻿using AdysTech.InfluxDB.Client.Net;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,51 +9,41 @@ namespace Hspi.Utils
 {
     internal static class InfluxDBHelper
     {
-        public static async Task<Serie> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
-        {
-            var influxDbClient = new InfluxDbClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password, InfluxDbVersion.v_1_3);
-            return (await influxDbClient.Client.QueryAsync(query, loginInformation.DB, TimeUnit.Seconds).ConfigureAwait(false)).FirstOrDefault();
-        }
+        public const string TimeColumn = "Time";
 
-        public static async Task<IEnumerable<Serie>> ExecuteInfluxDBQuery(IEnumerable<string> queries, InfluxDBLoginInformation loginInformation)
+        public static async Task<IList<IDictionary<string, object>>> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
         {
-            var influxDbClient = new InfluxDbClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password, InfluxDbVersion.v_1_3);
-            return await influxDbClient.Client.QueryAsync(queries, loginInformation.DB, TimeUnit.Seconds).ConfigureAwait(false);
-        }
+            var influxDbClient = new InfluxDBClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password);
+            var series = await influxDbClient.QueryMultiSeriesAsync(loginInformation.DB, query, precision: TimePrecision.Seconds).ConfigureAwait(false);
 
-        public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
-        {
-            var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
+            var accumatedList = new List<IDictionary<string, object>>();
 
-            if (queryData != null)
+            foreach(var serie in series)
             {
-                if (queryData.Values.Count > 0)
-                {
-                    // first row, second column
-                    if (queryData.Values[0].Count > 1)
-                    {
-                        return queryData.Values[0][1];
-                    }
-                }
+                accumatedList.AddRange(serie.Entries.Select(x => (IDictionary<string, object>)x));
+            }
+
+            return accumatedList;
+        }
+
+         public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
+         {
+            var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
+            if (queryData.Count > 0)
+            {
+                var firstRow = queryData[0];
+                return firstRow.FirstOrDefault( x => x.Key != TimeColumn).Value;
             }
 
             return null;
-        }
+         }
 
-        public static async Task<DateTimeOffset?> GetTimeValueForQuery(string query, InfluxDBLoginInformation loginInformation)
+        public static async Task<DateTime?> GetTimeValueForQuery(string query, InfluxDBLoginInformation loginInformation)
         {
             var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
-            if (queryData != null)
+            if (queryData.Count > 0)
             {
-                if (queryData.Values.Count > 0)
-                {
-                    // first row, first column
-                    if (queryData.Values[0].Count > 0)
-                    {
-                        var timePoint = Convert.ToInt64(queryData.Values[0][0], CultureInfo.InvariantCulture);
-                        return DateTimeOffset.FromUnixTimeSeconds(timePoint);
-                    }
-                }
+                return (DateTime)queryData[0][TimeColumn];
             }
 
             return null;

@@ -23,7 +23,7 @@ namespace Hspi.Pages
 
             var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
 
-            string timeRestriction = time.HasValue ? Invariant($"time > {time.Value.ToUnixTimeSeconds()}s") : Invariant($"time > now() - {duration}");
+            string timeRestriction = time.HasValue ? Invariant($"time > {new DateTimeOffset(time.Value).ToUnixTimeSeconds()}s") : Invariant($"time > now() - {duration}");
             string fillOption = fileLinear ? "linear" : "previous";
             return Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupByInterval.TotalSeconds}s) fill({fillOption})");
         }
@@ -92,7 +92,7 @@ namespace Hspi.Pages
         {
             groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
             string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                                            loginInformation, groupInterval.Value);
+                                                            loginInformation, groupInterval.Value).ConfigureAwait(false);
 
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");

@@ -1,14 +1,12 @@
-﻿using Hspi.Exceptions;
+﻿using AdysTech.InfluxDB.Client.Net;
+using Hspi.Exceptions;
 using Hspi.Utils;
-using InfluxData.Net.Common.Constants;
-using InfluxData.Net.Common.Enums;
-using InfluxData.Net.InfluxDb;
-using InfluxData.Net.InfluxDb.Models;
 using Nito.AsyncEx;
 using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,10 +22,9 @@ namespace Hspi
         {
             this.loginInformation = loginInformation;
             tokenSource = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
-            influxDBClient = new InfluxDbClient(loginInformation.DBUri.ToString(),
+            influxDBClient = new InfluxDBClient(loginInformation.DBUri.ToString(),
                                                 loginInformation.User,
-                                                loginInformation.Password,
-                                                InfluxDbVersion.v_1_3);
+                                                loginInformation.Password);
         }
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
@@ -47,7 +44,12 @@ namespace Hspi
             {
                 foreach (var value in peristenceData)
                 {
-                    var fields = new Dictionary<string, object>();
+                    var influxDatapoint = new InfluxDatapoint<InfluxValueField>()
+                    {
+                        MeasurementName = value.Measurement,
+                        Precision = TimePrecision.Seconds,
+                        UtcTimestamp = data.TimeStamp.ToUniversalTime(),
+                    };
 
                     if (!string.IsNullOrWhiteSpace(value.Field))
                     {
@@ -55,7 +57,7 @@ namespace Hspi
 
                         if (IsValidRange(value, deviceValue))
                         {
-                            fields.Add(value.Field, data.DeviceValue);
+                            influxDatapoint.Fields.Add(value.Field, new InfluxValueField(deviceValue));
                         }
                         else
                         {
@@ -63,37 +65,29 @@ namespace Hspi
                         }
                     }
 
-                    AddIfNotEmpty(fields, value.FieldString, data.DeviceString);
+                    if (!string.IsNullOrWhiteSpace(value.FieldString))
+                    {
+                        influxDatapoint.Fields.Add(value.FieldString, new InfluxValueField(data.DeviceString));
+                    }
 
-                    if (fields.Count == 0)
+                    if (influxDatapoint.Fields.Count == 0)
                     {
                         Trace.TraceInformation(Invariant($"Not Recording Value for {data.Name} as there is no valid value to record."));
                         continue;
                     }
 
-                    var tags = new Dictionary<string, object>()
-                    {
-                        {PluginConfig.DeviceNameTag, data.Name },
-                    };
+                    influxDatapoint.Tags.Add(PluginConfig.DeviceNameTag, data.Name); 
+                    influxDatapoint.Tags.Add(PluginConfig.DeviceRefIdTag, Convert.ToString(data.DeviceRefId, CultureInfo.InvariantCulture)); 
 
-                    tags.Add(PluginConfig.DeviceRefIdTag, data.DeviceRefId);
-                    AddIfNotEmpty(tags, PluginConfig.DeviceLocation1Tag, data.Location1);
-                    AddIfNotEmpty(tags, PluginConfig.DeviceLocation2Tag, data.Location2);
+                    AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation1Tag, data.Location1);
+                    AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation2Tag, data.Location2);
 
                     foreach (var tag in value.Tags)
                     {
-                        AddIfNotEmpty(tags, tag.Key, tag.Value);
+                        AddIfNotEmpty(influxDatapoint.Tags, tag.Key, tag.Value);
                     }
 
-                    var point = new Point()
-                    {
-                        Name = value.Measurement,
-                        Fields = fields,
-                        Tags = tags,
-                        Timestamp = data.TimeStamp.ToUniversalTime(),
-                    };
-
-                    await queue.EnqueueAsync(point, tokenSource.Token).ConfigureAwait(false);
+                    await queue.EnqueueAsync(influxDatapoint, tokenSource.Token).ConfigureAwait(false);
                 }
             }
 
@@ -103,7 +97,7 @@ namespace Hspi
         public void Start(IEnumerable<DevicePersistenceData> persistenceData)
         {
             UpdatePeristenceData(persistenceData);
-            TaskHelper.StartAsyncWithErrorChecking("DB Send Points", SendPoints, tokenSource.Token);
+            Utils.TaskHelper.StartAsyncWithErrorChecking("DB Send Points", SendPoints, tokenSource.Token);
         }
 
         public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)
@@ -129,7 +123,7 @@ namespace Hspi
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
 
-        private void AddIfNotEmpty(IDictionary<string, object> dict, string key, string value)
+        private void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
         {
             if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
             {
@@ -142,14 +136,14 @@ namespace Hspi
             CancellationToken token = tokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                var points = new List<Point>
-                {
-                    await queue.DequeueAsync(token).ConfigureAwait(false)
-                };
-
+                var point = await queue.DequeueAsync(token).ConfigureAwait(false);
+                
                 try
                 {
-                    await influxDBClient.Client.WriteAsync(points, loginInformation.DB, loginInformation.Retention, precision: TimeUnit.Seconds).ConfigureAwait(false);
+                    if (!await influxDBClient.PostPointAsync(loginInformation.DB, point).ConfigureAwait(false))
+                    {
+                        Trace.TraceWarning(Invariant($"Failed to update {loginInformation.DB} for {point.ToString()}"));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -158,17 +152,13 @@ namespace Hspi
                         throw;
                     }
 
-                    Trace.TraceWarning(Invariant($"Failed to update {influxDBClient.Database} with {ExceptionHelper.GetFullMessage(ex)}"));
+                    Trace.TraceWarning(Invariant($"Failed to update {loginInformation.DB} with {ExceptionHelper.GetFullMessage(ex)} for {point.ToString()}"));
                     bool connected = await IsConnectedToServer().ConfigureAwait(false);
 
                     if (!connected)
                     {
                         Trace.TraceWarning(Invariant($"DB is down. Waiting for {connectFailureDelay} before sending message"));
-
-                        foreach (var point in points)
-                        {
-                            await queue.EnqueueAsync(point, token).ConfigureAwait(false);
-                        }
+                        await queue.EnqueueAsync(point, token).ConfigureAwait(false);
                         await Task.Delay(connectFailureDelay, token).ConfigureAwait(false);
                     }
                 }
@@ -179,8 +169,8 @@ namespace Hspi
         {
             try
             {
-                var pong = await influxDBClient.Diagnostics.PingAsync().ConfigureAwait(false);
-                return pong.Success;
+                await influxDBClient.GetServerVersionAsync().ConfigureAwait(false);
+                return true;
             }
             catch
             {
@@ -190,11 +180,13 @@ namespace Hspi
 
         public void Dispose()
         {
+            influxDBClient?.Dispose();
             tokenSource.Cancel();
         }
 
-        private static readonly AsyncProducerConsumerQueue<Point> queue = new AsyncProducerConsumerQueue<Point>();
-        private readonly InfluxDbClient influxDBClient;
+        private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue 
+            = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
+        private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
         private readonly CancellationTokenSource tokenSource;
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;

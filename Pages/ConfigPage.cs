@@ -1,6 +1,4 @@
 ﻿using HomeSeerAPI;
-using InfluxData.Net.Common.Enums;
-using InfluxData.Net.InfluxDb;
 using NullGuard;
 using Scheduler;
 using System;
@@ -11,6 +9,7 @@ using System.Text;
 using System.Web;
 using Hspi.Utils;
 using static System.FormattableString;
+using AdysTech.InfluxDB.Client.Net;
 
 namespace Hspi.Pages
 {
@@ -363,11 +362,11 @@ namespace Hspi.Pages
 
             try
             {
-                var influxDbClient = new InfluxDbClient(dbUri.ToString(), username, password, InfluxDbVersion.v_1_3);
+                var influxDbClient = new InfluxDBClient(dbUri.ToString(), username, password);
 
-                var databases = influxDbClient.Database.GetDatabasesAsync().ResultForSync();
+                var databases = influxDbClient.GetInfluxDBNamesAsync().ResultForSync();
 
-                var selectedDb = databases.Where((db) => { return db.Name == database; }).FirstOrDefault();
+                var selectedDb = databases.Where((db) => { return db == database; }).FirstOrDefault();
                 if (selectedDb == null)
                 {
                     results.AppendLine("Database not found on server.<br>");
@@ -376,7 +375,7 @@ namespace Hspi.Pages
                 {
                     if (!string.IsNullOrWhiteSpace(retention))
                     {
-                        var retentionPolcies = influxDbClient.Retention.GetRetentionPoliciesAsync(selectedDb.Name).ResultForSync();
+                        var retentionPolcies = influxDbClient.GetRetentionPoliciesAsync(selectedDb).ResultForSync();
                         if (!retentionPolcies.Any(r => r.Name == retention))
                         {
                             results.AppendLine("Retention policy not found for database.<br>");

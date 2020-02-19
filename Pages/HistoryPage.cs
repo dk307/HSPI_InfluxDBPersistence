@@ -1,5 +1,4 @@
 ﻿using Hspi.Utils;
-using InfluxData.Net.InfluxDb.Models.Responses;
 using NullGuard;
 using Scheduler;
 using System;
@@ -15,9 +14,8 @@ namespace Hspi.Pages
 {
     internal partial class ConfigPage : PageHelper
     {
-        private static string ConvertInfluxDBDateTimeToString(DateTimeOffset today, CultureInfo culture, long timePoint)
+        private static string ConvertInfluxDBDateTimeToString(DateTimeOffset today, CultureInfo culture, DateTime dateTime)
         {
-            var dateTime = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime();
             var dateTimeToday = dateTime.Date;
 
             if (today == dateTimeToday)
@@ -58,6 +56,13 @@ namespace Hspi.Pages
                 case null:
                     return null;
 
+                case string stringValue:
+                    if (double.TryParse(stringValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double parsedValue))
+                    {
+                        return RoundDoubleValue(culture, parsedValue);
+                    }
+                    return stringValue;
+
                 default:
                     return Convert.ToString(column, culture);
             }
@@ -75,6 +80,7 @@ namespace Hspi.Pages
             var title = parts[TitlePartId] ?? string.Empty;
             try
             {
+
                 var queryData = GetData(HttpUtility.UrlDecode(query));
 
                 IncludeResourceCSS(stb, "metricsgraphics.css");
@@ -88,47 +94,48 @@ namespace Hspi.Pages
                 stb.AppendLine("<script>");
                 stb.AppendLine(@"function chartData() {");
 
-                List<string> legands = new List<string>();
-                if (queryData != null)
+               var legands = new List<string>();
+                if (queryData.Count > 0)
                 {
-                    for (var i = 1; i < queryData.Columns.Count; i++)
+                    var nonTimeColumns = queryData.First().Keys.Where( x => (0 != string.CompareOrdinal(x, InfluxDBHelper.TimeColumn)));
+
+                    foreach (var nonTimeColumn in nonTimeColumns)
                     {
-                        var column = queryData.Columns[i];
-                        legands.Add(Invariant($"'{FirstCharToUpper(column)}'"));
+                         legands.Add(Invariant($"'{FirstCharToUpper(nonTimeColumn)}'"));
                     }
 
-                    List<StringBuilder> dataStrings = new List<StringBuilder>();
-                    foreach (var row in queryData.Values)
+                    var dataStrings = new Dictionary<string, StringBuilder>();
+                    foreach (var row in queryData)
                     {
                         long jsMilliseconds = 0;
-                        for (int i = 0; i < row.Count; i++)
+                        foreach (var pair in row)
                         {
-                            object column = row[i];
-
-                            if (i == 0)
+                            if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) == 0)
                             {
-                                var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
-                                jsMilliseconds = DateTimeOffset.FromUnixTimeSeconds(timePoint).ToLocalTime().ToUnixTimeMilliseconds();
+                                var timePoint = (DateTime)pair.Value ;
+                                jsMilliseconds = (new DateTimeOffset(timePoint)).ToLocalTime().ToUnixTimeMilliseconds();
                             }
                             else
                             {
-                                if (column != null)
+                                if (pair.Value != null)
                                 {
-                                    if (dataStrings.Count < (i))
-                                    {
-                                        dataStrings.Add(new StringBuilder());
+                                    StringBuilder stringBuilder;
+                                    if (!dataStrings.TryGetValue(pair.Key, out stringBuilder))
+                                    { 
+                                        stringBuilder = new StringBuilder();
+                                        dataStrings.Add(pair.Key, stringBuilder);
                                     }
-                                    dataStrings[i - 1].AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {GetSerieValue(CultureInfo.InvariantCulture, column)}}},"));
+                                    stringBuilder.AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {GetSerieValue(CultureInfo.InvariantCulture, pair.Value)}}},"));
                                 }
                             }
                         }
                     }
 
                     stb.AppendLine("return [");
-                    foreach (var dataString in dataStrings)
+                    foreach (var nonTimeColumn in nonTimeColumns)
                     {
                         stb.AppendLine("[");
-                        stb.Append(dataString.ToString());
+                        stb.Append(dataStrings[nonTimeColumn].ToString());
                         stb.AppendLine("],");
                     }
                     stb.AppendLine("]");
@@ -247,27 +254,31 @@ namespace Hspi.Pages
             try
             {
                 var queryData = GetData(HttpUtility.UrlDecode(query));
-                if (queryData != null)
+                if (queryData.Count > 0)
                 {
                     //Display the first row/column only
                     stb.Append("<table id=\"results\" class=\"cell-border compact\" style=\"width:100%\">");
 
-                    var count = queryData.Columns.Count;
-                    for (var i = 1; i < count; i++)
+                    var firstRow = queryData[0];
+
+                    foreach (var pair in firstRow)
                     {
-                        stb.Append(@"<tr class='tablecell'>");
-                        stb.Append(@"<td>");
-                        stb.Append(HtmlEncode(FirstCharToUpper(queryData.Columns[i])));
-                        stb.Append(@"</td>");
+                        if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) != 0)
+                        {
+                            stb.Append(@"<tr class='tablecell'>");
+                            stb.Append(@"<td>");
+                            stb.Append(HtmlEncode(FirstCharToUpper(pair.Key)));
+                            stb.Append(@"</td>");
 
-                        stb.Append(@"<td>");
-                        stb.Append(HtmlEncode(GetSerieValue(culture, queryData.Values[0][i])));
-                        stb.Append(@"</td>");
+                            stb.Append(@"<td>");
+                            stb.Append(HtmlEncode(GetSerieValue(culture, pair.Value)));
+                            stb.Append(@"</td>");
 
-                        stb.Append(@"</tr>");
+                            stb.Append(@"</tr>");
+                        }
                     }
                     stb.AppendLine(@"</table>");
-                }
+                } 
 
                 return stb.ToString();
             }
@@ -284,13 +295,13 @@ namespace Hspi.Pages
                 var culture = CultureInfo.CurrentUICulture;
                 var queryData = GetData(query);
 
-                if (queryData != null)
+                if (queryData.Count > 0)
                 {
-                    int columns = queryData.Columns.Count;
+                    var columns = queryData[0].Keys;
 
                     stb.Append("<table id=\"results\" class=\"cell-border compact\" style=\"width:100%\">");
                     stb.Append(@"<thead><tr>");
-                    foreach (var column in queryData.Columns)
+                    foreach (var column in columns)
                     {
                         stb.Append(Invariant($"<th>{ HtmlEncode(FirstCharToUpper(column))}</th>"));
                     }
@@ -298,17 +309,9 @@ namespace Hspi.Pages
                     stb.Append(@"<tbody>");
 
                     DateTimeOffset today = DateTimeOffset.Now.Date;
-                    foreach (var row in queryData.Values)
+                    foreach (var row in queryData)
                     {
-                        bool anyValue = false;
-                        for (int i = 1; i < row.Count; i++)
-                        {
-                            if (row[i] != null)
-                            {
-                                anyValue = true;
-                                break;
-                            }
-                        }
+                        bool anyValue = row.Any(x => (string.CompareOrdinal(x.Key, InfluxDBHelper.TimeColumn) != 0) && (x.Value != null)); 
 
                         if (!anyValue)
                         {
@@ -316,16 +319,17 @@ namespace Hspi.Pages
                         }
 
                         stb.Append(@"<tr>");
-                        for (int i = 0; i < row.Count; i++)
+
+                        foreach (var columnName in columns)
                         {
-                            object column = row[i];
+                            object column = row[columnName];
                             string value = string.Empty;
                             string sortValue = null;
 
-                            if (i == 0)
+                            if (string.CompareOrdinal(columnName, InfluxDBHelper.TimeColumn) == 0)
                             {
-                                var timePoint = Convert.ToInt64(column, CultureInfo.InvariantCulture);
-                                sortValue = column.ToString();
+                                DateTime timePoint = (DateTime)column;
+                                sortValue = (new DateTimeOffset(timePoint)).ToUnixTimeSeconds().ToString();
                                 value = ConvertInfluxDBDateTimeToString(today, culture, timePoint);
                             }
                             else
@@ -384,7 +388,7 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
-        private Serie GetData(string query)
+        private IList<IDictionary<string, object>> GetData(string query)
         {
             var loginInformation = pluginConfig.DBLoginInformation;
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
@@ -488,7 +492,6 @@ namespace Hspi.Pages
             this.AddScript(stb.ToString());
         }
 
-        private const string DurationTypeId = "durationtypeid";
         private const string HistoryQueryTypeId = "historyquerytypeid";
         private const string HistoryResultDivId = "historyresultdivid";
         private const string HistoryRunQueryButtonName = "historyrunquery";
