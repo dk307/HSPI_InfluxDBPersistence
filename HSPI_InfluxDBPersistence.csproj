@@ -259,6 +259,7 @@
       <InputAssemblies Include="$(OutputPath)\System.Buffers.dll" />
       <InputAssemblies Include="$(OutputPath)\System.Memory.dll" />
       <InputAssemblies Include="$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll" />
+      <InputAssemblies Include="$(OutputPath)\AdysTech.InfluxDB.Client.Net.Core.dll" />
     </ItemGroup>
     <Message Importance="high" Text="Executing ILMerge in $(ProjectDir)..." />
     <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(ILMergeConsolePath)&quot; /ndebug /target:winexe /out:@(MainAssembly) /internalize /targetplatform:v4 @(InputAssemblies->'&quot;%(FullPath)&quot;', ' ')" />
