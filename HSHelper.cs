@@ -83,7 +83,9 @@ namespace Hspi
                 {
                     if (descriptionStringUpper.Contains(typeString))
                     {
-                        return typeString;
+#pragma warning disable CA1308 // Normalize strings to uppercase
+                        return typeString.ToLowerInvariant();
+#pragma warning restore CA1308 // Normalize strings to uppercase
                     }
                 }
             }
