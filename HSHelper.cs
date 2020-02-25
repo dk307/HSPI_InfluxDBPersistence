@@ -2,6 +2,7 @@
 using Scheduler.Classes;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Hspi
 {
@@ -73,16 +74,18 @@ namespace Hspi
             }
         }
 
-        private string FindTypeString(IEnumerable<string> descriptionStrings)
+        private static string FindTypeString(IEnumerable<string> descriptionStrings)
         {
             foreach (var descriptionString in descriptionStrings)
             {
-                var descriptionStringLower = descriptionString.ToLowerInvariant();
+                var descriptionStringUpper = descriptionString.ToUpperInvariant();
                 foreach (var typeString in measurementTypes)
                 {
-                    if (descriptionStringLower.Contains(typeString))
+                    if (descriptionStringUpper.Contains(typeString))
                     {
-                        return typeString;
+#pragma warning disable CA1308 // Normalize strings to uppercase
+                        return typeString.ToLowerInvariant();
+#pragma warning restore CA1308 // Normalize strings to uppercase
                     }
                 }
             }
@@ -130,10 +133,14 @@ namespace Hspi
 
         private void LoadSettings()
         {
-            location2Enabled = Convert.ToBoolean(HS.GetINISetting("Settings", "bUseLocation2", Convert.ToString(false), ""));
+            location2Enabled = Convert.ToBoolean(
+                HS.GetINISetting("Settings", "bUseLocation2", Convert.ToString(false, CultureInfo.InvariantCulture), ""),
+                CultureInfo.InvariantCulture);
             if (location2Enabled)
             {
-                location1First = Convert.ToBoolean(HS.GetINISetting("Settings", "bLocationFirst", Convert.ToString(false), ""));
+                location1First = Convert.ToBoolean(
+                    HS.GetINISetting("Settings", "bLocationFirst", Convert.ToString(false, CultureInfo.InvariantCulture), ""),
+                    CultureInfo.InvariantCulture);
             }
             else
             {
@@ -145,7 +152,7 @@ namespace Hspi
         private bool location2Enabled;
         private bool location1First;
 
-        private static string[] measurementTypes = { "temperature", "humidity", "watts", "kwh", "battery",
-                                                     "pressure", "amperes", "co2", "pm25", "volts", "luminance" };
+        private static string[] measurementTypes = { "TEMPERATURE", "HUMIDITY", "WATTS", "KWH", "BATTERY",
+                                                     "PRESSURE", "AMPERES", "CO2", "PM25", "VOLTS", "LUMINANCE" };
     }
 }

@@ -174,10 +174,8 @@ namespace Hspi
                 {
                     pluginConfig.ConfigChanged -= PluginConfig_ConfigChanged;
                 }
-                if (configPage != null)
-                {
-                    configPage.Dispose();
-                }
+
+                configPage?.Dispose();
 
                 Shutdown();
                 disposedValue = true;
@@ -290,8 +288,8 @@ namespace Hspi
 
         private void RestartProcessing()
         {
-            TaskHelper.StartAsyncWithErrorChecking("Measurements Collector", StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
-            TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
+            Utils.TaskHelper.StartAsyncWithErrorChecking("Measurements Collector", StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
+            Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
         }
 
         private void Shutdown()
@@ -342,7 +340,9 @@ namespace Hspi
             }
 
             // do not leave thread to avoid leaving thread as it can delay startup
+#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
             await RecordTrackedDevices();
+#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
         }
 
         #region "Action Override"

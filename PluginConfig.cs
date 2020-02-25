@@ -225,10 +225,9 @@ namespace Hspi
         private void LoadDBSettings()
         {
             // read db uri
-            System.Uri influxDBUri;
             string influxDBUriString = GetValue(InfluxDBUriKey, string.Empty);
 
-            Uri.TryCreate(influxDBUriString, UriKind.Absolute, out influxDBUri);
+            Uri.TryCreate(influxDBUriString, UriKind.Absolute, out Uri influxDBUri);
 
             this.influxDBLoginInformation = new InfluxDBLoginInformation(
                 influxDBUri,

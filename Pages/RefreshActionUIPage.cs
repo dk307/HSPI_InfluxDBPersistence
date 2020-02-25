@@ -26,10 +26,10 @@ namespace Hspi.Pages
 
                 foreach (var pair in postData)
                 {
-                    string text = Convert.ToString(pair);
-                    if (!string.IsNullOrWhiteSpace(text) && text.StartsWith(RefreshActionUIDropDownName))
+                    string text = Convert.ToString(pair, CultureInfo.InvariantCulture);
+                    if (!string.IsNullOrWhiteSpace(text) && text.StartsWith(RefreshActionUIDropDownName, StringComparison.Ordinal))
                     {
-                        action.DeviceRefId = Convert.ToInt32(postData[text]);
+                        action.DeviceRefId = Convert.ToInt32(postData[text], CultureInfo.InvariantCulture);
                     }
                 }
 

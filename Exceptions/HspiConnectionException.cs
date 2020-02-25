@@ -6,6 +6,9 @@ namespace Hspi.Exceptions
     [Serializable]
     internal class HspiConnectionException : HspiException
     {
+        public HspiConnectionException(string message) : base(message)
+        {
+        }
         public HspiConnectionException(string message, Exception innerException) : base(message, innerException)
         {
         }

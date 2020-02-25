@@ -49,5 +49,28 @@ namespace Hspi
                 this.Password == other.Password &&
                 this.Retention == other.Retention;
         }
+
+        public override bool Equals([AllowNull] object other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+            if (this == other)
+            {
+                return true;
+            }
+            return Equals(other as InfluxDBLoginInformation);
+        }
+
+
+        public override int GetHashCode()
+        {
+            return DB.GetHashCode() ^
+                   Retention.GetHashCode() ^
+                   DBUri.GetHashCode() ^
+                   Password.GetHashCode() ^
+                   User.GetHashCode();
+        }
     }
 }

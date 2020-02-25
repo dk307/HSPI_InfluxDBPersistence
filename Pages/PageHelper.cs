@@ -1,10 +1,10 @@
 ﻿using HomeSeerAPI;
+using Hspi.Utils;
 using NullGuard;
 using Scheduler;
 using System;
 using System.Collections.Specialized;
 using System.Web;
-using Hspi.Utils;
 using static System.FormattableString;
 
 namespace Hspi.Pages
@@ -95,7 +95,7 @@ namespace Hspi.Pages
             return FormButton(name, label, toolTip, PageName);
         }
 
-        protected string FormButton(string name, string label, string toolTip, string pageName)
+        protected static string FormButton(string name, string label, string toolTip, string pageName)
         {
             var button = new clsJQuery.jqButton(name, label, pageName, true)
             {

@@ -1,15 +1,15 @@
-﻿using HomeSeerAPI;
-using InfluxData.Net.Common.Enums;
-using InfluxData.Net.InfluxDb;
+﻿using AdysTech.InfluxDB.Client.Net;
+using HomeSeerAPI;
+using Hspi.Utils;
 using NullGuard;
 using Scheduler;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
-using Hspi.Utils;
 using static System.FormattableString;
 
 namespace Hspi.Pages
@@ -157,42 +157,6 @@ namespace Hspi.Pages
             }
         }
 
-        private void CreatePageWithAjaxLoad(NameValueCollection parts, StringBuilder stb,
-                                            string pageDivId, Func<NameValueCollection, string> func)
-        {
-            stb.Append(DivStart(pageDivId, string.Empty));
-
-            if (!string.IsNullOrWhiteSpace(parts[RealLoadId]))
-            {
-                stb.Append(func(parts));
-            }
-            else
-            {
-                stb.Append("<div id=\"loading\">Please wait ...</div>");
-
-                stb.Append(@"<script>
-                                           var $loading = $('#loading').hide();
-                                           $(document)
-                                             .ajaxStart(function () {$loading.show();})
-                                             .ajaxStop(function () {$loading.hide();});");
-                stb.AppendLine("$( document ).ready(function() {");
-
-                var newParts = new NameValueCollection();
-                foreach (var key in parts.AllKeys)
-                {
-                    newParts.Add(key, HttpUtility.UrlDecode(parts[key]));
-                }
-
-                newParts.Add(RealLoadId, "1");
-                stb.AppendFormat("$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
-                stb.AppendLine("});");
-                stb.AppendLine("</script>");
-            }
-            stb.Append(DivEnd());
-
-            AddBody(stb.ToString());
-        }
-
         /// <summary>
         /// The user has selected a control on the configuration web page.
         /// The post data is provided to determine the control that initiated the post and the state of the other controls.
@@ -234,7 +198,7 @@ namespace Hspi.Pages
             return base.postBackProc(Name, data, user, userRights);
         }
 
-        protected string FormDropDownChosen(string name, IDictionary<int, string> options, int selected)
+        protected static string FormDropDownChosen(string name, IDictionary<int, string> options, int selected)
         {
             string id = NameToIdWithPrefix(name);
             StringBuilder stb = new StringBuilder();
@@ -290,8 +254,7 @@ namespace Hspi.Pages
         {
             this.UsesJqTabs = true;
             string tab = parts[TabId] ?? "0";
-            int defaultTab = 0;
-            int.TryParse(tab, out defaultTab);
+            int.TryParse(tab, NumberStyles.Integer, CultureInfo.InvariantCulture, out int defaultTab);
 
             int i = 0;
             StringBuilder stb = new StringBuilder();
@@ -307,13 +270,13 @@ namespace Hspi.Pages
             var tab2 = new clsJQuery.Tab();
             tab2.tabTitle = "Persistence";
             tab2.tabDIVID = Invariant($"tabs{i++}");
-            tab2.tabContent = BuildPersistenceTab(parts);
+            tab2.tabContent = BuildPersistenceTab();
             tabs.tabs.Add(tab2);
 
             var tab3 = new clsJQuery.Tab();
             tab3.tabTitle = "Devices Import";
             tab3.tabDIVID = Invariant($"tabs{i++}");
-            tab3.tabContent = BuildImportDevicesTab(parts);
+            tab3.tabContent = BuildImportDevicesTab();
             tabs.tabs.Add(tab3);
 
             switch (defaultTab)
@@ -337,15 +300,48 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
+        private void CreatePageWithAjaxLoad(NameValueCollection parts, StringBuilder stb,
+                                                                            string pageDivId, Func<NameValueCollection, string> func)
+        {
+            stb.Append(DivStart(pageDivId, string.Empty));
+
+            if (!string.IsNullOrWhiteSpace(parts[RealLoadId]))
+            {
+                stb.Append(func(parts));
+            }
+            else
+            {
+                stb.Append("<div id=\"loading\">Please wait ...</div>");
+
+                stb.Append(@"<script>
+                                           var $loading = $('#loading').hide();
+                                           $(document)
+                                             .ajaxStart(function () {$loading.show();})
+                                             .ajaxStop(function () {$loading.hide();});");
+                stb.AppendLine("$( document ).ready(function() {");
+
+                var newParts = new NameValueCollection();
+                foreach (var key in parts.AllKeys)
+                {
+                    newParts.Add(key, HttpUtility.UrlDecode(parts[key]));
+                }
+
+                newParts.Add(RealLoadId, "1");
+                stb.AppendFormat(CultureInfo.InvariantCulture, "$(\"#{0}\").load('{1}');", pageDivId, BuildUri(pageUrl, newParts));
+                stb.AppendLine("});");
+                stb.AppendLine("</script>");
+            }
+            stb.Append(DivEnd());
+
+            AddBody(stb.ToString());
+        }
         private void HandleSaveDBSettingPostBack(NameValueCollection parts)
         {
             StringBuilder results = new StringBuilder();
 
             // Validate
 
-            System.Uri dbUri;
-
-            if (!System.Uri.TryCreate(parts[DBUriKey], UriKind.Absolute, out dbUri))
+            if (!System.Uri.TryCreate(parts[DBUriKey], UriKind.Absolute, out Uri dbUri))
             {
                 results.AppendLine("Url is not Valid.<br>");
             }
@@ -363,23 +359,24 @@ namespace Hspi.Pages
 
             try
             {
-                var influxDbClient = new InfluxDbClient(dbUri.ToString(), username, password, InfluxDbVersion.v_1_3);
-
-                var databases = influxDbClient.Database.GetDatabasesAsync().ResultForSync();
-
-                var selectedDb = databases.Where((db) => { return db.Name == database; }).FirstOrDefault();
-                if (selectedDb == null)
+                using (var influxDbClient = new InfluxDBClient(dbUri.ToString(), username, password))
                 {
-                    results.AppendLine("Database not found on server.<br>");
-                }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(retention))
+                    var databases = influxDbClient.GetInfluxDBNamesAsync().ResultForSync();
+
+                    var selectedDb = databases.Where((db) => { return db == database; }).FirstOrDefault();
+                    if (selectedDb == null)
                     {
-                        var retentionPolcies = influxDbClient.Retention.GetRetentionPoliciesAsync(selectedDb.Name).ResultForSync();
-                        if (!retentionPolcies.Any(r => r.Name == retention))
+                        results.AppendLine("Database not found on server.<br>");
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(retention))
                         {
-                            results.AppendLine("Retention policy not found for database.<br>");
+                            var retentionPolcies = influxDbClient.GetRetentionPoliciesAsync(selectedDb).ResultForSync();
+                            if (!retentionPolcies.Any(r => r.Name == retention))
+                            {
+                                results.AppendLine("Retention policy not found for database.<br>");
+                            }
                         }
                     }
                 }
@@ -411,13 +408,12 @@ namespace Hspi.Pages
         private const string DBUriKey = "DBUriId";
         private const string DebugLoggingId = "DebugLoggingId";
         private const string ErrorDivId = "message_id";
-        private const string IdPrefix = "id_";
         private const string PasswordKey = "PasswordId";
+        private const string RealLoadId = "realload";
         private const string RetentionKey = "RetentionId";
         private const string SaveErrorDivId = "SaveErrorDivId";
         private const string SettingSaveButtonName = "SettingSave";
         private const string TabId = "tab";
-        private const string RealLoadId = "realload";
         private const string UserKey = "UserId";
         private static readonly string pageUrl = HttpUtility.UrlEncode(Name);
     }

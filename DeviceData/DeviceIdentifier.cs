@@ -1,9 +1,9 @@
 ﻿using NullGuard;
 using Scheduler.Classes;
+using static System.FormattableString;
 
 namespace Hspi.DeviceData
 {
-    using static System.FormattableString;
 
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal class DeviceIdentifier : System.IEquatable<DeviceIdentifier>
@@ -41,7 +41,32 @@ namespace Hspi.DeviceData
             {
                 return false;
             }
+            if (this == other)
+            {
+                return true;
+            }
             return Address == other.Address;
+        }
+
+        public override bool Equals([AllowNull] object other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+            if (this == other)
+            {
+                return true;
+            }
+
+            return Equals(other as DeviceIdentifier);
+        }
+
+        public override int GetHashCode()
+        {
+            return Address.GetHashCode() ^
+                   DeviceId.GetHashCode() ^
+                   RootDeviceAddress.GetHashCode();
         }
 
         private const char AddressSeparator = '.';
