@@ -73,7 +73,7 @@ namespace Hspi.DeviceData
 
             try
             {
-                Trace.TraceInformation(Invariant($"Updating {importDeviceData.Name} with {deviceValue}"));
+                Trace.WriteLine(Invariant($"Updating {importDeviceData.Name} with {deviceValue}"));
                 deviceData.Update(HS, refID, deviceValue);
             }
             catch (Exception ex)
