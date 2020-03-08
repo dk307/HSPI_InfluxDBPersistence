@@ -18,9 +18,9 @@ namespace Hspi.Utils
                                                        Func<Task> taskAction,
                                                        CancellationToken token)
         {
-            var task = Task.Factory.StartNew(() => RunInLoop(taskName, taskAction, token), token,
-                                         TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                                         TaskScheduler.Current);
+            _ = Task.Factory.StartNew(() => RunInLoop(taskName, taskAction, token), token,
+                                          TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                                          TaskScheduler.Current);
         }
 
         private static async Task RunInLoop(string taskName, Func<Task> taskAction, CancellationToken token)

@@ -29,9 +29,24 @@ namespace Hspi
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
 
-        public bool IsTracked(int deviceRefId)
+        public bool IsTracked(int deviceRefId, TrackedType? trackedType)
         {
-            return peristenceDataMap?.ContainsKey(deviceRefId) ?? false;
+            if (peristenceDataMap != null)
+            {
+                if (peristenceDataMap.TryGetValue(deviceRefId, out var devicePersistenceDatas))
+                {
+                    if (!trackedType.HasValue)
+                    {
+                        return devicePersistenceDatas.Count > 0;
+                    }
+                    else
+                    {
+                        return devicePersistenceDatas.Any(x => x.TrackedType == trackedType.Value);
+                    }
+                }
+            }
+
+            return false;
         }
 
         public async Task<bool> Record(RecordData data)
@@ -186,6 +201,7 @@ namespace Hspi
 
         private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue
             = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
+
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
         private readonly CancellationTokenSource tokenSource;

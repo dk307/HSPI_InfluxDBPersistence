@@ -36,6 +36,7 @@ namespace Hspi.Pages
             string fieldString = data?.FieldString ?? string.Empty;
             string maxValidValue = data?.MaxValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
             string minValidValue = data?.MinValidValue?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+            var trackedType = data?.TrackedType  ?? TrackedType.Value;
             string tags = string.Empty;
             string id = data != null ? data.Id : string.Empty;
             string buttonLabel = data != null ? "Save" : "Add";
@@ -91,6 +92,11 @@ namespace Hspi.Pages
 
             stb.Append("</td></tr>");
             stb.Append(Invariant($"<tr><td class='tablecell'>Field for string value:</td><td class='tablecell'>{HtmlTextBox(FieldStringId, fieldString)}</td></tr>"));
+
+            NameValueCollection trackedTypeCollection = CreateNameValueCreation<TrackedType>();
+            stb.Append(Invariant($"<tr><td class='tablecell'>Record On Change of:</td><td class='tablecell'>{FormDropDown(TrackedTypeId, trackedTypeCollection, trackedType.ToString(), 100, string.Empty, false)}</td></tr>"));
+
+
             stb.Append(Invariant($"<tr><td class='tablecell'>Tags:</td><td class='tablecell'><p><small>Name and locations are automatically added as tags.</small></p>{TextArea(TagsId, tags, cols: 35)}</td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2>{HtmlTextBox(RecordId, id, type: "hidden")}<div id='{SaveErrorDivId}' style='color:Red'></div></td><td></td></tr>"));
             stb.Append(Invariant($"<tr><td colspan=2>{FormPageButton(EditPersistenceSave, buttonLabel)}"));
@@ -257,6 +263,18 @@ namespace Hspi.Pages
                         results.AppendLine("Both Field and FieldString are not valid. One of them need to valid.<br>");
                     }
 
+                    var trackedTypeString = parts[TrackedTypeId];
+
+                    TrackedType? trackingType = null;
+                    if (Enum.TryParse<TrackedType>(trackedTypeString, out var trackingTypeTemp))
+                    {
+                        trackingType = trackingTypeTemp;
+                    }
+                    else
+                    {
+                        results.AppendLine("Record on value change not valid");
+                    }
+
                     string tagsString = parts[TagsId];
                     var tagsList = tagsString.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
 
@@ -336,7 +354,7 @@ namespace Hspi.Pages
                             persistenceId = System.Guid.NewGuid().ToString();
                         }
 
-                        var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                        var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue, trackingType);
                         this.pluginConfig.AddDevicePersistenceData(persistenceData);
                         this.pluginConfig.FireConfigChanged();
                         this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
@@ -358,6 +376,7 @@ namespace Hspi.Pages
         private const string FieldDivId = "FieldDivId";
         private const string FieldId = "FieldId";
         private const string FieldStringId = "FieldStringId";
+        private const string TrackedTypeId = "TrackedTypeId";
         private const string FillDefaultValuesButtonName = "FillDefaultValues";
         private const string HistoryDevicePageType = "history";
         private const string MaxValidValueDivId = "MaxValidValueDivId";
