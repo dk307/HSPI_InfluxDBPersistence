@@ -127,6 +127,7 @@ namespace Hspi
                 SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
                 SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
                 SetValue(MinValidValueKey, device.MinValidValue, device.Id);
+                SetValue(TrackedTypeKey, device.TrackedType, device.Id);
             }
         }
 
@@ -281,6 +282,7 @@ namespace Hspi
                 string fieldString = GetValue(FieldStringKey, string.Empty, persistenceId);
                 string maxValidValueString = GetValue(MaxValidValueKey, string.Empty, persistenceId);
                 string minValidValueString = GetValue(MinValidValueKey, string.Empty, persistenceId);
+                string trackedTypeString = GetValue(TrackedTypeKey, string.Empty, persistenceId);
 
                 var tagString = GetValue(TagsKey, string.Empty, persistenceId);
 
@@ -296,6 +298,7 @@ namespace Hspi
 
                 double? maxValidValue = null;
                 double? minValidValue = null;
+                TrackedType? trackedType = null;
 
                 if (double.TryParse(maxValidValueString, out var value))
                 {
@@ -307,7 +310,13 @@ namespace Hspi
                     minValidValue = value;
                 }
 
-                var data = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue);
+                if (Enum.TryParse<TrackedType>(trackedTypeString, out var trackedTypeValue))
+                {
+                    trackedType = trackedTypeValue;
+                }
+
+                var data = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags,
+                                                     maxValidValue, minValidValue, trackedType);
                 this.devicePersistenceData.Add(persistenceId, data);
             }
         }
@@ -362,6 +371,7 @@ namespace Hspi
         private const string MaxValidValueKey = "MaxValidValue";
         private const string MeasurementKey = "Measurement";
         private const string MinValidValueKey = "MinValidValue";
+        private const string TrackedTypeKey = "TrackedTyp";
         private const string NameKey = "Name";
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';

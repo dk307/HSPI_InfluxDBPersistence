@@ -83,18 +83,7 @@ namespace Hspi
 
         public override void HSEvent(Enums.HSEvent eventType, [AllowNull]object[] parameters)
         {
-            try
-            {
-                if ((eventType == Enums.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
-                {
-                    int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
-                    RecordDeviceValue(deviceRefId).Wait(ShutdownCancellationToken);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceWarning(Invariant($"Failed to process HSEvent {eventType} with {ex.GetFullMessage()}"));
-            }
+            HSEventImpl(eventType, parameters).Wait(ShutdownCancellationToken);
         }
 
         public override string InitIO(string port)
@@ -112,6 +101,7 @@ namespace Hspi
                 RegisterConfigPage();
 
                 Callback.RegisterEventCB(Enums.HSEvent.VALUE_CHANGE, Name, string.Empty);
+                Callback.RegisterEventCB(Enums.HSEvent.STRING_CHANGE, Name, string.Empty);
 
                 RestartProcessing();
 
@@ -184,7 +174,9 @@ namespace Hspi
             base.Dispose(disposing);
         }
 
-        private static async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector, IHSApplication HS, DeviceClass device)
+        private static async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
+                                                    IHSApplication HS,
+                                                    DeviceClass device)
         {
             if (device != null)
             {
@@ -227,6 +219,26 @@ namespace Hspi
             }
         }
 
+        private async Task HSEventImpl(Enums.HSEvent eventType, object[] parameters)
+        {
+            try
+            {
+                if ((eventType == Enums.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
+                {
+                    int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
+                    await RecordDeviceValue(deviceRefId, TrackedType.Value).ConfigureAwait(false);
+                }
+                else if ((eventType == Enums.HSEvent.STRING_CHANGE) && (parameters.Length > 3))
+                {
+                    int deviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
+                    await RecordDeviceValue(deviceRefId, TrackedType.String).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(Invariant($"Failed to process HSEvent {eventType} with {ex.GetFullMessage()}"));
+            }
+        }
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
@@ -238,10 +250,10 @@ namespace Hspi
             RestartProcessing();
         }
 
-        private async Task RecordDeviceValue(int deviceRefId)
+        private async Task RecordDeviceValue(int deviceRefId, TrackedType trackedType)
         {
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
-            if ((collector != null) && collector.IsTracked(deviceRefId))
+            if ((collector != null) && collector.IsTracked(deviceRefId, trackedType))
             {
                 var device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
                 await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
@@ -259,7 +271,7 @@ namespace Hspi
                     DeviceClass device = deviceEnumerator.GetNext();
                     if (device != null)
                     {
-                        if (collector.IsTracked(device.get_Ref(HS)))
+                        if (collector.IsTracked(device.get_Ref(HS), null))
                         {
                             await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
                         }
