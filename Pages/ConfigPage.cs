@@ -96,6 +96,12 @@ namespace Hspi.Pages
                         }
                         break;
 
+                    case DeviceHistogramPageType:
+                        {
+                            string pageDivId = "histogrampage";
+                            CreatePageWithAjaxLoad(parts, stb, pageDivId, BuildHistogramPage);
+                        }
+                        break;
                     case DeviceDataTablePageType:
                         {
                             string pageDivId = "tablepage";
