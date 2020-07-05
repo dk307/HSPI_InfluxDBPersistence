@@ -14,6 +14,7 @@ namespace Hspi.Pages
 {
     internal partial class ConfigPage : PageHelper
     {
+
         private static void BuildQueryChartIFrame(StringBuilder stb, string finalQuery, string title = "")
         {
             string iFrameUrl = BuildChartUri(finalQuery, title);
@@ -93,30 +94,6 @@ namespace Hspi.Pages
             return queries;
         }
 
-        private static string GetSerieValue(CultureInfo culture, [AllowNull]object column)
-        {
-            switch (column)
-            {
-                case double doubleValue:
-                    return RoundDoubleValue(culture, doubleValue);
-
-                case float floatValue:
-                    return RoundDoubleValue(culture, floatValue);
-
-                case null:
-                    return null;
-
-                case string stringValue:
-                    if (double.TryParse(stringValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double parsedValue))
-                    {
-                        return RoundDoubleValue(culture, parsedValue);
-                    }
-                    return stringValue;
-
-                default:
-                    return Convert.ToString(column, culture);
-            }
-        }
 
         private static string HistoryBackButton()
         {
@@ -129,10 +106,6 @@ namespace Hspi.Pages
             return b.Build();
         }
 
-        private static string RoundDoubleValue(CultureInfo culture, double floatValue)
-        {
-            return Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
-        }
 
         private string BuildChartsPage(NameValueCollection parts)
         {
@@ -185,7 +158,7 @@ namespace Hspi.Pages
                                         stringBuilder = new StringBuilder();
                                         dataStrings.Add(pair.Key, stringBuilder);
                                     }
-                                    stringBuilder.AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {GetSerieValue(CultureInfo.InvariantCulture, pair.Value)}}},"));
+                                    stringBuilder.AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, pair.Value)}}},"));
                                 }
                             }
                         }
@@ -230,6 +203,72 @@ namespace Hspi.Pages
                 return Invariant($"<br><div style='color:Red'>{ex.GetFullMessage()}</div><br>");
             }
         }
+
+        private string BuildHistogramPage(NameValueCollection parts)
+        {
+            StringBuilder stb = new StringBuilder();
+            var query = parts[QueryPartId] ?? string.Empty;
+            var duration = parts[QueryDurationId] ?? string.Empty;
+
+            QueryDuration queryDuration = QueryDuration.D1h;
+            _ = Enum.TryParse<QueryDuration>(duration, out queryDuration);
+
+            IncludeDataTableFiles(stb);
+            IncludeResourceScript(stb, "iframeResizer.contentWindow.min.js");
+
+            try
+            {
+                var culture = CultureInfo.CurrentUICulture;
+                TimeSpan durationTimeSpan = InfluxDbQueryBuilder.GetTimeSpan(queryDuration);
+                var queryData = GetData(HttpUtility.UrlDecode(query));
+
+                var histogram = InfluxDBHelper.CreateHistogram(queryData, durationTimeSpan);
+
+                if (histogram.Count > 0)
+                {
+                    //Display the first row/column only
+                    stb.Append("<table id=\"results\" class=\"cell-border compact\" style=\"width:100%\">");
+
+                    stb.Append(@"<thead align='left'><tr>");
+                    stb.Append(@"<th>Value</th>");
+                    stb.Append(@"<th>Total time</th>");
+                    stb.Append(@"<th>Percentage</th>");
+                    stb.Append(@"</tr></thead>");
+
+                    stb.Append(@"<tbody>");
+
+                    var firstRow = queryData[0];
+
+                    foreach (var pair in histogram)
+                    {
+                        stb.Append(@"<tr class='tablecell'>");
+                        stb.Append(@"<td>");
+                        stb.Append(HtmlEncode(FirstCharToUpper(pair.Key, culture)));
+                        stb.Append(@"</td>");
+
+                        stb.Append(@"<td>");
+                        stb.Append(HtmlEncode(InfluxDBHelper.GetSerieValue(culture, pair.Value)));
+                        stb.Append(@"</td>");
+                        stb.Append(@"<td>");
+                        double percentage = 100 * pair.Value.TotalMilliseconds / durationTimeSpan.TotalMilliseconds;
+                        stb.Append(HtmlEncode(InfluxDBHelper.GetSerieValue(culture, percentage)));
+                        stb.Append(@"</td>");
+
+                        stb.Append(@"</tr>");
+                    }
+                    stb.Append(@"</tbody>");
+
+                    stb.AppendLine(@"</table>");
+                }
+
+                return stb.ToString();
+            }
+            catch (Exception ex)
+            {
+                return Invariant($"<br><div style='color:Red'>{ex.GetFullMessage()}</div><br>");
+            }
+        }
+
 
         private string BuildHistoryPage(NameValueCollection parts, DevicePersistenceData data)
         {
@@ -287,6 +326,7 @@ namespace Hspi.Pages
             return stb.ToString();
         }
 
+
         private string BuildStatsPage(NameValueCollection parts)
         {
             StringBuilder stb = new StringBuilder();
@@ -315,7 +355,7 @@ namespace Hspi.Pages
                             stb.Append(@"</td>");
 
                             stb.Append(@"<td>");
-                            stb.Append(HtmlEncode(GetSerieValue(culture, pair.Value)));
+                            stb.Append(HtmlEncode(InfluxDBHelper.GetSerieValue(culture, pair.Value)));
                             stb.Append(@"</td>");
 
                             stb.Append(@"</tr>");
@@ -378,7 +418,7 @@ namespace Hspi.Pages
                             }
                             else
                             {
-                                value = GetSerieValue(culture, column);
+                                value = InfluxDBHelper.GetSerieValue(culture, column);
                             }
 
                             if (sortValue != null)
@@ -434,7 +474,6 @@ namespace Hspi.Pages
             BuildTable(HttpUtility.UrlDecode(query), stb, size);
             return stb.ToString();
         }
-
         private IList<IDictionary<string, object>> GetData(string query)
         {
             var loginInformation = pluginConfig.DBLoginInformation;
@@ -498,6 +537,7 @@ namespace Hspi.Pages
         private const string HistoryResultDivId = "historyresultdivid";
         private const string HistoryRunQueryButtonName = "historyrunquery";
         private const string HistoryShowChartButtonName = "historyshowchart";
+        private const string QueryDurationId = "duration";
         private const string QueryPartId = "query";
         private const string QueryTestDivId = "querytestdivid";
         private const string QueryTestId = "querytextid";

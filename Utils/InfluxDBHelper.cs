@@ -1,14 +1,51 @@
 ﻿using AdysTech.InfluxDB.Client.Net;
+using NullGuard;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Hspi.Utils
 {
     internal static class InfluxDBHelper
     {
-        public const string TimeColumn = "Time";
+        public static IDictionary<string, TimeSpan> CreateHistogram(IList<IDictionary<string, object>> queryData,
+                                                             TimeSpan durationTimeSpan)
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            var lowerClip = utcNow - durationTimeSpan;
+
+            var histogram = new Dictionary<string, TimeSpan>();
+
+            // data is ascending
+            DateTime? previousDateTime = null;
+            string previousValue = null;
+            foreach (var row in queryData)
+            {
+                var dateTime = (DateTime)row[InfluxDBHelper.TimeColumn];
+                var rowValue = GetSerieValue(CultureInfo.InvariantCulture, row.FirstOrDefault(x => x.Key != InfluxDBHelper.TimeColumn).Value);
+
+                if (dateTime >= lowerClip)
+                {
+                    if (previousDateTime != null)
+                    {
+                        AddTimespanToHistogram(histogram, dateTime - previousDateTime.Value, previousValue);
+                    }
+                }
+
+                previousDateTime = dateTime < lowerClip ? lowerClip : dateTime;
+                previousValue = rowValue;
+            }
+
+            if (previousDateTime.HasValue)
+            {
+                AddTimespanToHistogram(histogram, utcNow - previousDateTime.Value, previousValue);
+            }
+
+            return histogram;
+        }
 
         public static async Task<IList<IDictionary<string, object>>> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
         {
@@ -23,6 +60,73 @@ namespace Hspi.Utils
                     accumatedList.AddRange(serie.Entries.Select(x => (IDictionary<string, object>)x));
                 }
                 return accumatedList;
+            }
+        }
+
+        public static string GetSerieValue(CultureInfo culture, [AllowNull]object column)
+        {
+            switch (column)
+            {
+                case double doubleValue:
+                    return RoundDoubleValue(culture, doubleValue);
+
+                case float floatValue:
+                    return RoundDoubleValue(culture, floatValue);
+
+                case TimeSpan span:
+                    {
+                        StringBuilder stringBuilder = new StringBuilder();
+
+                        int days = span.Days;
+                        if (days > 0)
+                        {
+                            stringBuilder.AppendFormat(culture, "{0} {1}", days, (days > 1 ? "days" : "day"));
+                        }
+
+                        int hours = span.Hours;
+                        if (hours > 0)
+                        {
+                            if (stringBuilder.Length > 1)
+                            {
+                                stringBuilder.Append(' ');
+                            }
+                            stringBuilder.AppendFormat(culture, "{0} {1}", hours, (hours > 1 ? "hours" : "hour"));
+                        }
+                        int minutes = span.Minutes;
+                        if (minutes > 0)
+                        {
+                            if (stringBuilder.Length > 1)
+                            {
+                                stringBuilder.Append(' ');
+                            }
+                            stringBuilder.AppendFormat(culture, "{0} {1}", minutes, (minutes > 1 ? "minutes" : "minute"));
+                        }
+
+                        int seconds = span.Seconds;
+                        if (seconds > 0)
+                        {
+                            if (stringBuilder.Length > 1)
+                            {
+                                stringBuilder.Append(' ');
+                            }
+                            stringBuilder.AppendFormat(culture, "{0} {1}", seconds, (seconds > 1 ? "seconds" : "second"));
+                        }
+
+                        return stringBuilder.ToString();
+                    }
+
+                case null:
+                    return null;
+
+                case string stringValue:
+                    if (double.TryParse(stringValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double parsedValue))
+                    {
+                        return RoundDoubleValue(culture, parsedValue);
+                    }
+                    return stringValue;
+
+                default:
+                    return Convert.ToString(column, culture);
             }
         }
 
@@ -48,5 +152,21 @@ namespace Hspi.Utils
 
             return null;
         }
+
+        private static void AddTimespanToHistogram(IDictionary<string, TimeSpan> value,
+                                                                           TimeSpan timeSpan,
+                                           string previousValue)
+        {
+            TimeSpan existingValue = new TimeSpan();
+            _ = value.TryGetValue(previousValue, out existingValue);
+            value[previousValue] = existingValue.Add(timeSpan);
+        }
+        private static string RoundDoubleValue(CultureInfo culture, double floatValue)
+        {
+            return Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
+        }
+
+
+        public const string TimeColumn = "Time";
     }
 }

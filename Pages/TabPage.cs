@@ -4,6 +4,7 @@ using Hspi.Utils;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Web;
@@ -13,19 +14,6 @@ namespace Hspi.Pages
 {
     internal partial class ConfigPage : PageHelper
     {
-        [Flags]
-        public enum IFrameType
-        {
-            [Description("Table")]
-            TableHistory,
-
-            [Description("Charts")]
-            ChartHistory,
-
-            [Description("Average Statistics")]
-            AverageStats,
-        }
-
         [Flags]
         public enum IFrameGrouping
         {
@@ -60,6 +48,21 @@ namespace Hspi.Pages
             I1d,
         }
 
+        [Flags]
+        public enum IFrameType
+        {
+            [Description("Table")]
+            TableHistory,
+
+            [Description("Charts")]
+            ChartHistory,
+
+            [Description("Average Statistics")]
+            AverageStats,
+
+            [Description("Histogram")]
+            Histogram,
+        }
         public Enums.ConfigDevicePostReturn GetDeviceHistoryPost(IAppCallbackAPI callback, int refId, string queryData)
         {
             var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
@@ -114,6 +117,10 @@ namespace Hspi.Pages
                 {
                     AddEnumValue(iframeType, IFrameType.ChartHistory);
                     AddEnumValue(iframeType, IFrameType.AverageStats);
+                } 
+                else
+                {
+                    AddEnumValue(iframeType, IFrameType.Histogram);
                 }
 
                 stb.Append(FormDropDown(IFrameTypeId, iframeType, DefaultFrameType.ToString(),
@@ -193,6 +200,16 @@ namespace Hspi.Pages
             });
         }
 
+        private static string BuildHistogramUri(string finalQuery, QueryDuration queryDuration)
+        {
+            return BuildUri(pageUrl, new NameValueCollection()
+            {
+                { PageTypeId, DeviceHistogramPageType},
+                { QueryPartId, finalQuery },
+                { QueryDurationId, queryDuration.ToString() },
+            });
+        }
+
         private static string BuildStatsUri(string finalQuery)
         {
             return BuildUri(pageUrl, new NameValueCollection()
@@ -201,7 +218,6 @@ namespace Hspi.Pages
                 { QueryPartId, finalQuery },
             });
         }
-
         private static string BuildTableUri(string finalQuery, int tableSize)
         {
             return BuildUri(pageUrl, new NameValueCollection()
@@ -210,46 +226,6 @@ namespace Hspi.Pages
                 { QueryPartId, finalQuery },
                 { TableSizeId, Invariant($"{tableSize}") },
             });
-        }
-
-        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType,
-                                           QueryDuration duration, IFrameGrouping grouping)
-        {
-            StringBuilder stb = new StringBuilder();
-            string iFrameUrl = null;
-
-            HSHelper hSHelper = new HSHelper(HS);
-            string deviceName = hSHelper.GetName(data.DeviceRefId);
-
-            switch (frameType)
-            {
-                case IFrameType.TableHistory:
-                    var query = InfluxDbQueryBuilder.GetDeviceHistoryTabQuery(data, deviceName, duration);
-                    iFrameUrl = BuildTableUri(query, 10);
-                    break;
-
-                case IFrameType.ChartHistory:
-                    var chartQuery = InfluxDbQueryBuilder.GetGroupedDeviceHistoryTabQuery(data, deviceName, duration,
-                                                                              pluginConfig.DBLoginInformation,
-                                                                              GetTimeSpan(grouping)).ResultForSync();
-                    iFrameUrl = BuildChartUri(chartQuery, string.Empty);
-                    break;
-
-                case IFrameType.AverageStats:
-                    var statsQuery = InfluxDbQueryBuilder.GetStatsQuery(data, duration,
-                                                                        pluginConfig.DBLoginInformation,
-                                                                        GetTimeSpan(grouping)).ResultForSync();
-                    iFrameUrl = BuildStatsUri(statsQuery);
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(frameType));
-            }
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
-            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
-
-            return stb.ToString();
         }
 
         private static TimeSpan? GetTimeSpan(IFrameGrouping grouping)
@@ -291,11 +267,55 @@ namespace Hspi.Pages
             }
         }
 
+        private string GetQueryResultFrame(DevicePersistenceData data, IFrameType frameType,
+                                                   QueryDuration duration, IFrameGrouping grouping)
+        {
+            StringBuilder stb = new StringBuilder();
+            string iFrameUrl = null;
+
+            HSHelper hSHelper = new HSHelper(HS);
+            string deviceName = hSHelper.GetName(data.DeviceRefId);
+
+            switch (frameType)
+            {
+                case IFrameType.TableHistory:
+                    var query = InfluxDbQueryBuilder.GetDeviceHistoryTabQuery(data, deviceName, duration);
+                    iFrameUrl = BuildTableUri(query, 10);
+                    break;
+
+                case IFrameType.ChartHistory:
+                    var chartQuery = InfluxDbQueryBuilder.GetGroupedDeviceHistoryTabQuery(data, deviceName, duration,
+                                                                              pluginConfig.DBLoginInformation,
+                                                                              GetTimeSpan(grouping)).ResultForSync();
+                    iFrameUrl = BuildChartUri(chartQuery, string.Empty);
+                    break;
+
+                case IFrameType.AverageStats:
+                    var statsQuery = InfluxDbQueryBuilder.GetStatsQuery(data, duration,
+                                                                        pluginConfig.DBLoginInformation,
+                                                                        GetTimeSpan(grouping)).ResultForSync();
+                    iFrameUrl = BuildStatsUri(statsQuery);
+                    break;
+
+                case IFrameType.Histogram:
+                    var histogramQuery = InfluxDbQueryBuilder.GetDeviceHistogramTabQuery(data, duration, pluginConfig.DBLoginInformation).ResultForSync();
+                    iFrameUrl = BuildHistogramUri(histogramQuery, duration);
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(frameType));
+            }
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"{iFrameUrl}\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:false}}, '#{TableFrameId}')</script>"));
+
+            return stb.ToString();
+        }
         private const string DeviceUtiltyPageName = "deviceutility";
         private const string DoneButtonId = "DoneButtonId";
         private const string IFrameDurationId = "duration";
-        private const string IFrameTypeId = "iframeType";
         private const string IFrameGroupingId = "iframeGroup";
+        private const string IFrameTypeId = "iframeType";
         private const string resultsDivPartId = "resultsDivPartId";
     }
 }
