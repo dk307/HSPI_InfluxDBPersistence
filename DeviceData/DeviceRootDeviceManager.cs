@@ -277,7 +277,9 @@ namespace Hspi.DeviceData
 
         private readonly IReadOnlyDictionary<int, DeviceData> Children;
         private readonly CancellationToken cancellationToken;
+#pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource combinedToken;
+#pragma warning restore CA2213 // Disposable fields should be disposed
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHSApplication HS;
         private readonly IReadOnlyDictionary<string, ImportDeviceData> importDevicesData;
@@ -296,7 +298,7 @@ namespace Hspi.DeviceData
             }
         }
 
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue; // To detect redundant calls
 
         #endregion IDisposable Support
     };

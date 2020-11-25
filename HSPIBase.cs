@@ -334,7 +334,7 @@ namespace Hspi
         private readonly bool supportMutipleInstances;
         private readonly bool supportsAddDevice;
         private readonly bool supportsMultipleInstancesSingleEXE;
-        private bool disposedValue = false;
+        private bool disposedValue;
         private HSTraceListener hsTraceListener;
     }
 }

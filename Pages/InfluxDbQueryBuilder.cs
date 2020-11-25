@@ -40,7 +40,7 @@ namespace Hspi.Pages
             stb.Append(PluginConfig.DeviceRefIdTag);
             stb.Append("='");
             stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
-            stb.Append("'");
+            stb.Append('\'');
             stb.AppendFormat(CultureInfo.InvariantCulture, "  AND time > now() - {0} ORDER BY time DESC", GetInfluxDBDuration(queryDuration));
 
             return stb.ToString();

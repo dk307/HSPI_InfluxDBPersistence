@@ -204,7 +204,9 @@ namespace Hspi
 
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
+#pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource tokenSource;
+#pragma warning restore CA2213 // Disposable fields should be disposed
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
         private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
     }
