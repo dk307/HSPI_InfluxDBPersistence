@@ -449,7 +449,7 @@ namespace Hspi
                 switch (actionInfo.TANumber)
                 {
                     case ActionRefreshTANumber:
-                        return configPage.GetRefreshActionPostUI(postData, actionInfo);
+                        return ConfigPage.GetRefreshActionPostUI(postData, actionInfo);
 
                     default:
                         return base.ActionProcessPostUI(postData, actionInfo);
@@ -557,7 +557,7 @@ namespace Hspi
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
         private ConfigPage configPage;
         private DeviceRootDeviceManager deviceRootDeviceManager;
-        private bool disposedValue = false;
+        private bool disposedValue;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;
     }

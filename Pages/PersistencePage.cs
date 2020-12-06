@@ -212,13 +212,13 @@ namespace Hspi.Pages
             {
                 this.pluginConfig.RemoveDevicePersistenceData(parts[RecordId]);
                 this.pluginConfig.FireConfigChanged();
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPageJS(Invariant($"/{pageUrl}?{TabId}=1")));
             }
             else if (form == NameToIdWithPrefix(EditPersistenceCancel))
             {
                 this.pluginConfig.RemoveDevicePersistenceData(parts[RecordId]);
                 this.pluginConfig.FireConfigChanged();
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPageJS(Invariant($"/{pageUrl}?{TabId}=1")));
             }
             else if ((form == NameToIdWithPrefix(EditPersistenceSave)) ||
                      (form == NameToIdWithPrefix(FillDefaultValuesButtonName)))
@@ -357,7 +357,7 @@ namespace Hspi.Pages
                         var persistenceData = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags, maxValidValue, minValidValue, trackingType);
                         this.pluginConfig.AddDevicePersistenceData(persistenceData);
                         this.pluginConfig.FireConfigChanged();
-                        this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=1")));
+                        this.divToUpdate.Add(SaveErrorDivId, RedirectPageJS(Invariant($"/{pageUrl}?{TabId}=1")));
                     }
                 }
             }

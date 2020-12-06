@@ -12,7 +12,7 @@ namespace Hspi.Pages
 {
     internal partial class ConfigPage : PageHelper
     {
-        public IPlugInAPI.strMultiReturn GetRefreshActionPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
+        public static IPlugInAPI.strMultiReturn GetRefreshActionPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
         {
             IPlugInAPI.strMultiReturn result = default;
             result.DataOut = actionInfo.DataIn;

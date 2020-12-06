@@ -4,6 +4,7 @@ using NullGuard;
 using Scheduler;
 using System;
 using System.Collections.Specialized;
+using System.Text;
 using System.Web;
 using static System.FormattableString;
 
@@ -146,6 +147,15 @@ namespace Hspi.Pages
             };
 
             return b.Build();
+        }
+
+        protected static string RedirectPageJS(string url)
+        {
+            StringBuilder stb = new StringBuilder();
+            stb.AppendLine("<script type='text/javascript'>");
+            stb.AppendLine(Invariant($"$(document).ready(function() {{ location.assign('{url}'); }});"));
+            stb.AppendLine("</script>");
+            return stb.ToString();
         }
 
         protected const string PageTypeId = "type";

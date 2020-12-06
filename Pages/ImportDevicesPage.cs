@@ -127,11 +127,11 @@ namespace Hspi.Pages
             {
                 this.pluginConfig.RemoveImportDeviceData(parts[RecordId]);
                 this.pluginConfig.FireConfigChanged();
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=2")));
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPageJS(Invariant($"/{pageUrl}?{TabId}=2")));
             }
             else if (form == NameToIdWithPrefix(CancelDeviceImport))
             {
-                this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=2")));
+                this.divToUpdate.Add(SaveErrorDivId, RedirectPageJS(Invariant($"/{pageUrl}?{TabId}=2")));
             }
             else if (form == NameToIdWithPrefix(SaveDeviceImport))
             {
@@ -186,7 +186,7 @@ namespace Hspi.Pages
                         var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(intervalSeconds), parts[UnitId]);
                         this.pluginConfig.AddImportDeviceData(data);
                         this.pluginConfig.FireConfigChanged();
-                        this.divToUpdate.Add(SaveErrorDivId, RedirectPage(Invariant($"/{pageUrl}?{TabId}=2")));
+                        this.divToUpdate.Add(SaveErrorDivId, RedirectPageJS(Invariant($"/{pageUrl}?{TabId}=2")));
                     }
                 }
             }
