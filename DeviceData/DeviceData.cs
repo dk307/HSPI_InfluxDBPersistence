@@ -1,5 +1,7 @@
-﻿using HomeSeerAPI;
+﻿
+using HomeSeer.PluginSdk;
 using NullGuard;
+using System;
 
 namespace Hspi.DeviceData
 {
@@ -17,16 +19,17 @@ namespace Hspi.DeviceData
             Data = data;
         }
 
-        public override void SetInitialData(IHSApplication HS, int refId)
+        public override void SetInitialData(IHsController HS, int refId)
         {
-            HS.SetDeviceValueByRef(refId, 0D, false);
-            HS.set_DeviceInvalidValue(refId, true);
+            throw new NotImplementedException();
+            //HS.SetDeviceValueByRef(refId, 0D, false);
+            //HS.set_DeviceInvalidValue(refId, true);
         }
 
-        public abstract void Update(IHSApplication HS, int refId, in double? deviceValue);
+        public abstract void Update(IHsController HS, int refId, in double? deviceValue);
 
-        public override int HSDeviceType => 0;
-        public override string HSDeviceTypeString => Invariant($"{PlugInData.PlugInName} Import Device");
+        
+        //public override string HSDeviceTypeString => Invariant($"{PlugInData.PlugInName} Import Device");
 
         public ImportDeviceData Data { get; }
     };

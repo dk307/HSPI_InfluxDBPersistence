@@ -1,4 +1,7 @@
-﻿using HomeSeerAPI;
+﻿using HomeSeer.PluginSdk;
+using HomeSeer.PluginSdk.Devices;
+using HomeSeer.PluginSdk.Devices.Controls;
+using HomeSeer.PluginSdk.Devices.Identification;
 using NullGuard;
 using System;
 using System.Collections.Generic;
@@ -24,19 +27,20 @@ namespace Hspi.DeviceData
         /// </summary>
         /// <param name="config">The plugin configuration.</param>
         /// <returns></returns>
-        public abstract IList<VSVGPairs.VSPair> StatusPairs { get; }
+        public abstract IList<StatusControl> StatusPairs { get; }
 
         /// <summary>
         /// Gets the graphics pairs for creating device
         /// </summary>
         /// <param name="config">The plugin configuration.</param>
         /// <returns></returns>
-        public abstract IList<VSVGPairs.VGPair> GraphicsPairs { get; }
+        public abstract IList<StatusGraphic> GraphicsPairs { get; }
 
-        public abstract int HSDeviceType { get; }
-        public virtual DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI DeviceAPI => DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI.Plug_In;
-        public abstract string HSDeviceTypeString { get; }
+        
+        public virtual EDeviceType DeviceType => EDeviceType.Generic;
+        
         public abstract bool StatusDevice { get; }
+
         public virtual string ScaleDisplayText => string.Empty;
 
         /// <summary>
@@ -44,7 +48,7 @@ namespace Hspi.DeviceData
         /// </summary>
         /// <param name="HS">The hs.</param>
         /// <param name="RefId">The reference identifier.</param>
-        public abstract void SetInitialData(IHSApplication HS, int RefId);
+        public abstract void SetInitialData(IHsController HS, int RefId);
 
         /// <summary>
         /// Updates the device data from number data
@@ -52,18 +56,21 @@ namespace Hspi.DeviceData
         /// <param name="HS">Homeseer application.</param>
         /// <param name="refId">The reference identifier.</param>
         /// <param name="data">Number data.</param>
-        protected static void UpdateDeviceData(IHSApplication HS, int refId, in double? data)
+        protected static void UpdateDeviceData(IHsController HS, int refId, in double? data)
         {
-            if (data.HasValue)
-            {
-                HS.set_DeviceInvalidValue(refId, false);
-                HS.SetDeviceValueByRef(refId, data.Value, true);
-                HS.SetDeviceLastChange(refId, DateTime.Now);
-            }
-            else
-            {
-                HS.set_DeviceInvalidValue(refId, true);
-            }
+
+            //if (data.HasValue)
+            //{
+            //    HS.set_DeviceInvalidValue(refId, false);
+            //    HS.SetDeviceValueByRef(refId, data.Value, true);
+            //    HS.SetDeviceLastChange(refId, DateTime.Now);
+            //}
+            //else
+            //{
+            //    HS.set_DeviceInvalidValue(refId, true);
+            //}
+
+            throw new NotImplementedException();
         }
     };
 }

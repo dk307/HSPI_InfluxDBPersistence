@@ -1,4 +1,6 @@
-﻿using HomeSeerAPI;
+﻿using HomeSeer.PluginSdk;
+using HomeSeer.PluginSdk.Devices;
+using HomeSeer.PluginSdk.Devices.Controls;
 using System.Collections.Generic;
 
 namespace Hspi.DeviceData
@@ -9,34 +11,33 @@ namespace Hspi.DeviceData
         {
         }
 
-        public override void Update(IHSApplication HS, int refId, in double? value)
+        public override void Update(IHsController HS, int refId, in double? value)
         {
             UpdateDeviceData(HS, refId, value);
         }
 
         public override bool StatusDevice => true;
-        public override DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI DeviceAPI => DeviceTypeInfo_m.DeviceTypeInfo.eDeviceAPI.Plug_In;
-
-        public override IList<VSVGPairs.VSPair> StatusPairs
+  
+        public override IList<StatusControl> StatusPairs
         {
             get
             {
-                var pairs = new List<VSVGPairs.VSPair>();
-                pairs.Add(new VSVGPairs.VSPair(HomeSeerAPI.ePairStatusControl.Status)
-                {
-                    PairType = VSVGPairs.VSVGPairType.Range,
-                    RangeStart = int.MinValue,
-                    RangeEnd = int.MaxValue,
-                    IncludeValues = true,
-                    RangeStatusDecimals = 3,
-                    RangeStatusSuffix = string.IsNullOrEmpty(ScaleDisplayText) ? string.Empty : " @S@",
-                    HasScale = !string.IsNullOrEmpty(ScaleDisplayText),
-                });
+                var pairs = new List<StatusControl>();
+                //pairs.Add(new StatusControl(ePairStatusControl.Status)
+                //{
+                //    PairType = StatusControl.VSVGPairType.Range,
+                //    RangeStart = int.MinValue,
+                //    RangeEnd = int.MaxValue,
+                //    IncludeValues = true,
+                //    RangeStatusDecimals = 3,
+                //    RangeStatusSuffix = string.IsNullOrEmpty(ScaleDisplayText) ? string.Empty : " @S@",
+                //    HasScale = !string.IsNullOrEmpty(ScaleDisplayText),
+                //});
                 return pairs;
             }
         }
 
-        public override IList<VSVGPairs.VGPair> GraphicsPairs => new List<VSVGPairs.VGPair>();
+        public override IList<StatusGraphic> GraphicsPairs => new List<StatusGraphic>();
         public override string ScaleDisplayText => Data.Unit;
     }
 }

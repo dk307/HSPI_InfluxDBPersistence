@@ -1,4 +1,4 @@
-﻿using HomeSeerAPI;
+﻿using HomeSeer.PluginSdk;
 using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
@@ -22,7 +22,7 @@ namespace Hspi
         /// Initializes a new instance of the <see cref="PluginConfig"/> class.
         /// </summary>
         /// <param name="HS">The homeseer application.</param>
-        public PluginConfig(IHSApplication HS)
+        public PluginConfig(IHsController HS)
         {
             this.HS = HS;
 
@@ -52,11 +52,16 @@ namespace Hspi
                     influxDBLoginInformation = value;
                     SetValue(InfluxDBUriKey, value.DBUri);
                     SetValue(InfluxDBUsernameKey, value.User);
-                    SetValue(InfluxDBPasswordKey, HS.EncryptString(value.Password, string.Empty));
+                    SetValue(InfluxDBPasswordKey, EncryptString(value.Password));
                     SetValue(InfluxDBDBKey, value.DB);
                     SetValue(RetentionKey, value.Retention);
                 }
             }
+        }
+
+        private string EncryptString(string password)
+        {
+            return password;
         }
 
         /// <summary>
@@ -106,7 +111,7 @@ namespace Hspi
             }
         }
 
-        public static string CheckEmptyOrWhitespace([AllowNull]string value)
+        public static string CheckEmptyOrWhitespace([AllowNull] string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
@@ -175,7 +180,7 @@ namespace Hspi
                 {
                     SetValue(PersistenceIdsKey, string.Empty);
                 }
-                HS.ClearINISection(id, FileName);
+                HS.ClearIniSection(id, FileName);
             }
         }
 
@@ -195,7 +200,7 @@ namespace Hspi
                 {
                     SetValue(ImportDevicesIdsKey, string.Empty);
                 }
-                HS.ClearINISection(id, FileName);
+                HS.ClearIniSection(id, FileName);
             }
         }
 
@@ -233,10 +238,15 @@ namespace Hspi
             this.influxDBLoginInformation = new InfluxDBLoginInformation(
                 influxDBUri,
                 CheckEmptyOrWhitespace(GetValue(InfluxDBUsernameKey, string.Empty)),
-                CheckEmptyOrWhitespace(HS.DecryptString(GetValue(InfluxDBPasswordKey, string.Empty), string.Empty)),
+                CheckEmptyOrWhitespace(DecryptString(GetValue(InfluxDBPasswordKey, string.Empty))),
                 CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty)),
                 CheckEmptyOrWhitespace(GetValue(RetentionKey, string.Empty))
              );
+        }
+
+        private string DecryptString(string p)
+        {
+            return p;
         }
 
         private void LoadImportDeviceSettings()
@@ -381,7 +391,7 @@ namespace Hspi
         private const string UnitKey = "Unit";
         private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
-        private readonly IHSApplication HS;
+        private readonly IHsController HS;
         private bool debugLogging;
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private Dictionary<string, ImportDeviceData> importDevicesData;

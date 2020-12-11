@@ -1,14 +1,14 @@
-﻿using HomeSeerAPI;
+﻿using HomeSeer.Jui.Views;
+using HomeSeer.PluginSdk;
+using HomeSeer.PluginSdk.Devices;
 using Hspi.DeviceData;
-using Hspi.Pages;
 using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
-using Scheduler.Classes;
 using System;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
@@ -19,89 +19,88 @@ namespace Hspi
     /// </summary>
     /// <seealso cref="Hspi.HspiBase" />
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal class PlugIn : HspiBase
+    internal partial class PlugIn : HspiBase
     {
         public PlugIn()
-            : base(PlugInData.PlugInName, supportConfigDevice: true, supportConfigDeviceAll: true)
+            : base(PlugInData.PlugInId, PlugInData.PlugInName)
         {
+
         }
 
-        public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
-        {
-            if (newDevice)
-            {
-                return string.Empty;
-            }
+         //public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
+        //{
+        //    if (newDevice)
+        //    {
+        //        return string.Empty;
+        //    }
 
-            try
-            {
-                var deviceClass = (DeviceClass)HS.GetDeviceByRef(deviceId);
+        //    try
+        //    {
+        //        var deviceClass = (DeviceClass)HomeSeerSystem.GetDeviceByRef(deviceId);
 
-                if (deviceClass.get_Interface(HS) == PlugInData.PlugInName)
-                {
-                    var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
-                    if (deviceIdentifier != null)
-                    {
-                        return configPage.GetDeviceImportTab(deviceIdentifier);
-                    }
-                }
-                else
-                {
-                    return configPage.GetDeviceHistoryTab(deviceId);
-                }
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                LogError(Invariant($"ConfigDevice for {deviceId} With {ex.Message}"));
-                return string.Empty;
-            }
-        }
+        //        if (deviceClass.get_Interface(HomeSeerSystem) == PlugInData.PlugInName)
+        //        {
+        //            var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
+        //            if (deviceIdentifier != null)
+        //            {
+        //                return configPage.GetDeviceImportTab(deviceIdentifier);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            return configPage.GetDeviceHistoryTab(deviceId);
+        //        }
+        //        return string.Empty;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(Invariant($"ConfigDevice for {deviceId} With {ex.Message}"));
+        //        return string.Empty;
+        //    }
+        //}
 
-        public override Enums.ConfigDevicePostReturn ConfigDevicePost(int deviceId, [AllowNull] string data, [AllowNull] string user, int userRights)
-        {
-            try
-            {
-                return configPage.GetDeviceHistoryPost(Callback, deviceId, data);
-            }
-            catch (Exception ex)
-            {
-                LogError(Invariant($"ConfigDevicePost for {deviceId} With {ex.Message}"));
-                return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
-            }
-        }
+        //public override Enums.ConfigDevicePostReturn ConfigDevicePost(int deviceId, [AllowNull] string data, [AllowNull] string user, int userRights)
+        //{
+        //    try
+        //    {
+        //        return configPage.GetDeviceHistoryPost(Callback, deviceId, data);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(Invariant($"ConfigDevicePost for {deviceId} With {ex.Message}"));
+        //        return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
+        //    }
+        //}
 
-        public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
-        {
-            if (page == ConfigPage.Name)
-            {
-                return configPage.GetWebPage(queryString);
-            }
+        //public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
+        //{
+        //    if (page == ConfigPage.Name)
+        //    {
+        //        return configPage.GetWebPage(queryString);
+        //    }
 
-            return string.Empty;
-        }
+        //    return string.Empty;
+        //}
 
-        public override void HSEvent(Enums.HSEvent eventType, [AllowNull]object[] parameters)
+        public override void HsEvent(Constants.HSEvent eventType, [AllowNull] object[] parameters)
         {
             HSEventImpl(eventType, parameters).Wait(ShutdownCancellationToken);
         }
 
-        public override string InitIO(string port)
+        protected override void Initialize()
         {
+            base.Initialize();
             string result = string.Empty;
             try
             {
-                pluginConfig = new PluginConfig(HS);
-                configPage = new ConfigPage(HS, pluginConfig);
+                pluginConfig = new PluginConfig(HomeSeerSystem);
                 Trace.TraceInformation("Starting Plugin");
                 LogConfiguration();
 
                 pluginConfig.ConfigChanged += PluginConfig_ConfigChanged;
 
-                RegisterConfigPage();
-
-                Callback.RegisterEventCB(Enums.HSEvent.VALUE_CHANGE, Name, string.Empty);
-                Callback.RegisterEventCB(Enums.HSEvent.STRING_CHANGE, Name, string.Empty);
+                HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
+                HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
 
                 RestartProcessing();
 
@@ -111,46 +110,39 @@ namespace Hspi
             {
                 result = Invariant($"Failed to initialize PlugIn with {ex.GetFullMessage()}");
                 Trace.TraceError(result);
-            }
-
-            return result;
-        }
-
-        public override void LogDebug(string message)
-        {
-            if ((pluginConfig != null) && pluginConfig.DebugLogging)
-            {
-                base.LogDebug(message);
+                throw;
             }
         }
 
-        public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
-        {
-            if (ImportDeviceFromDB(deviceId))
-            {
-                var pollResult = new IPlugInAPI.PollResultInfo
-                {
-                    Result = IPlugInAPI.enumPollResult.OK,
-                    Value = HS.DeviceValueEx(deviceId),
-                };
+         
 
-                return pollResult;
-            }
-            else
-            {
-                return base.PollDevice(deviceId);
-            }
-        }
+        //public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
+        //{
+        //    if (ImportDeviceFromDB(deviceId))
+        //    {
+        //        var pollResult = new IPlugInAPI.PollResultInfo
+        //        {
+        //            Result = IPlugInAPI.enumPollResult.OK,
+        //            Value = HomeSeerSystem.DeviceValueEx(deviceId),
+        //        };
 
-        public override string PostBackProc(string page, string data, [AllowNull]string user, int userRights)
-        {
-            if (page == ConfigPage.Name)
-            {
-                return configPage.PostBackProc(data, user, userRights);
-            }
+        //        return pollResult;
+        //    }
+        //    else
+        //    {
+        //        return base.PollDevice(deviceId);
+        //    }
+        //}
 
-            return string.Empty;
-        }
+        //public override string PostBackProc(string page, string data, [AllowNull]string user, int userRights)
+        //{
+        //    if (page == ConfigPage.Name)
+        //    {
+        //        return configPage.PostBackProc(data, user, userRights);
+        //    }
+
+        //    return string.Empty;
+        //}
 
         /// <summary>
         /// Releases unmanaged and - optionally - managed resources.
@@ -165,8 +157,6 @@ namespace Hspi
                     pluginConfig.ConfigChanged -= PluginConfig_ConfigChanged;
                 }
 
-                configPage?.Dispose();
-
                 Shutdown();
                 disposedValue = true;
             }
@@ -174,32 +164,36 @@ namespace Hspi
             base.Dispose(disposing);
         }
 
-        private static async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
-                                                    IHSApplication HS,
-                                                    DeviceClass device)
+        private  async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
+                                                    AbstractHsDevice device)
         {
             if (device != null)
             {
-                int deviceRefId = device.get_Ref(HS);
-                bool notValid = HS.get_DeviceInvalidValue(deviceRefId);
+                int deviceRefId = device.Ref;
+                bool notValid = device.IsValueInvalid;
                 if (!notValid)
                 {
-                    double deviceValue = device.get_devValue(HS);
-                    string deviceString = HS.DeviceString(deviceRefId);
+                    double deviceValue = device.Value;
+                    string deviceString = device.Status;
                     if (string.IsNullOrWhiteSpace(deviceString))
                     {
-                        deviceString = HS.DeviceVSP_GetStatus(deviceRefId, deviceValue, ePairStatusControl.Status);
+                        // HS.DeviceVSP_GetStatus(deviceRefId, deviceValue, ePairStatusControl.Status);
+                        var status = HomeSeerSystem.GetStatusControlForValue(deviceRefId, deviceValue);
+                        if (status != null)
+                        {
+                            deviceString = status.Label;
+                        }
                     }
                     Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
 
-                    DateTime lastChange = device.get_Last_Change(HS);
+                    DateTime lastChange = device.LastChange;
 
                     RecordData recordData = new RecordData(deviceRefId,
                                                            deviceValue,
                                                            deviceString,
-                                                           device.get_Name(HS),
-                                                           device.get_Location(HS),
-                                                           device.get_Location2(HS),
+                                                           device.Name,
+                                                           device.Location,
+                                                           device.Location2,
                                                            lastChange);
 
                     await collector.Record(recordData).ConfigureAwait(false);
@@ -219,16 +213,16 @@ namespace Hspi
             }
         }
 
-        private async Task HSEventImpl(Enums.HSEvent eventType, object[] parameters)
+        private async Task HSEventImpl(Constants.HSEvent eventType, object[] parameters)
         {
             try
             {
-                if ((eventType == Enums.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
+                if ((eventType == Constants.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
                 {
                     int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
                     await RecordDeviceValue(deviceRefId, TrackedType.Value).ConfigureAwait(false);
                 }
-                else if ((eventType == Enums.HSEvent.STRING_CHANGE) && (parameters.Length > 3))
+                else if ((eventType == Constants.HSEvent.STRING_CHANGE) && (parameters.Length > 3))
                 {
                     int deviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
                     await RecordDeviceValue(deviceRefId, TrackedType.String).ConfigureAwait(false);
@@ -239,6 +233,7 @@ namespace Hspi
                 Trace.TraceWarning(Invariant($"Failed to process HSEvent {eventType} with {ex.GetFullMessage()}"));
             }
         }
+
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
@@ -247,6 +242,7 @@ namespace Hspi
 
         private void PluginConfig_ConfigChanged(object sender, EventArgs e)
         {
+            this.EnableLogDebug = pluginConfig.DebugLogging;
             RestartProcessing();
         }
 
@@ -255,8 +251,8 @@ namespace Hspi
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if ((collector != null) && collector.IsTracked(deviceRefId, trackedType))
             {
-                var device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
-                await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
+                var device = HomeSeerSystem.GetDeviceByRef(deviceRefId);
+                await RecordDeviceValue(collector, device).ConfigureAwait(false);
             }
         }
 
@@ -265,43 +261,48 @@ namespace Hspi
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if (collector != null)
             {
-                var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
-                do
+                var deviceEnumerator = HomeSeerSystem.GetAllDeviceRefs();
+                foreach (var refId in deviceEnumerator)
                 {
-                    DeviceClass device = deviceEnumerator.GetNext();
-                    if (device != null)
+                    try
                     {
-                        if (collector.IsTracked(device.get_Ref(HS), null))
+                        var device = HomeSeerSystem.GetDeviceWithFeaturesByRef(refId);
+                        if (device != null)
                         {
-                            await RecordDeviceValue(collector, HS, device).ConfigureAwait(false);
+                            if (collector.IsTracked(refId, null))
+                            {
+                                await RecordDeviceValue(collector, device).ConfigureAwait(false);
+                            }
+
+                            foreach (var feature in device.Features)
+                            {
+                                if (collector.IsTracked(feature.Ref, null))
+                                {
+                                    await RecordDeviceValue(collector, feature).ConfigureAwait(false);
+                                }
+                                ShutdownCancellationToken.ThrowIfCancellationRequested();
+                            }
                         }
                     }
+                    catch(Exception ex)
+                    {
+                        if (ex.IsCancelException())
+                        {
+                            throw;
+                        }
+
+                        Trace.TraceError(Invariant($"Error in recording RefId:{refId} Error:{ex.GetFullMessage()}"));
+                    }
+
                     ShutdownCancellationToken.ThrowIfCancellationRequested();
                 }
-                while (!deviceEnumerator.Finished);
             }
-        }
-
-        private void RegisterConfigPage()
-        {
-            string link = ConfigPage.Name;
-            HS.RegisterPage(link, Name, string.Empty);
-
-            var wpd = new HomeSeerAPI.WebPageDesc()
-            {
-                plugInName = Name,
-                link = link,
-                linktext = "Configuration",
-                page_title = Invariant($"{Name} Configuration"),
-            };
-            Callback.RegisterConfigLink(wpd);
-            Callback.RegisterLink(wpd);
         }
 
         private void RestartProcessing()
         {
             Utils.TaskHelper.StartAsyncWithErrorChecking("Measurements Collector", StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
-            Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
+            // Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
         }
 
         private void Shutdown()
@@ -322,7 +323,7 @@ namespace Hspi
             using (var sync = await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken))
             {
                 deviceRootDeviceManager?.Dispose();
-                deviceRootDeviceManager = new DeviceRootDeviceManager(HS,
+                deviceRootDeviceManager = new DeviceRootDeviceManager(HomeSeerSystem,
                                                                       pluginConfig.DBLoginInformation,
                                                                       pluginConfig.ImportDevicesData,
                                                                       ShutdownCancellationToken);
@@ -357,187 +358,186 @@ namespace Hspi
 #pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
         }
 
-        #region "Action Override"
+ 
+        //public override string ActionBuildUI([AllowNull]string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
+        //{
+        //    try
+        //    {
+        //        switch (actionInfo.TANumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                return configPage.GetRefreshActionUI(uniqueControlId ?? string.Empty, actionInfo);
 
-        public override string ActionBuildUI([AllowNull]string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        return configPage.GetRefreshActionUI(uniqueControlId ?? string.Empty, actionInfo);
+        //            default:
+        //                return base.ActionBuildUI(uniqueControlId, actionInfo);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceError(Invariant($"Failed to give build Action UI with {ex.GetFullMessage()}"));
+        //        throw;
+        //    }
+        //}
 
-                    default:
-                        return base.ActionBuildUI(uniqueControlId, actionInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to give build Action UI with {ex.GetFullMessage()}"));
-                throw;
-            }
-        }
+        //public override bool ActionConfigured(IPlugInAPI.strTrigActInfo actionInfo)
+        //{
+        //    try
+        //    {
+        //        switch (actionInfo.TANumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                if (actionInfo.DataIn != null)
+        //                {
+        //                    RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+        //                    if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
+        //                    {
+        //                        return HomeSeerSystem.GetDeviceByRef(refreshDeviceAction.DeviceRefId) != null;
+        //                    }
+        //                }
 
-        public override bool ActionConfigured(IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        if (actionInfo.DataIn != null)
-                        {
-                            RefreshDeviceAction refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-                            if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
-                            {
-                                return HS.GetDeviceByRef(refreshDeviceAction.DeviceRefId) != null;
-                            }
-                        }
+        //                return false;
 
-                        return false;
+        //            default:
+        //                return base.ActionConfigured(actionInfo);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceError(Invariant($"Failed to ActionConfigured with {ex.GetFullMessage()}"));
+        //        return false;
+        //    }
+        //}
 
-                    default:
-                        return base.ActionConfigured(actionInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to ActionConfigured with {ex.GetFullMessage()}"));
-                return false;
-            }
-        }
+        //public override int ActionCount()
+        //{
+        //    return 1;
+        //}
 
-        public override int ActionCount()
-        {
-            return 1;
-        }
+        //public override string ActionFormatUI(IPlugInAPI.strTrigActInfo actionInfo)
+        //{
+        //    try
+        //    {
+        //        switch (actionInfo.TANumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                if (actionInfo.DataIn != null)
+        //                {
+        //                    var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+        //                    if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
+        //                    {
+        //                        HSHelper hSHelper = new HSHelper(HomeSeerSystem);
+        //                        return Invariant($"Refresh {hSHelper.GetName(refreshDeviceAction.DeviceRefId)} from Influx DB");
+        //                    }
+        //                }
+        //                return Invariant($"{PlugInData.PlugInName} Unknown Device Import Refresh");
 
-        public override string ActionFormatUI(IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        if (actionInfo.DataIn != null)
-                        {
-                            var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-                            if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
-                            {
-                                HSHelper hSHelper = new HSHelper(HS);
-                                return Invariant($"Refresh {hSHelper.GetName(refreshDeviceAction.DeviceRefId)} from Influx DB");
-                            }
-                        }
-                        return Invariant($"{PlugInData.PlugInName} Unknown Device Import Refresh");
+        //            default:
+        //                return base.ActionFormatUI(actionInfo);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceError(Invariant($"Failed to ActionFormatUI with {ex.GetFullMessage()}"));
+        //        throw;
+        //    }
+        //}
 
-                    default:
-                        return base.ActionFormatUI(actionInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to ActionFormatUI with {ex.GetFullMessage()}"));
-                throw;
-            }
-        }
+        //public override IPlugInAPI.strMultiReturn ActionProcessPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
+        //{
+        //    try
+        //    {
+        //        switch (actionInfo.TANumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                return ConfigPage.GetRefreshActionPostUI(postData, actionInfo);
 
-        public override IPlugInAPI.strMultiReturn ActionProcessPostUI([AllowNull] NameValueCollection postData, IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        return ConfigPage.GetRefreshActionPostUI(postData, actionInfo);
+        //            default:
+        //                return base.ActionProcessPostUI(postData, actionInfo);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceError(Invariant($"Failed to ActionProcessPostUI with {ex.GetFullMessage()}"));
+        //        throw;
+        //    }
+        //}
 
-                    default:
-                        return base.ActionProcessPostUI(postData, actionInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to ActionProcessPostUI with {ex.GetFullMessage()}"));
-                throw;
-            }
-        }
+        //public override bool ActionReferencesDevice(IPlugInAPI.strTrigActInfo actionInfo, int deviceId)
+        //{
+        //    try
+        //    {
+        //        switch (actionInfo.TANumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                if (actionInfo.DataIn != null)
+        //                {
+        //                    var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+        //                    return (refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId == deviceId);
+        //                }
+        //                return false;
 
-        public override bool ActionReferencesDevice(IPlugInAPI.strTrigActInfo actionInfo, int deviceId)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        if (actionInfo.DataIn != null)
-                        {
-                            var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-                            return (refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId == deviceId);
-                        }
-                        return false;
+        //            default:
+        //                return false;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceError(Invariant($"Failed to ActionReferencesDevice with {ex.GetFullMessage()}"));
+        //        return false;
+        //    }
+        //}
 
-                    default:
-                        return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to ActionReferencesDevice with {ex.GetFullMessage()}"));
-                return false;
-            }
-        }
+        //public override string get_ActionName(int actionNumber)
+        //{
+        //    try
+        //    {
+        //        switch (actionNumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                return Invariant($"{Name}:Refresh From InfluxDB");
 
-        public override string get_ActionName(int actionNumber)
-        {
-            try
-            {
-                switch (actionNumber)
-                {
-                    case ActionRefreshTANumber:
-                        return Invariant($"{Name}:Refresh From InfluxDB");
+        //            default:
+        //                return base.get_ActionName(actionNumber);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceError(Invariant($"Failed to give Action Name with {ex.GetFullMessage()}"));
+        //        throw;
+        //    }
+        //}
 
-                    default:
-                        return base.get_ActionName(actionNumber);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError(Invariant($"Failed to give Action Name with {ex.GetFullMessage()}"));
-                throw;
-            }
-        }
+        //public override bool HandleAction(IPlugInAPI.strTrigActInfo actionInfo)
+        //{
+        //    try
+        //    {
+        //        switch (actionInfo.TANumber)
+        //        {
+        //            case ActionRefreshTANumber:
+        //                if (actionInfo.DataIn != null)
+        //                {
+        //                    var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
+        //                    if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
+        //                    {
+        //                        if (ImportDeviceFromDB(refreshDeviceAction.DeviceRefId))
+        //                        {
+        //                            return true;
+        //                        }
+        //                    }
+        //                }
+        //                Trace.TraceWarning(Invariant($"Failed to execute action with Device not Found"));
+        //                return false;
 
-        public override bool HandleAction(IPlugInAPI.strTrigActInfo actionInfo)
-        {
-            try
-            {
-                switch (actionInfo.TANumber)
-                {
-                    case ActionRefreshTANumber:
-                        if (actionInfo.DataIn != null)
-                        {
-                            var refreshDeviceAction = ObjectSerialize.DeSerializeFromBytes(actionInfo.DataIn) as RefreshDeviceAction;
-                            if ((refreshDeviceAction != null) && (refreshDeviceAction.DeviceRefId != 0))
-                            {
-                                if (ImportDeviceFromDB(refreshDeviceAction.DeviceRefId))
-                                {
-                                    return true;
-                                }
-                            }
-                        }
-                        Trace.TraceWarning(Invariant($"Failed to execute action with Device not Found"));
-                        return false;
-
-                    default:
-                        return base.HandleAction(actionInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceWarning(Invariant($"Failed to execute action with {ex.GetFullMessage()}"));
-                return false;
-            }
-        }
+        //            default:
+        //                return base.HandleAction(actionInfo);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Trace.TraceWarning(Invariant($"Failed to execute action with {ex.GetFullMessage()}"));
+        //        return false;
+        //    }
+        //}
 
         private bool ImportDeviceFromDB(int deviceRefId)
         {
@@ -550,12 +550,13 @@ namespace Hspi
             return deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ResultForSync();
         }
 
-        #endregion "Action Override"
+        protected override void BeforeReturnStatus()
+        {
+        }
 
-        private const int ActionRefreshTANumber = 1;
+
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
-        private ConfigPage configPage;
         private DeviceRootDeviceManager deviceRootDeviceManager;
         private bool disposedValue;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;

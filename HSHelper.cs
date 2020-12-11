@@ -1,14 +1,15 @@
-﻿using HomeSeerAPI;
-using Scheduler.Classes;
+﻿
+using HomeSeer.PluginSdk;
+using HomeSeer.PluginSdk.Devices;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace Hspi
 {
-    internal class HSHelper
+    internal sealed class HSHelper
     {
-        public HSHelper(IHSApplication hS)
+        public HSHelper(IHsController hS)
         {
             HS = hS;
             LoadSettings();
@@ -17,33 +18,32 @@ namespace Hspi
         public IDictionary<int, string> GetDevices()
         {
             Dictionary<int, string> devices = new Dictionary<int, string>();
-            var deviceEnumerator = HS.GetDeviceEnumerator() as clsDeviceEnumeration;
-            do
+            var deviceEnumerator = HS.GetAllDevices(true);
+            foreach(var device in deviceEnumerator)
             {
-                DeviceClass device = deviceEnumerator.GetNext();
                 if (device != null)
                 {
-                    devices.Add(device.get_Ref(HS), GetName(device));
+                    devices.Add(device.Ref, GetName(device));
                 }
             }
-            while (!deviceEnumerator.Finished);
+           
             return devices;
         }
 
         public string GetName(int deviceRefId)
         {
-            DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
+            var device = HS.GetDeviceByRef(deviceRefId);
             return device != null ? GetName(device) : null;
         }
 
-        public string GetName(DeviceClass device)
+        public string GetName(AbstractHsDevice device)
         {
             List<string> parts = new List<string>();
 
-            string location1 = device.get_Location(HS);
+            string location1 = device.Location;
             if (location2Enabled)
             {
-                string location2 = device.get_Location2(HS);
+                string location2 = device.Location2;
 
                 if (location1First)
                 {
@@ -61,7 +61,7 @@ namespace Hspi
                 AddIfNotEmpty(parts, location1);
             }
 
-            AddIfNotEmpty(parts, device.get_Name(HS));
+            AddIfNotEmpty(parts, device.Name);
 
             return string.Join(" ", parts);
         }
@@ -99,36 +99,38 @@ namespace Hspi
             maxValidValue = null;
             minValidValue = null;
 
-            DeviceClass device = HS.GetDeviceByRef(deviceRefId) as DeviceClass;
-            var deviceType = device.get_DeviceType_Get(HS);
-            measurement = FindTypeString(new string[] {
-                                      deviceType?.Device_SubType_Description,
-                                      deviceType?.Device_API_Description,
-                                      device.get_Name(HS) });
+            throw new NotImplementedException();
 
-            switch (measurement)
-            {
-                case "temperature":
-                    maxValidValue = 255;
-                    minValidValue = -255;
-                    break;
+            //var device = HS.GetDeviceByRef(deviceRefId);
+            //var deviceType = device.get_DeviceType_Get(HS);
+            //measurement = FindTypeString(new string[] {
+            //                          deviceType?.Device_SubType_Description,
+            //                          deviceType?.Device_API_Description,
+            //                          device.get_Name(HS) });
 
-                case "battery":
-                case "humidity":
-                    maxValidValue = 100;
-                    minValidValue = 0;
-                    break;
+            //switch (measurement)
+            //{
+            //    case "temperature":
+            //        maxValidValue = 255;
+            //        minValidValue = -255;
+            //        break;
 
-                case "watts":
-                case "kwh":
-                case "pressure":
-                case "amperes":
-                case "co2":
-                case "luminance":
-                case "pm25":
-                    minValidValue = 0;
-                    break;
-            }
+            //    case "battery":
+            //    case "humidity":
+            //        maxValidValue = 100;
+            //        minValidValue = 0;
+            //        break;
+
+            //    case "watts":
+            //    case "kwh":
+            //    case "pressure":
+            //    case "amperes":
+            //    case "co2":
+            //    case "luminance":
+            //    case "pm25":
+            //        minValidValue = 0;
+            //        break;
+            //}
         }
 
         private void LoadSettings()
@@ -148,7 +150,7 @@ namespace Hspi
             }
         }
 
-        private readonly IHSApplication HS;
+        private readonly IHsController HS;
         private bool location2Enabled;
         private bool location1First;
 

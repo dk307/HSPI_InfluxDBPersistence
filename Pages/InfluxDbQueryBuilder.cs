@@ -16,7 +16,7 @@ namespace Hspi.Pages
         {
             string duration = GetInfluxDBDuration(queryDuration);
 
-            // Find last element before duration            
+            // Find last element before duration
             string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {duration} order by time asc");
 
             var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
@@ -26,8 +26,9 @@ namespace Hspi.Pages
         }
 
         public static string GetDeviceHistoryTabQuery(DevicePersistenceData data,
-                                                                                  string deviceName,
-                                                                  QueryDuration queryDuration)
+                                                      string deviceName,
+                                                      int? maxRecords,
+                                                      TimeSpan? queryDuration)
         {
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
@@ -41,7 +42,16 @@ namespace Hspi.Pages
             stb.Append("='");
             stb.AppendFormat(CultureInfo.InvariantCulture, "{0}", data.DeviceRefId);
             stb.Append('\'');
-            stb.AppendFormat(CultureInfo.InvariantCulture, "  AND time > now() - {0} ORDER BY time DESC", GetInfluxDBDuration(queryDuration));
+            if (queryDuration.HasValue)
+            {
+                stb.AppendFormat(CultureInfo.InvariantCulture, "  AND time > now() - {0}s", queryDuration.Value.TotalSeconds);
+            }
+            stb.Append("  ORDER BY time DESC");
+
+            if (maxRecords.HasValue)
+            {
+                stb.AppendFormat(CultureInfo.InvariantCulture, "  LIMIT {0}", maxRecords.Value);
+            }
 
             return stb.ToString();
         }
@@ -64,32 +74,32 @@ namespace Hspi.Pages
 
         public static async Task<string> GetGroupedDeviceHistoryTabQuery(DevicePersistenceData data,
                                                                          string deviceName,
-                                                                         QueryDuration queryDuration,
+                                                                         TimeSpan queryDuration,
                                                                          InfluxDBLoginInformation loginInformation,
-                                                                         TimeSpan? groupInterval)
+                                                                         TimeSpan? groupInterval,
+                                                                         TimeSpan groupByOffset)
         {
             groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
 
             string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                            loginInformation, groupInterval.Value).ConfigureAwait(false);
+                                            loginInformation, groupInterval.Value, groupByOffset).ConfigureAwait(false);
 
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
             stb.Append(Invariant($"\"{data.Field}\" as \"{deviceName}\""));
-
-            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time >= now() - {1})", subquery, GetInfluxDBDuration(queryDuration));
-
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time >= now() - {1}s)", subquery, queryDuration.TotalSeconds);
             return stb.ToString();
         }
 
         public static async Task<string> GetStatsQuery(DevicePersistenceData data,
-                                             QueryDuration queryDuration,
+                                             TimeSpan queryDuration,
                                              InfluxDBLoginInformation loginInformation,
-                                             TimeSpan? groupInterval)
+                                             TimeSpan? groupInterval,
+                                             TimeSpan groupByOffset)
         {
             groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
             string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                                            loginInformation, groupInterval.Value).ConfigureAwait(false);
+                                                            loginInformation, groupInterval.Value, groupByOffset).ConfigureAwait(false);
 
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
@@ -101,65 +111,46 @@ namespace Hspi.Pages
             stb.Append(Invariant($",PERCENTILE(\"{data.Field}\", 95) as \"95 Percentile\""));
             stb.Append(Invariant($",STDDEV(\"{data.Field}\") as \"Standard Deviation\""));
 
-            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time >= now() - {1})", subquery, GetInfluxDBDuration(queryDuration));
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time >= now() - {1}s)", subquery, queryDuration.TotalSeconds);
             stb.Append(" LIMIT 100000");
 
             return stb.ToString();
         }
 
-        public static TimeSpan GetTimeSpan(QueryDuration duration)
-        {
-            switch (duration)
-            {
-                case QueryDuration.D1h: return TimeSpan.FromHours(1);
-                case QueryDuration.D6h: return TimeSpan.FromHours(6);
-                case QueryDuration.D12h: return TimeSpan.FromHours(12);
-                case QueryDuration.D24h: return TimeSpan.FromHours(24);
-                case QueryDuration.D7d: return TimeSpan.FromHours(24 *7 );
-                case QueryDuration.D30d: return TimeSpan.FromHours(30 * 24);
-                case QueryDuration.D60d: return TimeSpan.FromHours(60 * 24 );
-                case QueryDuration.D180d: return TimeSpan.FromHours(180 * 24);
-                case QueryDuration.D365d: return TimeSpan.FromHours(365 * 24);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(duration));
-            }
-        }
-
         private static async Task<string> CreateRegularTimeSeries(DevicePersistenceData data,
-                                                                         QueryDuration queryDuration,
-                                         InfluxDBLoginInformation loginInformation,
-                                         TimeSpan groupByInterval,
-                                         bool fileLinear = false)
+                                                                  TimeSpan queryDuration,
+                                                                  InfluxDBLoginInformation loginInformation,
+                                                                  TimeSpan groupByInterval,
+                                                                  TimeSpan groupByOffset,
+                                                                  bool fileLinear = false)
         {
-            string duration = GetInfluxDBDuration(queryDuration);
-
             // Find last element before duration
-            string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {duration} order by time asc");
+            string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {queryDuration.TotalSeconds}s order by time asc");
 
             var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
 
-            string timeRestriction = time.HasValue ? Invariant($"time >= {new DateTimeOffset(time.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {duration}");
+            string timeRestriction = time.HasValue ? Invariant($"time >= {new DateTimeOffset(time.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {queryDuration.TotalSeconds}s");
             string fillOption = fileLinear ? "linear" : "previous";
-            return Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupByInterval.TotalSeconds}s) fill({fillOption})");
+            return Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupByInterval.TotalSeconds}s, {groupByOffset.TotalSeconds}s) fill({fillOption})");
         }
 
-        private static TimeSpan GetDefaultInfluxDBGroupInterval(QueryDuration duration)
+        private static TimeSpan GetDefaultInfluxDBGroupInterval(TimeSpan duration)
         {
             switch (duration)
             {
-                case QueryDuration.D1h: return TimeSpan.FromSeconds(1);
-                case QueryDuration.D6h: return TimeSpan.FromSeconds(5);
-                case QueryDuration.D12h: return TimeSpan.FromSeconds(15);
-                case QueryDuration.D24h: return TimeSpan.FromMinutes(1);
-                case QueryDuration.D7d: return TimeSpan.FromMinutes(5);
-                case QueryDuration.D30d: return TimeSpan.FromMinutes(30);
-                case QueryDuration.D60d: return TimeSpan.FromHours(1);
-                case QueryDuration.D180d: return TimeSpan.FromHours(12);
-                case QueryDuration.D365d: return TimeSpan.FromHours(24);
+                case TimeSpan _ when duration <= TimeSpan.FromHours(1): return TimeSpan.FromSeconds(1);
+                case TimeSpan _ when duration <= TimeSpan.FromHours(6): return TimeSpan.FromSeconds(10);
+                case TimeSpan _ when duration <= TimeSpan.FromHours(12): return TimeSpan.FromSeconds(30);
+                case TimeSpan _ when duration <= TimeSpan.FromHours(24): return TimeSpan.FromMinutes(1);
+                case TimeSpan _ when duration <= TimeSpan.FromDays(7): return TimeSpan.FromMinutes(5);
+                case TimeSpan _ when duration <= TimeSpan.FromDays(30): return TimeSpan.FromMinutes(60);
+                case TimeSpan _ when duration <= TimeSpan.FromDays(60): return TimeSpan.FromHours(6);
+                case TimeSpan _ when duration <= TimeSpan.FromDays(180): return TimeSpan.FromHours(12);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(duration));
+                    return TimeSpan.FromHours(24);
             }
         }
+
         private static string GetInfluxDBDuration(QueryDuration duration)
         {
             switch (duration)

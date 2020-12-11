@@ -1,5 +1,8 @@
-﻿using HomeSeerAPI;
+﻿using HomeSeer.PluginSdk;
+using HomeSeer.PluginSdk.Devices;
+using HomeSeer.PluginSdk.Devices.Controls;
 using NullGuard;
+using System;
 using System.Collections.Generic;
 
 namespace Hspi.DeviceData
@@ -13,29 +16,29 @@ namespace Hspi.DeviceData
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal class RootDeviceData : DeviceDataBase
     {
-        public override void SetInitialData(IHSApplication HS, int refID)
+        public override void SetInitialData(IHsController HS, int refID)
         {
-            HS.set_DeviceInvalidValue(refID, false);
-            HS.SetDeviceString(refID, "Root", false);
+            //HS.set_DeviceInvalidValue(refID, false);
+            // HS.SetDeviceString(refID, "Root", false);
+            throw new NotImplementedException();
         }
 
-        public override IList<VSVGPairs.VSPair> StatusPairs
+        public override IList<StatusControl> StatusPairs
         {
             get
             {
-                var pairs = new List<VSVGPairs.VSPair>();
-                pairs.Add(new VSVGPairs.VSPair(HomeSeerAPI.ePairStatusControl.Status)
-                {
-                    PairType = VSVGPairs.VSVGPairType.SingleValue,
-                    Value = 0,
-                });
+                var pairs = new List<StatusControl>();
+                //pairs.Add(new StatusControl(HomeSeerAPI.ePairStatusControl.Status)
+                //{
+                //    PairType = VSVGPairs.VSVGPairType.SingleValue,
+                //    Value = 0,
+                //});
                 return pairs;
             }
         }
 
         public override bool StatusDevice => false;
-        public override IList<VSVGPairs.VGPair> GraphicsPairs => new List<VSVGPairs.VGPair>();
-        public override string HSDeviceTypeString => Invariant($"{PlugInData.PlugInName} Root Device");
-        public override int HSDeviceType => (int)DeviceTypeInfo_m.DeviceTypeInfo.eDeviceType_Plugin.Root;
+        public override IList<StatusGraphic> GraphicsPairs => new List<StatusGraphic>();
+        //public override string HSDeviceTypeString => Invariant($"{PlugInData.PlugInName} Root Device");
     }
 }
