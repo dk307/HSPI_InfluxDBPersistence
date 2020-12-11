@@ -10,22 +10,20 @@ namespace Hspi.Pages
 {
     internal static class InfluxDbQueryBuilder
     {
-        public static async Task<string> GetDeviceHistogramTabQuery(DevicePersistenceData data,
-                                                          QueryDuration queryDuration,
+        public static async Task<string> GetHistogramQuery(DevicePersistenceData data,
+                                                          TimeSpan queryDuration,
                                                           InfluxDBLoginInformation loginInformation)
         {
-            string duration = GetInfluxDBDuration(queryDuration);
-
+            DateTime? lastEntry;
             // Find last element before duration
-            string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {duration} order by time asc");
+            string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {queryDuration.TotalSeconds}s order by time asc");
+            lastEntry = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
 
-            var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
-
-            string timeRestriction = time.HasValue ? Invariant($"time >= {new DateTimeOffset(time.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {duration}");
+            string timeRestriction = lastEntry.HasValue ? Invariant($"time >= {new DateTimeOffset(lastEntry.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {queryDuration}s");
             return Invariant($"SELECT {GetFields(data)[0]} FROM \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' AND {timeRestriction} ORDER BY time ASC");
         }
 
-        public static string GetDeviceHistoryTabQuery(DevicePersistenceData data,
+        public static (string, string) GetHistoryQueries(DevicePersistenceData data,
                                                       string deviceName,
                                                       int? maxRecords,
                                                       TimeSpan? queryDuration)
@@ -53,7 +51,8 @@ namespace Hspi.Pages
                 stb.AppendFormat(CultureInfo.InvariantCulture, "  LIMIT {0}", maxRecords.Value);
             }
 
-            return stb.ToString();
+            string lastValueQuery = Invariant($"SELECT {GetFields(data)[0]} AS \"{deviceName}\" from \"{data.Measurement}\" WHERE {PluginConfig.DeviceRefIdTag}='{data.DeviceRefId}' order by time desc Limit 1");
+            return (stb.ToString(), lastValueQuery);
         }
 
         public static List<string> GetFields(DevicePersistenceData data)
@@ -72,7 +71,7 @@ namespace Hspi.Pages
             return fields;
         }
 
-        public static async Task<string> GetGroupedDeviceHistoryTabQuery(DevicePersistenceData data,
+        public static async Task<string> GetChartQuery(DevicePersistenceData data,
                                                                          string deviceName,
                                                                          TimeSpan queryDuration,
                                                                          InfluxDBLoginInformation loginInformation,
@@ -81,57 +80,48 @@ namespace Hspi.Pages
         {
             groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
 
-            string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                            loginInformation, groupInterval.Value, groupByOffset).ConfigureAwait(false);
+            string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {(queryDuration).TotalSeconds}s order by time asc");
+            var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
+
+            string timeRestriction = time.HasValue ? Invariant($"time >= {new DateTimeOffset(time.Value).ToUnixTimeMilliseconds()}ms") : Invariant($"time >= now() - {(queryDuration).TotalSeconds}s");
+            string fillOption = "previous";
+
+            string subquery = Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupInterval.Value.TotalSeconds}s, {groupByOffset.TotalSeconds}s) fill({fillOption})");
 
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
             stb.Append(Invariant($"\"{data.Field}\" as \"{deviceName}\""));
-            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time >= now() - {1}s)", subquery, queryDuration.TotalSeconds);
+            // We do not filter by time because filtering for time uses time of original entry , not filled ones
+            // it is filtered later.
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}))", subquery);
             return stb.ToString();
         }
 
-        public static async Task<string> GetStatsQuery(DevicePersistenceData data,
+        public static async Task<IList<string>> GetStatsQueries(DevicePersistenceData data,
                                              TimeSpan queryDuration,
                                              InfluxDBLoginInformation loginInformation,
                                              TimeSpan? groupInterval,
                                              TimeSpan groupByOffset)
         {
             groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
-            string subquery = await CreateRegularTimeSeries(data, queryDuration,
-                                                            loginInformation, groupInterval.Value, groupByOffset).ConfigureAwait(false);
 
-            StringBuilder stb = new StringBuilder();
+            string lastValueQuery = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {(queryDuration).TotalSeconds}s order by time asc");
+            var lastEntry = await InfluxDBHelper.GetTimeValueForQuery(lastValueQuery, loginInformation).ConfigureAwait(false);
+
+            string timeRestriction = lastEntry.HasValue ? Invariant($"time >= {new DateTimeOffset(lastEntry.Value).ToUnixTimeMilliseconds()}ms") : Invariant($"time >= now() - {(queryDuration).TotalSeconds}s");
+            string minMaxQuery = Invariant($"SELECT MIN({data.Field}), MAX({data.Field}) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction}");
+
+            string subquery = Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupInterval.Value.TotalSeconds}s, {groupByOffset.TotalSeconds}s) fill(previous)");
+            var stb = new StringBuilder();
             stb.Append("SELECT ");
-            stb.Append(Invariant($"MIN(\"{data.Field}\")"));
-            stb.Append(Invariant($",MAX(\"{data.Field}\")"));
-            stb.Append(Invariant($",MEAN(\"{data.Field}\")"));
+            stb.Append(Invariant($"MEAN(\"{data.Field}\")"));
             stb.Append(Invariant($",MEDIAN(\"{data.Field}\")"));
             stb.Append(Invariant($",MODE(\"{data.Field}\")"));
             stb.Append(Invariant($",PERCENTILE(\"{data.Field}\", 95) as \"95 Percentile\""));
             stb.Append(Invariant($",STDDEV(\"{data.Field}\") as \"Standard Deviation\""));
-
             stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}) WHERE time >= now() - {1}s)", subquery, queryDuration.TotalSeconds);
-            stb.Append(" LIMIT 100000");
 
-            return stb.ToString();
-        }
-
-        private static async Task<string> CreateRegularTimeSeries(DevicePersistenceData data,
-                                                                  TimeSpan queryDuration,
-                                                                  InfluxDBLoginInformation loginInformation,
-                                                                  TimeSpan groupByInterval,
-                                                                  TimeSpan groupByOffset,
-                                                                  bool fileLinear = false)
-        {
-            // Find last element before duration
-            string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {queryDuration.TotalSeconds}s order by time asc");
-
-            var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
-
-            string timeRestriction = time.HasValue ? Invariant($"time >= {new DateTimeOffset(time.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {queryDuration.TotalSeconds}s");
-            string fillOption = fileLinear ? "linear" : "previous";
-            return Invariant($"SELECT MEAN(\"{data.Field}\") as \"{data.Field}\" from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and {timeRestriction} GROUP BY time({(int)groupByInterval.TotalSeconds}s, {groupByOffset.TotalSeconds}s) fill({fillOption})");
+            return new List<string> { minMaxQuery, stb.ToString() };
         }
 
         private static TimeSpan GetDefaultInfluxDBGroupInterval(TimeSpan duration)
@@ -148,24 +138,6 @@ namespace Hspi.Pages
                 case TimeSpan _ when duration <= TimeSpan.FromDays(180): return TimeSpan.FromHours(12);
                 default:
                     return TimeSpan.FromHours(24);
-            }
-        }
-
-        private static string GetInfluxDBDuration(QueryDuration duration)
-        {
-            switch (duration)
-            {
-                case QueryDuration.D1h: return "1h";
-                case QueryDuration.D6h: return "6h";
-                case QueryDuration.D12h: return "12h";
-                case QueryDuration.D24h: return "24h";
-                case QueryDuration.D7d: return "7d";
-                case QueryDuration.D30d: return "30d";
-                case QueryDuration.D60d: return "60d";
-                case QueryDuration.D180d: return "180d";
-                case QueryDuration.D365d: return "365d";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(duration));
             }
         }
     }

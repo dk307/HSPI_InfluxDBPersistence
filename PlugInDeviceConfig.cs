@@ -18,12 +18,12 @@ namespace Hspi
     {
         public override bool SupportsConfigDeviceAll => true;
 
-        public string BuildAverageStatsData(string refIdString, string maxCount, string duration)
+        public string BuildAverageStatsData(string refIdString, string duration)
         {
             StringBuilder stb = new StringBuilder();
             try
             {
-                (int refId, TimeSpan? queryDuration, int? maxRecords) = ParseDataCallValues(refIdString, maxCount, duration);
+                (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
 
                 if (!queryDuration.HasValue)
                 {
@@ -38,36 +38,35 @@ namespace Hspi
                     HSHelper hSHelper = new HSHelper(HomeSeerSystem);
                     string deviceName = hSHelper.GetName(refId);
 
-                    var query = InfluxDbQueryBuilder.GetStatsQuery(data,
+                    var queries = InfluxDbQueryBuilder.GetStatsQueries(data,
                                                                   queryDuration.Value,
                                                                   pluginConfig.DBLoginInformation,
                                                                   null,
                                                                   -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
-                    var queryData = GetData(query);
-                    if (queryData.Count > 0)
+
+                    foreach (var query in queries)
                     {
-                        var firstRow = queryData[0];
-                        foreach (var pair in firstRow)
+                        var queryData = GetData(query);
+                        if (queryData.Count > 0)
                         {
-                            if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) != 0)
+                            var firstRow = queryData[0];
+                            foreach (var pair in firstRow)
                             {
-                                stb.Append(@"<tr>");
-                                stb.Append(@"<td>");
-                                stb.Append(WebUtility.HtmlEncode(FirstCharToUpper(pair.Key, CultureInfo.InvariantCulture)));
-                                stb.Append(@"</td>");
+                                if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) != 0)
+                                {
+                                    stb.Append(@"<tr>");
+                                    stb.Append(@"<td>");
+                                    stb.Append(WebUtility.HtmlEncode(FirstCharToUpper(pair.Key, CultureInfo.InvariantCulture)));
+                                    stb.Append(@"</td>");
 
-                                stb.Append(@"<td>");
-                                stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, pair.Value)));
-                                stb.Append(@"</td>");
+                                    stb.Append(@"<td>");
+                                    stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, pair.Value)));
+                                    stb.Append(@"</td>");
 
-                                stb.Append(@"</tr>");
+                                    stb.Append(@"</tr>");
+                                }
                             }
                         }
-                    }
-
-                    if (stb.Length == 0)
-                    {
-                        stb.Append(Invariant($"<tr><td>No data</td><tr>"));
                     }
                 }
             }
@@ -79,12 +78,12 @@ namespace Hspi
             return stb.ToString();
         }
 
-        public string BuildChartData(string refIdString, string maxCount, string duration)
+        public string BuildChartData(string refIdString, string duration)
         {
             StringBuilder stb = new StringBuilder();
             try
             {
-                (int refId, TimeSpan? queryDuration, int? maxRecords) = ParseDataCallValues(refIdString, maxCount, duration);
+                (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
 
                 if (!queryDuration.HasValue)
                 {
@@ -96,13 +95,10 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-                    string deviceName = hSHelper.GetName(refId);
-
-                    var chartQuery = InfluxDbQueryBuilder.GetGroupedDeviceHistoryTabQuery(data, deviceName, queryDuration.Value,
-                                                            pluginConfig.DBLoginInformation,
-                                                            null,
-                                                            -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
+                    var chartQuery = InfluxDbQueryBuilder.GetChartQuery(data, "value", queryDuration.Value,
+                                                          pluginConfig.DBLoginInformation,
+                                                          null,
+                                                          -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
 
                     var queryData = GetData(chartQuery);
 
@@ -119,6 +115,7 @@ namespace Hspi
                             legands.Add(Invariant($"'{FirstCharToUpper(nonTimeColumn, CultureInfo.CurrentUICulture)}'"));
                         }
 
+                        var limit = DateTimeOffset.UtcNow - queryDuration.Value;
                         var dataStrings = new Dictionary<string, StringBuilder>();
                         foreach (var row in queryData)
                         {
@@ -128,7 +125,14 @@ namespace Hspi
                                 if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) == 0)
                                 {
                                     var timePoint = (DateTime)pair.Value;
-                                    jsMilliseconds = (new DateTimeOffset(timePoint)).ToLocalTime().ToUnixTimeMilliseconds();
+                                    DateTimeOffset timeForPoint = new DateTimeOffset(timePoint);
+                                    if (timeForPoint < limit)
+                                    {
+                                        // time is before the range
+                                        break;
+                                    }
+
+                                    jsMilliseconds = timeForPoint.ToLocalTime().ToUnixTimeMilliseconds();
                                 }
                                 else
                                 {
@@ -172,7 +176,13 @@ namespace Hspi
             StringBuilder stb = new StringBuilder();
             try
             {
-                (int refId, TimeSpan? queryDuration, int? maxRecords) = ParseDataCallValues(refIdString, maxCount, duration);
+                (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
+
+                int? maxRecords = null;
+                if (!string.IsNullOrEmpty(maxCount))
+                {
+                    maxRecords = int.Parse(maxCount, CultureInfo.InvariantCulture);
+                }
 
                 var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
@@ -182,14 +192,78 @@ namespace Hspi
                     HSHelper hSHelper = new HSHelper(HomeSeerSystem);
                     string deviceName = hSHelper.GetName(refId);
 
-                    var query = InfluxDbQueryBuilder.GetDeviceHistoryTabQuery(data, deviceName, maxRecords, queryDuration);
-                    var queryData = GetData(query);
+                    var queries = InfluxDbQueryBuilder.GetHistoryQueries(data, deviceName, maxRecords, queryDuration);
+                    var queryData = GetData(queries.Item1);
                     BuildTable(stb, queryData);
-                }
 
-                if (stb.Length == 0)
+                    if (stb.Length == 0)
+                    {
+                        var queryData2 = GetData(queries.Item2);
+                        BuildTable(stb, queryData2);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                stb.Append(Invariant($"<tr><td style='color:Red'>{ex.GetFullMessage()}</td><tr>"));
+            }
+
+            return stb.ToString();
+        }
+
+        public string BuildHistogramData(string refIdString, string duration)
+        {
+            StringBuilder stb = new StringBuilder();
+            try
+            {
+                (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
+
+                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+                var data = dataKeyPair.Value;
+
+                if (data != null)
                 {
-                    stb.Append(Invariant($"<tr><td>No data</td><tr>"));
+                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
+
+                    var query = InfluxDbQueryBuilder.GetHistogramQuery(data, queryDuration.Value, pluginConfig.DBLoginInformation).ResultForSync();
+
+                    var culture = CultureInfo.CurrentUICulture;
+
+                    var queryData = GetData(query);
+
+                    var histogram = InfluxDBHelper.CreateHistogram(queryData, queryDuration.Value);
+
+                    if (histogram.Count > 0)
+                    {
+                        stb.Append(@"<thead><tr>");
+                        stb.Append(@"<th>Value</th>");
+                        stb.Append(@"<th>Total time</th>");
+                        stb.Append(@"<th>Percentage</th>");
+                        stb.Append(@"</tr></thead>");
+
+                        stb.Append(@"<tbody>");
+
+                        var firstRow = queryData[0];
+
+                        foreach (var pair in histogram)
+                        {
+                            stb.Append(@"<tr>");
+                            stb.Append(@"<td>");
+                            stb.Append(WebUtility.HtmlEncode(FirstCharToUpper(pair.Key, culture)));
+                            stb.Append(@"</td>");
+
+                            stb.Append(@"<td>");
+                            stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(culture, pair.Value)));
+                            stb.Append(@"</td>");
+                            stb.Append(@"<td>");
+                            double percentage = 100 * pair.Value.TotalMilliseconds / queryDuration.Value.TotalMilliseconds;
+                            stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(culture, percentage)));
+                            stb.Append(@"</td>");
+
+                            stb.Append(@"</tr>");
+                        }
+                        stb.Append(@"</tbody>");
+                    }
                 }
             }
             catch (Exception ex)
@@ -355,22 +429,17 @@ namespace Hspi
             }
         }
 
-        private static (int, TimeSpan?, int?) ParseDataCallValues(string refIdString, string maxCount, string duration)
+        private static (int, TimeSpan?) ParseDataCallValues(string refIdString, string duration)
         {
             int refId = ParseRefId(refIdString);
             TimeSpan? queryDuration = null;
-            int? maxRecords = null;
+
             if (!string.IsNullOrEmpty(duration))
             {
                 queryDuration = TimeSpan.Parse(duration, CultureInfo.InvariantCulture);
             }
 
-            if (!string.IsNullOrEmpty(maxCount))
-            {
-                maxRecords = int.Parse(maxCount, CultureInfo.InvariantCulture);
-            }
-
-            return (refId, queryDuration, maxRecords);
+            return (refId, queryDuration);
         }
 
         private static int ParseRefId(string refIdString)
