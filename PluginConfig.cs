@@ -211,7 +211,7 @@ namespace Hspi
 
         private T GetValue<T>(string key, T defaultValue, string section)
         {
-            string stringValue = HS.GetINISetting(section, key, null, FileName);
+            string stringValue = HS.GetINISetting(section, key, null, fileName: FileName);
 
             if (stringValue != null)
             {
@@ -334,13 +334,13 @@ namespace Hspi
         private void SetValue<T>(string key, T value, string section = DefaultSection)
         {
             string stringValue = System.Convert.ToString(value, CultureInfo.InvariantCulture);
-            HS.SaveINISetting(section, key, stringValue, FileName);
+            HS.SaveINISetting(section, key, stringValue, fileName: FileName);
         }
 
         private void SetValue<T>(string key, Nullable<T> value, string section = DefaultSection) where T : struct
         {
             string stringValue = value.HasValue ? System.Convert.ToString(value.Value, CultureInfo.InvariantCulture) : string.Empty;
-            HS.SaveINISetting(section, key, stringValue, FileName);
+            HS.SaveINISetting(section, key, stringValue, fileName: FileName);
         }
 
         private void SetValue<T>(string key, T value, ref T oldValue)
@@ -353,7 +353,7 @@ namespace Hspi
             if (!value.Equals(oldValue))
             {
                 string stringValue = System.Convert.ToString(value, CultureInfo.InvariantCulture);
-                HS.SaveINISetting(section, key, stringValue, FileName);
+                HS.SaveINISetting(section, key, stringValue, fileName: FileName);
                 oldValue = value;
             }
         }
@@ -389,7 +389,7 @@ namespace Hspi
         private const string SqlKey = "Sql";
         private const string TagsKey = "Tags";
         private const string UnitKey = "Unit";
-        private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
+        private const string FileName = PlugInData.SettingFileName;
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
         private readonly IHsController HS;
         private bool debugLogging;
