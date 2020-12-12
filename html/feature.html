@@ -25,30 +25,39 @@
 	periodEnd=queries['periodEnd'] ?? ""
 	
 	if feature != ""
-		finalRefId=feature
+		deviceDisplayDetails=plugin_function 'HSPI_InfluxDBPersistence' 'GetAllowedDisplays'[feature]
 	else
-		finalRefId=refId
+		deviceDisplayDetails=plugin_function 'HSPI_InfluxDBPersistence' 'GetAllowedDisplays'[refId]
 	end		
 	
-	deviceDisplayDetails=plugin_function 'HSPI_InfluxDBPersistence' 'GetAllowedDisplays' [finalRefId]	 
+	if displaySelect=="" && deviceDisplayDetails
+		if  !deviceDisplayDetails.empty?
+			element=array.first deviceDisplayDetails
+			displayType="table"
+			displayTypes=element['displayTypes']
+			
+			if array.contains displayTypes "chart"
+				displayType="chart"
+			end	
 		
-	if displaySelect=="" && deviceDisplayDetails && !deviceDisplayDetails.empty?
-		element=array.first deviceDisplayDetails
-		displayType="table"
-		displayTypes=element['displayTypes']
-		
-		if array.contains displayTypes "chart"
-			displayType="chart"
-		end	
-	
-		displaySelect=element['refId']+ '.' + displayType
+			displaySelect=element['refId']+ '.' + displayType
+		end
 	end
 		
 	}}	
 	
 	
-<body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
-<div class=".container-fluid"> 
+<body class="body homeseer-skin ml-0 mr-0" style="min-height: 15rem" aria-busy="true">	
+
+<div class="hs_spinner" id="loading">
+        <div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
+            <div class="spinner-border" role="status">
+            	<span class="sr-only">Loading...</span>
+          	</div>
+        </div>
+</div>
+
+<div class="container-fluid"> 
 {{options=displaySelect | regex.split `\.` }}
 {{if options.size == 2}}
 	{{
@@ -57,13 +66,12 @@
 					 ]
 									 
 		rangeOptionsForOthers=[ 
-						 ["1 hour", "", "01:00:00", "1hr"],
-						 ["6 hours", "", "06:00:00", "6hr"],
-						 ["1 day", "", "1.00:00:00", "1d"],
-						 ["7 days", "", "7.00:00:00", "7d"],
-						 ["30 days", "", "30.00:00:00", "30d"],
-						 ["90 days", "", "90.00:00:00", "90d"],
-						 ["365 days", "", "365.00:00:00", "365d"],
+						 ["Last 6 hours", "", "06:00:00", "6hr"],
+						 ["Last 24 hours", "", "1.00:00:00", "1d"],
+						 ["Last 7 days", "", "7.00:00:00", "7d"],
+						 ["Last 30 days", "", "30.00:00:00", "30d"],
+						 ["Last 90 days", "", "90.00:00:00", "90d"],
+						 ["Last 365 days", "", "365.00:00:00", "365d"],
 					 ]
 									
 		if options[1]=="table"
@@ -94,7 +102,7 @@
 			<input type="hidden" id="periodStart" name="periodStart" value="{{periodStart}}">
 			<input type="hidden" id="periodEnd" name="periodEnd" value="{{periodEnd}}">
 			
-			<div class="md-form my-0 ml-0 mr-3">
+			<div class="md-form my-0 mr-3">
 				<select id="displaySelect" class="mdb-select md-form md-outline colorful-select dropdown-primary" name="displaySelect">
 					{{ for item in deviceDisplayDetails }}				
 						{{ for displayType in item["displayTypes"] }}
@@ -122,7 +130,7 @@
 				</select> 
 			</div>	
 			
-			<div class="md-form my-0 ml-0 mr-3">
+			<div class="md-form my-0 mr-3">
 				<select id="displayPeriod" class="mdb-select md-form md-outline colorful-select dropdown-secondary" name="displayPeriod">
 					{{for rangeOption in rangeOptions}}
 						<option value="{{rangeOption[3]}}" {{if rangeOption[3]==displayPeriod;}}selected{{end}}>{{rangeOption[0]}}</option>	
@@ -148,34 +156,40 @@
 
 	{{needDataTables=false}}
 	{{if options[1]=="table"}}
-		<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
-			{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildHistoryTableData' [options[0], recordLimit, duration]}}
-		<table>		
+		{{tableData=plugin_function 'HSPI_InfluxDBPersistence' 'BuildHistoryTableData' [options[0], recordLimit, duration]}}
+		{{if !tableData.empty? }}
+			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
+				{{tableData}}
+			<table>	
+		{{else}}
+		<div class="text-center my-3"><p>No data found</p></div>	
+		{{end}}		
 		{{needDataTables=true}}
 	{{else if options[1]=="chart"}}
 		<div id='chartGraph2' align="center"></div> 
-		<!-- <table align="center" class="table"> -->
-			<!-- <tr><td id='chartGraph2' align="center"></td>  -->
-		<!-- </table>  -->
-		{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildChartData' [options[0], recordLimit, duration] }}
+		{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildChartData' [options[0], duration] }}
 	{{else if options[1]=="averageStats"}}
 		<table id="dt-persistence" class="table table-sm" width="100%">
-			{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildAverageStatsData' [options[0], recordLimit, duration] }}
+			{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildAverageStatsData' [options[0], duration] }}
+		<table>		
+		{{needDataTables=true}}	
+	{{else if options[1]=="histogram"}}
+		<table id="dt-persistence" class="table table-sm" width="100%">
+			{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildHistogramData' [options[0], duration] }}
 		<table>		
 		{{needDataTables=true}}	
 	{{end}}
 	
 {{else}}
-{{displaySelect}}
-No data	
-	
+<button id="modalActivate" type="button" class="btn btn-primary" >
+  Add Persistence
+</button>
 {{end}}
 
 </div>
  
 {{includefile 'bootstrap/js/page_common.js'}}
 <script type="text/javascript" src="/HSPI_InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
 {{if needDataTables}}
 <script type="text/javascript" src="/HSPI_InfluxDBPersistence/datatables.min.js"></script>
@@ -184,7 +198,6 @@ No data
 {{if options[1]=="chart"}}
 <script type="text/javascript" src="/HSPI_InfluxDBPersistence/d3.min.js"></script>
 <script type="text/javascript" src="/HSPI_InfluxDBPersistence/metricsgraphics.min.js"></script>
-
 {{end}}
 
 <script>
@@ -226,8 +239,8 @@ function setUpPersistanceTable() {
 $(document).ready(function () {
 	setUpPersistanceTable();
 });	
-{{else if options[1]=="chart"}}
 
+{{else if options[1]=="chart"}}
 
 function setUpChart() {
  var chartDataFromDB = chartData();
@@ -246,8 +259,6 @@ function setUpChart() {
 					width: 300,
 					height: 500,
 				 });
-
-
 }
 
 $(document).ready(function () {
@@ -256,9 +267,12 @@ $(document).ready(function () {
 
 $( window ).resize(function() {
     setUpChart();
-});
-			 	
+});	 	
 {{end}}
+
+$(window).on('load',function() {                
+  				$('#loading').hide();
+			});
 </script>
 </body>
 </html>

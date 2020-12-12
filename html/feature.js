@@ -1,3 +1,7 @@
+function getUrlParameterOrEmpty(key) {
+	return getUrlParameter(key) ?? '';
+};
+
 function getUrlParameter(sParam) {
     var sPageURL = window.location.search.substring(1),
         sURLVariables = sPageURL.split('&'),
@@ -12,3 +16,7 @@ function getUrlParameter(sParam) {
         }
     }
 };
+
+
+
+

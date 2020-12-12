@@ -1,5 +1,4 @@
-﻿using HomeSeer.Jui.Views;
-using HomeSeer.PluginSdk;
+﻿using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
 using Hspi.DeviceData;
 using Hspi.Utils;
@@ -8,7 +7,6 @@ using NullGuard;
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
@@ -24,10 +22,9 @@ namespace Hspi
         public PlugIn()
             : base(PlugInData.PlugInId, PlugInData.PlugInName)
         {
-
         }
 
-         //public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
+        //public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
         //{
         //    if (newDevice)
         //    {
@@ -114,8 +111,6 @@ namespace Hspi
             }
         }
 
-         
-
         //public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
         //{
         //    if (ImportDeviceFromDB(deviceId))
@@ -164,8 +159,8 @@ namespace Hspi
             base.Dispose(disposing);
         }
 
-        private  async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
-                                                    AbstractHsDevice device)
+        private async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
+                                             AbstractHsDevice device)
         {
             if (device != null)
             {
@@ -177,7 +172,6 @@ namespace Hspi
                     string deviceString = device.Status;
                     if (string.IsNullOrWhiteSpace(deviceString))
                     {
-                        // HS.DeviceVSP_GetStatus(deviceRefId, deviceValue, ePairStatusControl.Status);
                         var status = HomeSeerSystem.GetStatusControlForValue(deviceRefId, deviceValue);
                         if (status != null)
                         {
@@ -284,7 +278,7 @@ namespace Hspi
                             }
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         if (ex.IsCancelException())
                         {
@@ -352,13 +346,9 @@ namespace Hspi
                 }
             }
 
-            // do not leave thread to avoid leaving thread as it can delay startup
-#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
-            await RecordTrackedDevices();
-#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
+            await RecordTrackedDevices().ConfigureAwait(false);
         }
 
- 
         //public override string ActionBuildUI([AllowNull]string uniqueControlId, IPlugInAPI.strTrigActInfo actionInfo)
         //{
         //    try
@@ -553,7 +543,6 @@ namespace Hspi
         protected override void BeforeReturnStatus()
         {
         }
-
 
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();

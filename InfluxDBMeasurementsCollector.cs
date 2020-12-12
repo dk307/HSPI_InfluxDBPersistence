@@ -29,6 +29,12 @@ namespace Hspi
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
 
+        public void Dispose()
+        {
+            influxDBClient?.Dispose();
+            tokenSource.Cancel();
+        }
+
         public bool IsTracked(int deviceRefId, TrackedType? trackedType)
         {
             if (peristenceDataMap != null)
@@ -131,18 +137,30 @@ namespace Hspi
             peristenceDataMap = map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>);
         }
 
+        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
+            {
+                dict.Add(key, value);
+            }
+        }
+
         private static bool IsValidRange(DevicePersistenceData value, double deviceValue)
         {
             double maxValidValue = value.MaxValidValue ?? double.MaxValue;
             double minValidValue = value.MinValidValue ?? double.MinValue;
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
-
-        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
+        private async Task<bool> IsConnectedToServer()
         {
-            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
+            try
             {
-                dict.Add(key, value);
+                await influxDBClient.GetServerVersionAsync().ConfigureAwait(false);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -179,28 +197,10 @@ namespace Hspi
                 }
             }
         }
-
-        private async Task<bool> IsConnectedToServer()
-        {
-            try
-            {
-                await influxDBClient.GetServerVersionAsync().ConfigureAwait(false);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        public void Dispose()
-        {
-            influxDBClient?.Dispose();
-            tokenSource.Cancel();
-        }
+        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
 
         private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue
-            = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
+                    = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
 
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
@@ -208,6 +208,5 @@ namespace Hspi
         private readonly CancellationTokenSource tokenSource;
 #pragma warning restore CA2213 // Disposable fields should be disposed
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
-        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
     }
 }
