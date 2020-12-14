@@ -1,6 +1,7 @@
-﻿
-using HomeSeer.PluginSdk;
+﻿using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
+using HomeSeer.PluginSdk.Devices.Identification;
+using Hspi.Utils;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,19 +16,62 @@ namespace Hspi
             LoadSettings();
         }
 
-        public IDictionary<int, string> GetDevices()
+        public void Fill(int deviceRefId,
+                         out string measurement,
+                         out string field,
+                         out string fieldString,
+                         out double? maxValidValue,
+                         out double? minValidValue)
         {
-            Dictionary<int, string> devices = new Dictionary<int, string>();
-            var deviceEnumerator = HS.GetAllDevices(true);
-            foreach(var device in deviceEnumerator)
+            measurement = null;
+            maxValidValue = null;
+            minValidValue = null;
+            field = null;
+            fieldString = null;
+
+            var device = HS.GetDeviceByRef(deviceRefId);
+            var deviceTypeInfo = device.TypeInfo;
+
+            measurement = FindTypeString(new string[] {
+                                        deviceTypeInfo.SubTypeDescription,
+                                        EnumHelper.GetDescription((EDeviceType) deviceTypeInfo.Type),
+                                        device.Name,
+                                        deviceTypeInfo.Summary,});
+
+            switch (measurement)
             {
-                if (device != null)
-                {
-                    devices.Add(device.Ref, GetName(device));
-                }
+                case "temperature":
+                    maxValidValue = 255;
+                    minValidValue = -255;
+                    field = "value";
+                    break;
+
+                case "battery":
+                case "humidity":
+                    maxValidValue = 100;
+                    minValidValue = 0;
+                    field = "value";
+                    break;
+
+                case "watts":
+                case "kwh":
+                case "pressure":
+                case "amperes":
+                case "co2":
+                case "luminance":
+                case "pm25":
+                    minValidValue = 0;
+                    field = "value";
+                    break;
+
+                case "switch":
+                case "light":
+                case "window":
+                case "door":
+                case "lock":
+                    fieldString = "fieldString";
+                    break;
             }
-           
-            return devices;
         }
 
         public string GetName(int deviceRefId)
@@ -93,46 +137,6 @@ namespace Hspi
             return null;
         }
 
-        public void Fill(int deviceRefId, out string measurement, out double? maxValidValue, out double? minValidValue)
-        {
-            measurement = null;
-            maxValidValue = null;
-            minValidValue = null;
-
-            throw new NotImplementedException();
-
-            //var device = HS.GetDeviceByRef(deviceRefId);
-            //var deviceType = device.get_DeviceType_Get(HS);
-            //measurement = FindTypeString(new string[] {
-            //                          deviceType?.Device_SubType_Description,
-            //                          deviceType?.Device_API_Description,
-            //                          device.get_Name(HS) });
-
-            //switch (measurement)
-            //{
-            //    case "temperature":
-            //        maxValidValue = 255;
-            //        minValidValue = -255;
-            //        break;
-
-            //    case "battery":
-            //    case "humidity":
-            //        maxValidValue = 100;
-            //        minValidValue = 0;
-            //        break;
-
-            //    case "watts":
-            //    case "kwh":
-            //    case "pressure":
-            //    case "amperes":
-            //    case "co2":
-            //    case "luminance":
-            //    case "pm25":
-            //        minValidValue = 0;
-            //        break;
-            //}
-        }
-
         private void LoadSettings()
         {
             location2Enabled = Convert.ToBoolean(
@@ -150,11 +154,12 @@ namespace Hspi
             }
         }
 
-        private readonly IHsController HS;
-        private bool location2Enabled;
-        private bool location1First;
-
         private static string[] measurementTypes = { "TEMPERATURE", "HUMIDITY", "WATTS", "KWH", "BATTERY",
-                                                     "PRESSURE", "AMPERES", "CO2", "PM25", "VOLTS", "LUMINANCE" };
+                                                     "PRESSURE", "AMPERES", "CO2", "PM25", "VOLTS", "LUMINANCE",
+                                                     "LOCK", "WINDOW", "DOOR", "LIGHT", "SWITCH" };
+
+        private readonly IHsController HS;
+        private bool location1First;
+        private bool location2Enabled;
     }
 }

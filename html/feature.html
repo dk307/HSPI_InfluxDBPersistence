@@ -11,8 +11,8 @@
     <title>InfluxDB Persistence</title>
 	
     <link href="/css/hs.css" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="/HSPI_InfluxDBPersistence/datatables.min.css"/>
-	<link rel="stylesheet" type="text/css" href="/HSPI_InfluxDBPersistence/metricsgraphics.css"/>
+	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/datatables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/metricsgraphics.css"/>
 </head>
 
 	{{
@@ -24,11 +24,14 @@
 	periodStart=queries['periodStart'] ?? ""
 	periodEnd=queries['periodEnd'] ?? ""
 	
+	
 	if feature != ""
-		deviceDisplayDetails=plugin_function 'HSPI_InfluxDBPersistence' 'GetAllowedDisplays'[feature]
+		finalRefId=feature
 	else
-		deviceDisplayDetails=plugin_function 'HSPI_InfluxDBPersistence' 'GetAllowedDisplays'[refId]
+		finalRefId=refId
 	end		
+	
+	deviceDisplayDetails=plugin_function 'InfluxDBPersistence' 'GetAllowedDisplays'[finalRefId]
 	
 	if displaySelect=="" && deviceDisplayDetails
 		if  !deviceDisplayDetails.empty?
@@ -42,8 +45,7 @@
 		
 			displaySelect=element['refId']+ '.' + displayType
 		end
-	end
-		
+	end	
 	}}	
 	
 	
@@ -94,23 +96,19 @@
 	}}
 
 	<nav class="navbar">
-		<form class="form-inline my-0 mx-0" action="/HSPI_InfluxDBPersistence/feature.html" method="GET">	
+		<form class="form-inline my-0 mx-0" action="/InfluxDBPersistence/feature.html" method="GET">	
 			<input type="hidden" id="refId" name="refId" value="{{refId}}"> 
 			<input type="hidden" id="feature" name="feature" value="{{feature}}"> 
-			
-			
-			<input type="hidden" id="periodStart" name="periodStart" value="{{periodStart}}">
-			<input type="hidden" id="periodEnd" name="periodEnd" value="{{periodEnd}}">
 			
 			<div class="md-form my-0 mr-3">
 				<select id="displaySelect" class="mdb-select md-form md-outline colorful-select dropdown-primary" name="displaySelect">
 					{{ for item in deviceDisplayDetails }}				
 						{{ for displayType in item["displayTypes"] }}
 							{{thisOptionDisplaySelect=item["refId"] + "." + displayType}}
-							<option value="{{thisOptionDisplaySelect}}" {{if thisOptionDisplaySelect==displaySelect;}}selected{{end}}>
+							<option value="{{thisOptionDisplaySelect | html.escape}}" {{if thisOptionDisplaySelect==displaySelect;}}selected{{end}}>
 							{{
 							if deviceDisplayDetails.size > 1
-								item["name"] + " - "
+								item["name"] + " - " | html.escape
 							end
 							case displayType
 								when "table"
@@ -133,12 +131,20 @@
 			<div class="md-form my-0 mr-3">
 				<select id="displayPeriod" class="mdb-select md-form md-outline colorful-select dropdown-secondary" name="displayPeriod">
 					{{for rangeOption in rangeOptions}}
-						<option value="{{rangeOption[3]}}" {{if rangeOption[3]==displayPeriod;}}selected{{end}}>{{rangeOption[0]}}</option>	
+						<option value="{{rangeOption[3]}}" {{if rangeOption[3]==displayPeriod;}}selected{{end}}>{{rangeOption[0] | html.escape}}</option>	
 					{{end}}			
 				</select> 
 			</div>
 
 		</form>
+		
+		<ul class="navbar-nav ml-auto nav-flex-icons">
+		  <li class="nav-item">	  
+			<a class="nav-link waves-effect waves-light" href="/InfluxDBPersistence/addeditpersistence.html?devicerefid={{finalRefId}}">
+			  <i class="fas fa-edit"></i>
+			</a>
+		  </li>
+		</ul>
 	</nav>	  
 
 	{{
@@ -156,7 +162,7 @@
 
 	{{needDataTables=false}}
 	{{if options[1]=="table"}}
-		{{tableData=plugin_function 'HSPI_InfluxDBPersistence' 'BuildHistoryTableData' [options[0], recordLimit, duration]}}
+		{{tableData=plugin_function 'InfluxDBPersistence' 'BuildHistoryTableData' [options[0], recordLimit, duration]}}
 		{{if !tableData.empty? }}
 			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
 				{{tableData}}
@@ -167,21 +173,21 @@
 		{{needDataTables=true}}
 	{{else if options[1]=="chart"}}
 		<div id='chartGraph2' align="center"></div> 
-		{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildChartData' [options[0], duration] }}
+		{{plugin_function 'InfluxDBPersistence' 'BuildChartData' [options[0], duration] }}
 	{{else if options[1]=="averageStats"}}
 		<table id="dt-persistence" class="table table-sm" width="100%">
-			{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildAverageStatsData' [options[0], duration] }}
+			{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [options[0], duration] }}
 		<table>		
 		{{needDataTables=true}}	
 	{{else if options[1]=="histogram"}}
 		<table id="dt-persistence" class="table table-sm" width="100%">
-			{{plugin_function 'HSPI_InfluxDBPersistence' 'BuildHistogramData' [options[0], duration] }}
+			{{plugin_function 'InfluxDBPersistence' 'BuildHistogramData' [options[0], duration] }}
 		<table>		
 		{{needDataTables=true}}	
 	{{end}}
 	
 {{else}}
-<button id="modalActivate" type="button" class="btn btn-primary" >
+<button id="addPersistence" type="button" class="btn btn-primary" >
   Add Persistence
 </button>
 {{end}}
@@ -189,15 +195,15 @@
 </div>
  
 {{includefile 'bootstrap/js/page_common.js'}}
-<script type="text/javascript" src="/HSPI_InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
+<script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
 
 {{if needDataTables}}
-<script type="text/javascript" src="/HSPI_InfluxDBPersistence/datatables.min.js"></script>
+<script type="text/javascript" src="/InfluxDBPersistence/datatables.min.js"></script>
 {{end}}
 
 {{if options[1]=="chart"}}
-<script type="text/javascript" src="/HSPI_InfluxDBPersistence/d3.min.js"></script>
-<script type="text/javascript" src="/HSPI_InfluxDBPersistence/metricsgraphics.min.js"></script>
+<script type="text/javascript" src="/InfluxDBPersistence/d3.min.js"></script>
+<script type="text/javascript" src="/InfluxDBPersistence/metricsgraphics.min.js"></script>
 {{end}}
 
 <script>
@@ -253,7 +259,7 @@ function setUpChart() {
                     min_y_from_data: true,
                     color: '#329de4',
                     x_rollover_format: function(d) { return d.date.toLocaleString() + ' '; },
-					title:'{{plugin_function 'HSPI_InfluxDBPersistence' 'GetDisplayName' [options[0]]}}',
+					title:'{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [options[0]] | html.escape}}',
 					full_width: true,
 					// full_height: true,
 					width: 300,

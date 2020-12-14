@@ -255,12 +255,12 @@ namespace Hspi
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if (collector != null)
             {
-                var deviceEnumerator = HomeSeerSystem.GetAllDeviceRefs();
+                var deviceEnumerator = HomeSeerSystem.GetAllRefs();
                 foreach (var refId in deviceEnumerator)
                 {
                     try
                     {
-                        var device = HomeSeerSystem.GetDeviceWithFeaturesByRef(refId);
+                        var device = HomeSeerSystem.GetDeviceByRef(refId);
                         if (device != null)
                         {
                             if (collector.IsTracked(refId, null))
@@ -268,14 +268,7 @@ namespace Hspi
                                 await RecordDeviceValue(collector, device).ConfigureAwait(false);
                             }
 
-                            foreach (var feature in device.Features)
-                            {
-                                if (collector.IsTracked(feature.Ref, null))
-                                {
-                                    await RecordDeviceValue(collector, feature).ConfigureAwait(false);
-                                }
-                                ShutdownCancellationToken.ThrowIfCancellationRequested();
-                            }
+                            ShutdownCancellationToken.ThrowIfCancellationRequested();
                         }
                     }
                     catch (Exception ex)

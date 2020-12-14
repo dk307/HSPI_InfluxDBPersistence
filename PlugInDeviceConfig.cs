@@ -171,46 +171,6 @@ namespace Hspi
             return stb.ToString();
         }
 
-        public string BuildHistoryTableData(string refIdString, string maxCount, string duration)
-        {
-            StringBuilder stb = new StringBuilder();
-            try
-            {
-                (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
-
-                int? maxRecords = null;
-                if (!string.IsNullOrEmpty(maxCount))
-                {
-                    maxRecords = int.Parse(maxCount, CultureInfo.InvariantCulture);
-                }
-
-                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
-                var data = dataKeyPair.Value;
-
-                if (data != null)
-                {
-                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-                    string deviceName = hSHelper.GetName(refId);
-
-                    var queries = InfluxDbQueryBuilder.GetHistoryQueries(data, deviceName, maxRecords, queryDuration);
-                    var queryData = GetData(queries.Item1);
-                    BuildTable(stb, queryData);
-
-                    if (stb.Length == 0)
-                    {
-                        var queryData2 = GetData(queries.Item2);
-                        BuildTable(stb, queryData2);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                stb.Append(Invariant($"<tr><td style='color:Red'>{ex.GetFullMessage()}</td><tr>"));
-            }
-
-            return stb.ToString();
-        }
-
         public string BuildHistogramData(string refIdString, string duration)
         {
             StringBuilder stb = new StringBuilder();
@@ -263,6 +223,46 @@ namespace Hspi
                             stb.Append(@"</tr>");
                         }
                         stb.Append(@"</tbody>");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                stb.Append(Invariant($"<tr><td style='color:Red'>{ex.GetFullMessage()}</td><tr>"));
+            }
+
+            return stb.ToString();
+        }
+
+        public string BuildHistoryTableData(string refIdString, string maxCount, string duration)
+        {
+            StringBuilder stb = new StringBuilder();
+            try
+            {
+                (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
+
+                int? maxRecords = null;
+                if (!string.IsNullOrEmpty(maxCount))
+                {
+                    maxRecords = int.Parse(maxCount, CultureInfo.InvariantCulture);
+                }
+
+                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+                var data = dataKeyPair.Value;
+
+                if (data != null)
+                {
+                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
+                    string deviceName = hSHelper.GetName(refId);
+
+                    var queries = InfluxDbQueryBuilder.GetHistoryQueries(data, deviceName, maxRecords, queryDuration);
+                    var queryData = GetData(queries.Item1);
+                    BuildTable(stb, queryData);
+
+                    if (stb.Length == 0)
+                    {
+                        var queryData2 = GetData(queries.Item2);
+                        BuildTable(stb, queryData2);
                     }
                 }
             }
@@ -328,6 +328,42 @@ namespace Hspi
             var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id", stb.ToString());
 
             return page.Page.ToJsonString();
+        }
+
+        public IDictionary<string, object> GetPersistanceData([AllowNull] string refIdString)
+        {
+            int refId = ParseRefId(refIdString);
+            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+            var data = dataKeyPair.Value;
+
+            if (data != null)
+            {
+                return ScribanHelper.ToDictionary(data);
+            }
+
+            // prefill values
+            HSHelper hSHelper = new HSHelper(HomeSeerSystem);
+            hSHelper.Fill(refId, out var measurement, out var field, out var fieldString, out var maxValidValue, out var minValidValue);
+
+            data = new DevicePersistenceData(string.Empty,
+                                            refId,
+                                            measurement ?? string.Empty,
+                                            field,
+                                            fieldString,
+                                            null,
+                                            maxValidValue,
+                                            minValidValue,
+                                            null);
+
+            return ScribanHelper.ToDictionary(data);
+        }
+
+        public string SavePersistanceData(IDictionary<string, string> persistanceDataDict)
+        {
+            var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict);
+            // validate
+
+            return string.Empty;
         }
 
         public override bool HasJuiDeviceConfigPage(int deviceRef)
@@ -451,7 +487,7 @@ namespace Hspi
             var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == device.Ref);
             var data = dataKeyPair.Value;
 
-            if ((data != null) && !string.IsNullOrWhiteSpace(pluginConfig.DBLoginInformation.DB))
+            if (data != null)
             {
                 string featureName = hSHelper.GetName(device);
                 bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);

@@ -82,6 +82,7 @@
     <Compile Include="ImportDeviceData.cs" />
     <Compile Include="Pages\InfluxDbQueryBuilder.cs" />
     <Compile Include="PlugInDeviceConfig.cs" />
+    <Compile Include="Utils\ScribanHelper.cs" />
     <Compile Include="Utils\EnumHelper.cs" />
     <Compile Include="Utils\InfluxDBHelper.cs" />
     <Compile Include="DevicePersistenceData.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="ILogger.cs" />
     <Compile Include="InfluxDBLoginInformation.cs" />
     <Compile Include="InfluxDBMeasurementsCollector.cs" />
+    <Compile Include="Utils\Mapper.cs" />
     <Compile Include="Utils\ObjectSerialize.cs" />
     <Compile Include="PlugIn.cs" />
     <Compile Include="PlugInData.cs" />
@@ -227,6 +229,8 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="html\addeditpersistence.html" />
+    <Content Include="html\configuration.html" />
     <Content Include="html\datatables.min.css" />
     <Content Include="html\datatables.min.js" />
     <Content Include="html\feature.html" />

@@ -4,19 +4,19 @@ using System.Collections.Generic;
 namespace Hspi
 {
 
-    internal enum TrackedType
+    public enum TrackedType
     {
         Value = 0,
         String = 1,
     }
 
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class DevicePersistenceData
+    public sealed class DevicePersistenceData
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
-                                     [AllowNull]string field, [AllowNull]string fieldString,
-                                     [AllowNull]IReadOnlyDictionary<string, string> tags,
-                                     [AllowNull]double? maxValidValue, [AllowNull]double? minValidValue,
+                                     [AllowNull]string field = null, [AllowNull]string fieldString = null,
+                                     [AllowNull]IReadOnlyDictionary<string, string> tags = null,
+                                     [AllowNull]double? maxValidValue = null, [AllowNull]double? minValidValue = null,
                                      [AllowNull]TrackedType? trackedType = null)
         {
             Id = id;
