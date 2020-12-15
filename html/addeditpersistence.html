@@ -13,30 +13,54 @@
     <link href="/css/hs.css" rel="stylesheet">
 </head>
 
-	{{
-	
+	{{	
 	deviceRefId=queries['devicerefid'] ?? ""
 	id=queries['id'] ?? ""
 	
-	validation=""
+	validation=[]
 	data={}
 	
-	if id!=""
+	if queries["save"]
 		data=queries
 		validation=plugin_function 'InfluxDBPersistence' 'SavePersistanceData' [queries]
+		redirect=validation.empty?
+	else if queries["delete"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'DeletePersistanceData' [deviceRefId]
+		redirect=validation.empty?
 	else
 		persistanceData=plugin_function 'InfluxDBPersistence' 'GetPersistanceData'[deviceRefId]
 		data=persistanceData
+		redirect=false
 	end
 	}}
 	
 <body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
+<div class="hs_spinner" id="loading">
+        <div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
+            <div class="spinner-border" role="status">
+            	<span class="sr-only">Loading...</span>
+          	</div>
+        </div>
+</div>
+{{if !redirect}}
 <div class="container-fluid"> 
 	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [deviceRefId] | html.escape}}</p>
 	
 	<form class="md-form" action="/InfluxDBPersistence/addeditpersistence.html" method="GET">		
 		<input type="hidden" id="devicerefid" name="devicerefid" value="{{data["devicerefid"]}}"> 
 		<input type="hidden" id="id" name="id" value="{{data["id"]}}"> 
+		
+		
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+		{{end}}
 	
 		<div class="row mt-1 mb-1">
 			<div class="md-form col-md">	 
@@ -82,28 +106,52 @@
 				</select> 	
 				<label class="mdb-main-label" for="trackedtype">Persist on Change of</label>
 			</div>
-		</div
-
+		</div>
+		
 		<div class="modal-footer-wide mt-3">	 
 			<div class="row mt-1 mb-1">
 				<div class="col d-flex justify-content-end">
-					<button class="btn btn-default" type="submit">Save</button>
+					<button type="button" class="btn btn-cancel waves-effect waves-light" onclick="window.location.replace('/InfluxDBPersistence/feature.html?refId={{deviceRefId}}');">Cancel</button>
+					{{if data["id"]!=""}}
+						<button class="btn btn-secondary waves-effect waves-light" name="delete" type="submit" id="delete_button">Delete</button>
+					{{end}}
+					<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
 				</div>
 			</div>		
 		</div>	
 	</form> 
 </div>
+
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
+
 {{includefile 'bootstrap/js/page_common.js'}}
+<script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
 
- 
 <script>
-
- 
-	
+$(function() {
+   $("#delete_button").click(function(){
+      //if (confirm("Click OK to continue?")){
+         $('form#delete').submit();
+      //}
+   });
+});
 </script>
 
+
+{{else}}
+
+{{includefile 'bootstrap/js/page_common.js'}}
+<script>
+window.location.replace("/InfluxDBPersistence/feature.html?refId={{deviceRefId}}");
+</script>
+
+{{end}}
+<script>
+$(window).on('load',function() {                
+  				$('#loading').hide();
+			});
+</script>
 </body>
 </html>

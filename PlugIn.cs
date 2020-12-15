@@ -94,8 +94,6 @@ namespace Hspi
                 Trace.TraceInformation("Starting Plugin");
                 LogConfiguration();
 
-                pluginConfig.ConfigChanged += PluginConfig_ConfigChanged;
-
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
 
@@ -147,11 +145,6 @@ namespace Hspi
         {
             if (!disposedValue)
             {
-                if (pluginConfig != null)
-                {
-                    pluginConfig.ConfigChanged -= PluginConfig_ConfigChanged;
-                }
-
                 Shutdown();
                 disposedValue = true;
             }
@@ -234,7 +227,7 @@ namespace Hspi
             Trace.WriteLine(Invariant($"Url:{dbConfig.DBUri} User:{dbConfig.User} Database:{dbConfig.DB}"));
         }
 
-        private void PluginConfig_ConfigChanged(object sender, EventArgs e)
+        private void PluginConfigChanged()
         {
             this.EnableLogDebug = pluginConfig.DebugLogging;
             RestartProcessing();
@@ -260,16 +253,8 @@ namespace Hspi
                 {
                     try
                     {
-                        var device = HomeSeerSystem.GetDeviceByRef(refId);
-                        if (device != null)
-                        {
-                            if (collector.IsTracked(refId, null))
-                            {
-                                await RecordDeviceValue(collector, device).ConfigureAwait(false);
-                            }
-
-                            ShutdownCancellationToken.ThrowIfCancellationRequested();
-                        }
+                        await RecordTrackedDevices(collector, refId).ConfigureAwait(false);
+                        ShutdownCancellationToken.ThrowIfCancellationRequested();
                     }
                     catch (Exception ex)
                     {
@@ -284,6 +269,21 @@ namespace Hspi
                     ShutdownCancellationToken.ThrowIfCancellationRequested();
                 }
             }
+        }
+
+        private async Task<bool> RecordTrackedDevices(InfluxDBMeasurementsCollector collector, int refId)
+        {
+            var device = HomeSeerSystem.GetDeviceByRef(refId);
+            if (device != null)
+            {
+                if (collector.IsTracked(refId, null))
+                {
+                    await RecordDeviceValue(collector, device).ConfigureAwait(false);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void RestartProcessing()

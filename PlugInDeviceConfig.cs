@@ -18,9 +18,15 @@ namespace Hspi
     {
         public override bool SupportsConfigDeviceAll => true;
 
-        public string BuildAverageStatsData(string refIdString, string duration)
+        public string BuildAverageStatsData(string refIdString, string duration, string grouping)
         {
             StringBuilder stb = new StringBuilder();
+           
+            stb.Append(@"<thead><tr>");
+            stb.Append(@"<th>Type</th>");
+            stb.Append(@"<th>Value</th>");
+            stb.Append(@"</tr></thead>");
+            stb.Append("<tbody>");
             try
             {
                 (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
@@ -28,6 +34,12 @@ namespace Hspi
                 if (!queryDuration.HasValue)
                 {
                     throw new ArgumentException("Invalid Duration", nameof(duration));
+                }
+
+                TimeSpan? groupInterval = null;
+                if (!string.IsNullOrEmpty(grouping))
+                {
+                    groupInterval = TimeSpan.Parse(grouping, CultureInfo.InvariantCulture);
                 }
 
                 var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
@@ -41,9 +53,10 @@ namespace Hspi
                     var queries = InfluxDbQueryBuilder.GetStatsQueries(data,
                                                                   queryDuration.Value,
                                                                   pluginConfig.DBLoginInformation,
-                                                                  null,
+                                                                  groupInterval,
                                                                   -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
 
+                   
                     foreach (var query in queries)
                     {
                         var queryData = GetData(query);
@@ -72,13 +85,15 @@ namespace Hspi
             }
             catch (Exception ex)
             {
-                stb.Append(Invariant($"<tr><td style='color:Red'>{ex.GetFullMessage()}</td><tr>"));
+                stb.Append(Invariant($"<tr><td style='color:Red' colspan=\"2\">{ex.GetFullMessage()}</td><tr>"));
             }
+
+            stb.Append("</tbody>");
 
             return stb.ToString();
         }
 
-        public string BuildChartData(string refIdString, string duration)
+        public string BuildChartData(string refIdString, string duration, string grouping)
         {
             StringBuilder stb = new StringBuilder();
             try
@@ -90,6 +105,12 @@ namespace Hspi
                     throw new ArgumentException("Invalid Duration", nameof(duration));
                 }
 
+                TimeSpan? groupInterval = null;
+                if (!string.IsNullOrEmpty(grouping))
+                {
+                    groupInterval = TimeSpan.Parse(grouping, CultureInfo.InvariantCulture);
+                }
+
                 var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
 
@@ -97,7 +118,7 @@ namespace Hspi
                 {
                     var chartQuery = InfluxDbQueryBuilder.GetChartQuery(data, "value", queryDuration.Value,
                                                           pluginConfig.DBLoginInformation,
-                                                          null,
+                                                          groupInterval,
                                                           -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
 
                     var queryData = GetData(chartQuery);
@@ -129,7 +150,7 @@ namespace Hspi
                                     if (timeForPoint < limit)
                                     {
                                         // time is before the range
-                                        break;
+                                        // break;
                                     }
 
                                     jsMilliseconds = timeForPoint.ToLocalTime().ToUnixTimeMilliseconds();
@@ -358,12 +379,66 @@ namespace Hspi
             return ScribanHelper.ToDictionary(data);
         }
 
-        public string SavePersistanceData(IDictionary<string, string> persistanceDataDict)
+        public IList<string> SavePersistanceData(IDictionary<string, string> persistanceDataDict)
         {
-            var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict);
-            // validate
+            var errors = new List<string>();
+            try
+            {
+                if (!persistanceDataDict.TryGetValue("id", out var value) || string.IsNullOrEmpty(value))
+                {
+                    Trace.WriteLine(Invariant($"Adding new persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
+                    persistanceDataDict["id"] = Guid.NewGuid().ToString();
+                }
+                else
+                {
+                    Trace.WriteLine(Invariant($"Adding existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
+                }
 
-            return string.Empty;
+                var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict);
+
+                // validate
+                if (string.IsNullOrWhiteSpace(persistantData.Field) && string.IsNullOrWhiteSpace(persistantData.FieldString))
+                {
+                    errors.Add("Both <B>Field for Numeric Value</B> and <B>Field for String Value</B> cannot be empty");
+                }
+
+                if (errors.Count == 0)
+                {
+                    // save
+                    pluginConfig.AddDevicePersistenceData(persistantData);
+                    PluginConfigChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add(ex.GetFullMessage());
+            }
+            return errors;
+        }
+
+        public IList<string> DeletePersistanceData(string refIdString)
+        {
+            var errors = new List<string>();
+            try
+            {
+                int refId = ParseRefId(refIdString);
+
+                Trace.WriteLine(Invariant($"Deleting persitence for Ref Id:{refId}"));
+
+                var dataKeyPairs = pluginConfig.DevicePersistenceData.Where(x => x.Value.DeviceRefId == refId);
+
+                foreach (var pair in dataKeyPairs)
+                {
+                    pluginConfig.RemoveDevicePersistenceData(pair.Key);
+                }
+
+                PluginConfigChanged();
+            }
+            catch (Exception ex)
+            {
+                errors.Add(ex.GetFullMessage());
+            }
+            return errors;
         }
 
         public override bool HasJuiDeviceConfigPage(int deviceRef)

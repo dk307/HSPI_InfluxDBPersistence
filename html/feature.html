@@ -20,6 +20,7 @@
 	feature=queries['feature'] ?? ""
 	displaySelect=queries['displaySelect'] ?? ""
 	displayPeriod=queries['displayPeriod'] ?? ""
+	displayGroup=queries['displayGroup'] ?? ""
 
 	periodStart=queries['periodStart'] ?? ""
 	periodEnd=queries['periodEnd'] ?? ""
@@ -93,6 +94,16 @@
 		if !rangeOptionFound
 			displayPeriod = rangeOptions[0][3]
 		end	
+			
+		groupOptions=[ 
+			 ["Auto", "", ""],
+			 ["1 minute",  "00:01:00", "1m"],
+			 ["5 minute",  "00:05:00", "5m"],
+			 ["30 minute",  "00:20:00", "30m"],
+			 ["1 hour",  "01:00:00", "60m"],
+			 ["12 hours",  "12:00:00", "12hr"],
+			 ["1 day",  "1.00:00:00", "24hr"],
+			]		
 	}}
 
 	<nav class="navbar">
@@ -136,6 +147,15 @@
 				</select> 
 			</div>
 
+			{{if options[1]!="table"}}
+			<div class="md-form my-0 mr-3">
+				<select id="displayGroup" class="mdb-select md-form md-outline colorful-select dropdown-secondary" name="displayGroup">
+					{{for groupOption in groupOptions}}
+						<option value="{{groupOption[2]}}" {{if groupOption[2]==displayGroup;}}selected{{end}}>{{groupOption[0] | html.escape}}</option>	
+					{{end}}			
+				</select> 
+			</div>
+			{{end}}
 		</form>
 		
 		<ul class="navbar-nav ml-auto nav-flex-icons">
@@ -150,11 +170,19 @@
 	{{
 		recordLimit = ""
 		duration = ""
+		grouping = ""
 	
 		for rangeOption in rangeOptions
 			if rangeOption[3]==displayPeriod
 				recordLimit=rangeOption[1]
 				duration=rangeOption[2]
+				break
+			end
+		end
+		
+		for groupOption in groupOptions
+			if groupOption[2]==displayGroup
+				grouping=groupOption[1]
 				break
 			end
 		end
@@ -173,23 +201,21 @@
 		{{needDataTables=true}}
 	{{else if options[1]=="chart"}}
 		<div id='chartGraph2' align="center"></div> 
-		{{plugin_function 'InfluxDBPersistence' 'BuildChartData' [options[0], duration] }}
+		{{plugin_function 'InfluxDBPersistence' 'BuildChartData' [options[0], duration, grouping] }}
 	{{else if options[1]=="averageStats"}}
-		<table id="dt-persistence" class="table table-sm" width="100%">
-			{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [options[0], duration] }}
+		<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
+			{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [options[0], duration, grouping] }}
 		<table>		
 		{{needDataTables=true}}	
 	{{else if options[1]=="histogram"}}
-		<table id="dt-persistence" class="table table-sm" width="100%">
+		<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">	
 			{{plugin_function 'InfluxDBPersistence' 'BuildHistogramData' [options[0], duration] }}
 		<table>		
 		{{needDataTables=true}}	
 	{{end}}
 	
 {{else}}
-<button id="addPersistence" type="button" class="btn btn-primary" >
-  Add Persistence
-</button>
+<a class="btn btn-primary" role="button" href="/InfluxDBPersistence/addeditpersistence.html?devicerefid={{finalRefId}}">Add Persistence</a>
 {{end}}
 
 </div>
@@ -215,6 +241,13 @@ $(function() {
     $('#displayPeriod').change(function() {
         this.form.submit();
     });	
+
+    
+{{if options[1]!="table"}}	
+	$('#displayGroup').change(function() {
+        this.form.submit();
+    });	
+{{end}}	
 });
 
 {{if needDataTables}}
@@ -244,6 +277,7 @@ function setUpPersistanceTable() {
 
 $(document).ready(function () {
 	setUpPersistanceTable();
+	$('#loading').hide();
 });	
 
 {{else if options[1]=="chart"}}
@@ -264,21 +298,22 @@ function setUpChart() {
 					// full_height: true,
 					width: 300,
 					height: 500,
+					animate_on_load: true,
 				 });
 }
 
 $(document).ready(function () {
 	setUpChart();
+	$('#loading').hide();
 });
 
 $( window ).resize(function() {
+	$('#loading').show();
     setUpChart();
+	$('#loading').hide();
 });	 	
 {{end}}
 
-$(window).on('load',function() {                
-  				$('#loading').hide();
-			});
 </script>
 </body>
 </html>

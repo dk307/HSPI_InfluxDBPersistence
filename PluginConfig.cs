@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using static System.FormattableString;
 
@@ -33,8 +32,6 @@ namespace Hspi
             debugLogging = GetValue(DebugLoggingKey, false);
         }
 
-        public event EventHandler<EventArgs> ConfigChanged;
-
         public InfluxDBLoginInformation DBLoginInformation
         {
             get
@@ -57,11 +54,6 @@ namespace Hspi
                     SetValue(RetentionKey, value.Retention);
                 }
             }
-        }
-
-        private string EncryptString(string password)
-        {
-            return password;
         }
 
         /// <summary>
@@ -118,6 +110,11 @@ namespace Hspi
 
         public void AddDevicePersistenceData(in DevicePersistenceData device)
         {
+            if (string.IsNullOrWhiteSpace(device.Id))
+            {
+                throw new ArgumentException("device id is empty");
+            }
+
             using (var sync = configLock.WriterLock())
             {
                 var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
@@ -128,7 +125,7 @@ namespace Hspi
                 SetValue(MeasurementKey, device.Measurement, device.Id);
                 SetValue(FieldKey, device.Field ?? string.Empty, device.Id);
                 SetValue(FieldStringKey, device.FieldString ?? string.Empty, device.Id);
-                SetValue(TagsKey, ObjectSerialize.SerializeToString(device.Tags) ?? string.Empty, device.Id);
+                SetValue(TagsKey, device.Tags != null ? ObjectSerialize.SerializeToString(device.Tags) : null, device.Id);
                 SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
                 SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
                 SetValue(MinValidValueKey, device.MinValidValue, device.Id);
@@ -149,18 +146,6 @@ namespace Hspi
                 SetValue(IntervalKey, device.Interval.TotalSeconds, device.Id);
                 SetValue(UnitKey, device.Unit, device.Id);
                 SetValue(ImportDevicesIdsKey, importDevicesData.Keys.Aggregate((x, y) => x + ImportDevicesIdsSeparator + y));
-            }
-        }
-
-        /// <summary>
-        /// Fires event that configuration changed.
-        /// </summary>
-        public void FireConfigChanged()
-        {
-            if (ConfigChanged != null)
-            {
-                var ConfigChangedCopy = ConfigChanged;
-                ConfigChangedCopy(this, EventArgs.Empty);
             }
         }
 
@@ -204,6 +189,16 @@ namespace Hspi
             }
         }
 
+        private string DecryptString(string p)
+        {
+            return p;
+        }
+
+        private string EncryptString(string password)
+        {
+            return password;
+        }
+
         private T GetValue<T>(string key, T defaultValue)
         {
             return GetValue(key, defaultValue, DefaultSection);
@@ -242,11 +237,6 @@ namespace Hspi
                 CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty)),
                 CheckEmptyOrWhitespace(GetValue(RetentionKey, string.Empty))
              );
-        }
-
-        private string DecryptString(string p)
-        {
-            return p;
         }
 
         private void LoadImportDeviceSettings()
@@ -371,6 +361,7 @@ namespace Hspi
         private const string DeviceRefIdKey = "DeviceRefId";
         private const string FieldKey = "Field";
         private const string FieldStringKey = "FieldString";
+        private const string FileName = PlugInData.SettingFileName;
         private const string ImportDevicesIdsKey = "ImportDeviceIds";
         private const char ImportDevicesIdsSeparator = ',';
         private const string InfluxDBDBKey = "InfluxDBDB";
@@ -381,15 +372,14 @@ namespace Hspi
         private const string MaxValidValueKey = "MaxValidValue";
         private const string MeasurementKey = "Measurement";
         private const string MinValidValueKey = "MinValidValue";
-        private const string TrackedTypeKey = "TrackedTyp";
         private const string NameKey = "Name";
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';
         private const string RetentionKey = "Retention";
         private const string SqlKey = "Sql";
         private const string TagsKey = "Tags";
+        private const string TrackedTypeKey = "TrackedTyp";
         private const string UnitKey = "Unit";
-        private const string FileName = PlugInData.SettingFileName;
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
         private readonly IHsController HS;
         private bool debugLogging;

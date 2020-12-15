@@ -148,12 +148,6 @@
     <None Include="html\jquery.dataTables.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\chosen.jquery.min.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="html\chosen.css" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="html\iframeResizer.contentWindow.min.js" />
   </ItemGroup>
   <ItemGroup>

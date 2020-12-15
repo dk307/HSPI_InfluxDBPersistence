@@ -103,9 +103,12 @@ namespace Hspi
                     AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation1Tag, data.Location1);
                     AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation2Tag, data.Location2);
 
-                    foreach (var tag in value.Tags)
+                    if (value.Tags != null)
                     {
-                        AddIfNotEmpty(influxDatapoint.Tags, tag.Key, tag.Value);
+                        foreach (var tag in value.Tags)
+                        {
+                            AddIfNotEmpty(influxDatapoint.Tags, tag.Key, tag.Value);
+                        }
                     }
 
                     await queue.EnqueueAsync(influxDatapoint, tokenSource.Token).ConfigureAwait(false);
