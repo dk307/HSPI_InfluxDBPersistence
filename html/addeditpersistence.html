@@ -36,13 +36,6 @@
 	}}
 	
 <body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
-<div class="hs_spinner" id="loading">
-        <div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
-            <div class="spinner-border" role="status">
-            	<span class="sr-only">Loading...</span>
-          	</div>
-        </div>
-</div>
 {{if !redirect}}
 <div class="container-fluid"> 
 	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [deviceRefId] | html.escape}}</p>
@@ -54,7 +47,7 @@
 		
 		{{if !validation.empty?}}
 			<div class="row mt-1 mb-1">
-				<div class="alert alert-danger" role="alert">
+				<div class="md-form col-md alert alert-danger" role="alert">
 					{{ for item in validation}}	
 						{{ item }}<BR>
 					{{end}}
@@ -107,18 +100,17 @@
 				<label class="mdb-main-label" for="trackedtype">Persist on Change of</label>
 			</div>
 		</div>
+			
+		<div class="row mt-1 mb-1">
+			<div class="col d-flex justify-content-end">
+				<button type="button" class="btn btn-cancel waves-effect waves-light" onclick="window.location.replace('/InfluxDBPersistence/feature.html?refId={{deviceRefId}}');">Cancel</button>
+				{{if data["id"]!=""}}
+					<button class="btn btn-secondary waves-effect waves-light" name="delete" type="submit" id="delete_button">Delete</button>
+				{{end}}
+				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
+			</div>
+		</div>		
 		
-		<div class="modal-footer-wide mt-3">	 
-			<div class="row mt-1 mb-1">
-				<div class="col d-flex justify-content-end">
-					<button type="button" class="btn btn-cancel waves-effect waves-light" onclick="window.location.replace('/InfluxDBPersistence/feature.html?refId={{deviceRefId}}');">Cancel</button>
-					{{if data["id"]!=""}}
-						<button class="btn btn-secondary waves-effect waves-light" name="delete" type="submit" id="delete_button">Delete</button>
-					{{end}}
-					<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
-				</div>
-			</div>		
-		</div>	
 	</form> 
 </div>
 
@@ -148,10 +140,5 @@ window.location.replace("/InfluxDBPersistence/feature.html?refId={{deviceRefId}}
 </script>
 
 {{end}}
-<script>
-$(window).on('load',function() {                
-  				$('#loading').hide();
-			});
-</script>
 </body>
 </html>

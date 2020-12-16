@@ -19,7 +19,7 @@ namespace Hspi.Pages
             string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {queryDuration.TotalSeconds}s order by time asc");
             lastEntry = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
 
-            string timeRestriction = lastEntry.HasValue ? Invariant($"time >= {new DateTimeOffset(lastEntry.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {queryDuration}s");
+            string timeRestriction = lastEntry.HasValue ? Invariant($"time >= {new DateTimeOffset(lastEntry.Value).ToUnixTimeSeconds()}s") : Invariant($"time >= now() - {queryDuration.TotalSeconds}s");
             return Invariant($"SELECT {GetFields(data)[0]} FROM \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' AND {timeRestriction} ORDER BY time ASC");
         }
 

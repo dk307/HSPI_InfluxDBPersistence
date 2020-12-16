@@ -7,7 +7,19 @@ namespace Hspi.Utils
 {
     internal static class ScribanHelper
     {
-        public static T FromDictionary<T>(IDictionary<string, string> source) where T : class
+        public static IDictionary<string, object> ConvertToStringObjectDictionary(IDictionary<string, string> source)
+        {
+            var destination = new Dictionary<string, object>();
+
+            foreach (var pair in source)
+            {
+                destination.Add(pair.Key, pair.Value);
+            }
+
+            return destination;
+        }
+
+        public static T FromDictionary<T>(IDictionary<string, object> source) where T : class
         {
             var constructors = typeof(T).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
@@ -63,29 +75,38 @@ namespace Hspi.Utils
             return dict;
         }
 
-        private static object ConvertToParameterExpectedType(ParameterInfo parameter, string sourceValue)
+        private static object ConvertToParameterExpectedType(ParameterInfo parameter, object sourceValueObject)
         {
-            Type sourceType = typeof(string);
-            Type expectedType = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
-
-            if (expectedType.IsAssignableFrom(sourceType))
+            if ((sourceValueObject != null) && (sourceValueObject.GetType() != typeof(string)))
             {
-                return sourceValue;
+                // already converted
+                return sourceValueObject;
             }
-
-            // Nullable value
-            if (string.IsNullOrEmpty(sourceValue) && 
-                (!parameter.ParameterType.IsValueType || (Nullable.GetUnderlyingType(parameter.ParameterType) != null)))
+            else
             {
-                return null;
-            }
+                string sourceValue = (string)sourceValueObject;
+                Type sourceType = typeof(string);
+                Type expectedType = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
 
-            if (expectedType.IsEnum)
-            {
-                return Enum.Parse(expectedType, sourceValue);
-            }
+                if (expectedType.IsAssignableFrom(sourceType))
+                {
+                    return sourceValue;
+                }
 
-            return Convert.ChangeType(sourceValue, expectedType, CultureInfo.InvariantCulture);
+                // Nullable value
+                if (string.IsNullOrEmpty(sourceValue) &&
+                    (!parameter.ParameterType.IsValueType || (Nullable.GetUnderlyingType(parameter.ParameterType) != null)))
+                {
+                    return null;
+                }
+
+                if (expectedType.IsEnum)
+                {
+                    return Enum.Parse(expectedType, sourceValue);
+                }
+
+                return Convert.ChangeType(sourceValue, expectedType, CultureInfo.InvariantCulture);
+            }
         }
 
         private static string NormalizeName(string name)

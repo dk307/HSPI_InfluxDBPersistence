@@ -147,7 +147,7 @@
 				</select> 
 			</div>
 
-			{{if options[1]!="table"}}
+			{{if options[1]!="table" && options[1]!="histogram"}}
 			<div class="md-form my-0 mr-3">
 				<select id="displayGroup" class="mdb-select md-form md-outline colorful-select dropdown-secondary" name="displayGroup">
 					{{for groupOption in groupOptions}}
@@ -243,7 +243,7 @@ $(function() {
     });	
 
     
-{{if options[1]!="table"}}	
+{{if options[1]!="table" && options[1]!="histogram"}}	
 	$('#displayGroup').change(function() {
         this.form.submit();
     });	
@@ -313,6 +313,10 @@ $( window ).resize(function() {
 	$('#loading').hide();
 });	 	
 {{end}}
+
+$(document).ready(function () {
+	$('#loading').hide();
+});
 
 </script>
 </body>

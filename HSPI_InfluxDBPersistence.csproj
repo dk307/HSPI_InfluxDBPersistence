@@ -81,6 +81,7 @@
     <Compile Include="DeviceData\DeviceIdentifier.cs" />
     <Compile Include="ImportDeviceData.cs" />
     <Compile Include="Pages\InfluxDbQueryBuilder.cs" />
+    <Compile Include="PlugInDBInformation.cs" />
     <Compile Include="PlugInDeviceConfig.cs" />
     <Compile Include="Utils\ScribanHelper.cs" />
     <Compile Include="Utils\EnumHelper.cs" />

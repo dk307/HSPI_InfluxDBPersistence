@@ -92,10 +92,13 @@ namespace Hspi
             {
                 pluginConfig = new PluginConfig(HomeSeerSystem);
                 Trace.TraceInformation("Starting Plugin");
-                LogConfiguration();
+                LogConfiguration(); 
 
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
+
+                // Feature pages
+                HomeSeerSystem.RegisterFeaturePage(Id, "dbconfiguration.html", "Database configuration");
 
                 RestartProcessing();
 

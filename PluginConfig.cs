@@ -44,6 +44,11 @@ namespace Hspi
 
             set
             {
+                if (!value.IsValid)
+                {
+                    throw new ArgumentException("DB Information is not valid");
+                }
+
                 using (var sync = configLock.WriterLock())
                 {
                     influxDBLoginInformation = value;
@@ -51,7 +56,6 @@ namespace Hspi
                     SetValue(InfluxDBUsernameKey, value.User);
                     SetValue(InfluxDBPasswordKey, EncryptString(value.Password));
                     SetValue(InfluxDBDBKey, value.DB);
-                    SetValue(RetentionKey, value.Retention);
                 }
             }
         }
@@ -234,8 +238,7 @@ namespace Hspi
                 influxDBUri,
                 CheckEmptyOrWhitespace(GetValue(InfluxDBUsernameKey, string.Empty)),
                 CheckEmptyOrWhitespace(DecryptString(GetValue(InfluxDBPasswordKey, string.Empty))),
-                CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty)),
-                CheckEmptyOrWhitespace(GetValue(RetentionKey, string.Empty))
+                CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty))
              );
         }
 

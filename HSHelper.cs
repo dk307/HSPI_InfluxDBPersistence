@@ -34,7 +34,6 @@ namespace Hspi
 
             measurement = FindTypeString(new string[] {
                                         deviceTypeInfo.SubTypeDescription,
-                                        EnumHelper.GetDescription((EDeviceType) deviceTypeInfo.Type),
                                         device.Name,
                                         deviceTypeInfo.Summary,});
 

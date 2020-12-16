@@ -27,6 +27,7 @@ namespace Hspi
             stb.Append(@"<th>Value</th>");
             stb.Append(@"</tr></thead>");
             stb.Append("<tbody>");
+
             try
             {
                 (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
@@ -55,8 +56,7 @@ namespace Hspi
                                                                   pluginConfig.DBLoginInformation,
                                                                   groupInterval,
                                                                   -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
-
-                   
+                    
                     foreach (var query in queries)
                     {
                         var queryData = GetData(query);
@@ -209,7 +209,6 @@ namespace Hspi
                     var query = InfluxDbQueryBuilder.GetHistogramQuery(data, queryDuration.Value, pluginConfig.DBLoginInformation).ResultForSync();
 
                     var culture = CultureInfo.CurrentUICulture;
-
                     var queryData = GetData(query);
 
                     var histogram = InfluxDBHelper.CreateHistogram(queryData, queryDuration.Value);
@@ -240,7 +239,6 @@ namespace Hspi
                             double percentage = 100 * pair.Value.TotalMilliseconds / queryDuration.Value.TotalMilliseconds;
                             stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(culture, percentage)));
                             stb.Append(@"</td>");
-
                             stb.Append(@"</tr>");
                         }
                         stb.Append(@"</tbody>");
@@ -251,7 +249,6 @@ namespace Hspi
             {
                 stb.Append(Invariant($"<tr><td style='color:Red'>{ex.GetFullMessage()}</td><tr>"));
             }
-
             return stb.ToString();
         }
 
@@ -384,17 +381,20 @@ namespace Hspi
             var errors = new List<string>();
             try
             {
+
+                var persistanceDataDict2 = ScribanHelper.ConvertToStringObjectDictionary(persistanceDataDict);
+
                 if (!persistanceDataDict.TryGetValue("id", out var value) || string.IsNullOrEmpty(value))
                 {
                     Trace.WriteLine(Invariant($"Adding new persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
-                    persistanceDataDict["id"] = Guid.NewGuid().ToString();
+                    persistanceDataDict2["id"] = Guid.NewGuid().ToString();
                 }
                 else
                 {
                     Trace.WriteLine(Invariant($"Adding existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
                 }
 
-                var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict);
+                var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict2);
 
                 // validate
                 if (string.IsNullOrWhiteSpace(persistantData.Field) && string.IsNullOrWhiteSpace(persistantData.FieldString))
