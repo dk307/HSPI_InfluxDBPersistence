@@ -111,7 +111,9 @@ namespace Hspi.Utils
 
         private static string NormalizeName(string name)
         {
+#pragma warning disable CA1308 // Normalize strings to uppercase
             return name.ToLower(CultureInfo.InvariantCulture);
+#pragma warning restore CA1308 // Normalize strings to uppercase
         }
     }
 }

@@ -7,7 +7,9 @@ namespace Hspi
     public enum TrackedType
     {
         Value = 0,
+#pragma warning disable CA1720 // Identifier contains type name
         String = 1,
+#pragma warning restore CA1720 // Identifier contains type name
     }
 
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]

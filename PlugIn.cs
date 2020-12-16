@@ -92,7 +92,7 @@ namespace Hspi
             {
                 pluginConfig = new PluginConfig(HomeSeerSystem);
                 Trace.TraceInformation("Starting Plugin");
-                LogConfiguration(); 
+                LogConfiguration();
 
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
@@ -292,7 +292,7 @@ namespace Hspi
         private void RestartProcessing()
         {
             Utils.TaskHelper.StartAsyncWithErrorChecking("Measurements Collector", StartInfluxDBMeasurementsCollector, ShutdownCancellationToken);
-            // Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
+            Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
         }
 
         private void Shutdown()

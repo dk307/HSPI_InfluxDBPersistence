@@ -378,7 +378,6 @@ namespace Hspi
         private const string NameKey = "Name";
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';
-        private const string RetentionKey = "Retention";
         private const string SqlKey = "Sql";
         private const string TagsKey = "Tags";
         private const string TrackedTypeKey = "TrackedTyp";
