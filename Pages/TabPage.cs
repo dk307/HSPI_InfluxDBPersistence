@@ -1,4 +1,4 @@
-﻿using HomeSeerAPI;
+﻿ 
 using Hspi.DeviceData;
 using Hspi.Utils;
 using System;

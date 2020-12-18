@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--This maintains the scale of the page based on the scale of the screen-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--This liquid tag loads all of the necessary css files for HomeSeer-->
+    {{includefile '/bootstrap/css/page_common.css'}}
+    <title>InfluxDB Persistence</title>
+	
+    <link href="/css/hs.css" rel="stylesheet">
+</head>
+
+	{{	
+	deviceRefId=queries['devicerefid'] ?? ""
+	id=queries['id'] ?? ""
+	
+	validation=[]
+	data={}
+	
+	if queries["save"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'SavePersistanceData' [queries]
+		redirect=validation.empty?
+	else if queries["delete"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'DeletePersistanceData' [deviceRefId]
+		redirect=validation.empty?
+	else
+		persistanceData=plugin_function 'InfluxDBPersistence' 'GetPersistanceData'[deviceRefId]
+		data=persistanceData
+		redirect=false
+	end
+	}}
+	
+<body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
+{{if !redirect}}
+<div class="container-fluid"> 
+	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [deviceRefId] | html.escape}}</p>
+	
+	<form class="md-form" action="/InfluxDBPersistence/addeditpersistence.html" method="GET">		
+		<input type="hidden" id="devicerefid" name="devicerefid" value="{{data["devicerefid"]}}"> 
+		<input type="hidden" id="id" name="id" value="{{data["id"]}}"> 
+		
+		
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+		{{end}}
+	
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="measurement" class="form-control" name="measurement" value="{{data['measurement']| html.escape}}" required>
+				<label for="measurement">Measurement</label>
+			</div>
+		</div>
+		
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="field" class="form-control" name="field" value="{{data['field'] | html.escape}}">
+				<label for="measurement">Field For Numeric Value</label>
+			</div>
+		</div>
+		
+							
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="fieldstring" class="form-control" name="fieldstring" value="{{data['fieldstring'] | html.escape}}">
+				<label for="measurement">Field For String Value</label>
+			</div>
+		</div>
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="maxvalidvalue" class="form-control" name="maxvalidvalue" value="{{data['maxvalidvalue'] | html.escape}}">
+				<label for="measurement">Max Valid Numeric Value</label>
+			</div>
+		</div>	
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="minvalidvalue" class="form-control" name="minvalidvalue" value="{{data['minvalidvalue'] | html.escape}}">
+				<label for="measurement">Min Valid Numeric Value</label>
+			</div>
+		</div>	
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	
+				<select id="trackedtype" class="mdb-select md-form colorful-select dropdown-default" name="trackedtype">				 
+					<option value="Value" {{if data['trackedtype']=="Value";}}selected{{end}}>Numeric Value</option>	
+					<option value="String" {{if data['trackedtype']=="String";}}selected{{end}}>String Value</option>					 		
+				</select> 	
+				<label class="mdb-main-label" for="trackedtype">Persist on Change of</label>
+			</div>
+		</div>
+			
+		<div class="row mt-1 mb-1">
+			<div class="col d-flex justify-content-end">
+				<button type="button" class="btn btn-cancel waves-effect waves-light" onclick="window.location.replace('/InfluxDBPersistence/feature.html?refId={{deviceRefId}}');">Cancel</button>
+				{{if data["id"]!=""}}
+					<button class="btn btn-secondary waves-effect waves-light" name="delete" type="submit" id="delete_button">Delete</button>
+				{{end}}
+				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
+			</div>
+		</div>		
+		
+	</form> 
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+
+{{includefile 'bootstrap/js/page_common.js'}}
+<script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
+
+<script>
+$(function() {
+   $("#delete_button").click(function(){
+      //if (confirm("Click OK to continue?")){
+         $('form#delete').submit();
+      //}
+   });
+});
+</script>
+
+
+{{else}}
+
+{{includefile 'bootstrap/js/page_common.js'}}
+<script>
+window.location.replace("/InfluxDBPersistence/feature.html?refId={{deviceRefId}}");
+</script>
+
+{{end}}
+</body>
+</html>

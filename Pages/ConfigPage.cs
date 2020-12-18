@@ -1,8 +1,9 @@
 ﻿using AdysTech.InfluxDB.Client.Net;
-using HomeSeerAPI;
+using HomeSeer.PluginSdk;
+ 
 using Hspi.Utils;
 using NullGuard;
-using Scheduler;
+ 
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -26,7 +27,7 @@ namespace Hspi.Pages
         /// </summary>
         /// <param name="HS">The hs.</param>
         /// <param name="pluginConfig">The plugin configuration.</param>
-        public ConfigPage(IHSApplication HS, PluginConfig pluginConfig) : base(HS, pluginConfig, Name)
+        public ConfigPage(IHsController HS, PluginConfig pluginConfig) : base(HS, pluginConfig, Name)
         {
         }
 
