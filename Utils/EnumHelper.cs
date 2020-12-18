@@ -7,7 +7,6 @@ using System.Reflection;
 
 namespace Hspi.Utils
 {
-
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal static class EnumHelper
     {

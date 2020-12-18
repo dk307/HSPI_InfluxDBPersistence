@@ -1,5 +1,5 @@
-﻿using HomeSeer.PluginSdk.Devices;
-using NullGuard;
+﻿using NullGuard;
+using Scheduler.Classes;
 using static System.FormattableString;
 
 namespace Hspi.DeviceData
@@ -21,16 +21,9 @@ namespace Hspi.DeviceData
 
         public static string CreateRootAddress() => "Root";
 
-        public const string ExtraDataNamedData = "Address";
-
-        public static DeviceIdentifier Identify(AbstractHsDevice hsDevice)
+        public static DeviceIdentifier Identify(DeviceClass hsDevice)
         {
-            var childAddress = hsDevice.Address;
-
-            if (string.IsNullOrEmpty(childAddress))
-            {
-                childAddress = hsDevice.PlugExtraData.GetNamed<string>(ExtraDataNamedData);
-            }
+            var childAddress = hsDevice.get_Address(null);
 
             var parts = childAddress.Split(AddressSeparator);
 

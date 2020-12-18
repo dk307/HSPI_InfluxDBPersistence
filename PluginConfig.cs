@@ -1,4 +1,4 @@
-﻿using HomeSeer.PluginSdk;
+﻿using HomeSeerAPI;
 using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using static System.FormattableString;
 
@@ -21,7 +22,7 @@ namespace Hspi
         /// Initializes a new instance of the <see cref="PluginConfig"/> class.
         /// </summary>
         /// <param name="HS">The homeseer application.</param>
-        public PluginConfig(IHsController HS)
+        public PluginConfig(IHSApplication HS)
         {
             this.HS = HS;
 
@@ -31,6 +32,8 @@ namespace Hspi
 
             debugLogging = GetValue(DebugLoggingKey, false);
         }
+
+        public event EventHandler<EventArgs> ConfigChanged;
 
         public InfluxDBLoginInformation DBLoginInformation
         {
@@ -44,18 +47,14 @@ namespace Hspi
 
             set
             {
-                if (!value.IsValid)
-                {
-                    throw new ArgumentException("DB Information is not valid");
-                }
-
                 using (var sync = configLock.WriterLock())
                 {
                     influxDBLoginInformation = value;
                     SetValue(InfluxDBUriKey, value.DBUri);
                     SetValue(InfluxDBUsernameKey, value.User);
-                    SetValue(InfluxDBPasswordKey, EncryptString(value.Password));
+                    SetValue(InfluxDBPasswordKey, HS.EncryptString(value.Password, string.Empty));
                     SetValue(InfluxDBDBKey, value.DB);
+                    SetValue(RetentionKey, value.Retention);
                 }
             }
         }
@@ -107,18 +106,13 @@ namespace Hspi
             }
         }
 
-        public static string CheckEmptyOrWhitespace([AllowNull] string value)
+        public static string CheckEmptyOrWhitespace([AllowNull]string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
         public void AddDevicePersistenceData(in DevicePersistenceData device)
         {
-            if (string.IsNullOrWhiteSpace(device.Id))
-            {
-                throw new ArgumentException("device id is empty");
-            }
-
             using (var sync = configLock.WriterLock())
             {
                 var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
@@ -129,7 +123,7 @@ namespace Hspi
                 SetValue(MeasurementKey, device.Measurement, device.Id);
                 SetValue(FieldKey, device.Field ?? string.Empty, device.Id);
                 SetValue(FieldStringKey, device.FieldString ?? string.Empty, device.Id);
-                SetValue(TagsKey, device.Tags != null ? ObjectSerialize.SerializeToString(device.Tags) : null, device.Id);
+                SetValue(TagsKey, ObjectSerialize.SerializeToString(device.Tags) ?? string.Empty, device.Id);
                 SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
                 SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
                 SetValue(MinValidValueKey, device.MinValidValue, device.Id);
@@ -153,6 +147,18 @@ namespace Hspi
             }
         }
 
+        /// <summary>
+        /// Fires event that configuration changed.
+        /// </summary>
+        public void FireConfigChanged()
+        {
+            if (ConfigChanged != null)
+            {
+                var ConfigChangedCopy = ConfigChanged;
+                ConfigChangedCopy(this, EventArgs.Empty);
+            }
+        }
+
         public void RemoveDevicePersistenceData(string id)
         {
             using (var sync = configLock.WriterLock())
@@ -169,7 +175,7 @@ namespace Hspi
                 {
                     SetValue(PersistenceIdsKey, string.Empty);
                 }
-                HS.ClearIniSection(id, FileName);
+                HS.ClearINISection(id, FileName);
             }
         }
 
@@ -189,18 +195,8 @@ namespace Hspi
                 {
                     SetValue(ImportDevicesIdsKey, string.Empty);
                 }
-                HS.ClearIniSection(id, FileName);
+                HS.ClearINISection(id, FileName);
             }
-        }
-
-        private string DecryptString(string p)
-        {
-            return p;
-        }
-
-        private string EncryptString(string password)
-        {
-            return password;
         }
 
         private T GetValue<T>(string key, T defaultValue)
@@ -210,7 +206,7 @@ namespace Hspi
 
         private T GetValue<T>(string key, T defaultValue, string section)
         {
-            string stringValue = HS.GetINISetting(section, key, null, fileName: FileName);
+            string stringValue = HS.GetINISetting(section, key, null, FileName);
 
             if (stringValue != null)
             {
@@ -237,8 +233,9 @@ namespace Hspi
             this.influxDBLoginInformation = new InfluxDBLoginInformation(
                 influxDBUri,
                 CheckEmptyOrWhitespace(GetValue(InfluxDBUsernameKey, string.Empty)),
-                CheckEmptyOrWhitespace(DecryptString(GetValue(InfluxDBPasswordKey, string.Empty))),
-                CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty))
+                CheckEmptyOrWhitespace(HS.DecryptString(GetValue(InfluxDBPasswordKey, string.Empty), string.Empty)),
+                CheckEmptyOrWhitespace(GetValue(InfluxDBDBKey, string.Empty)),
+                CheckEmptyOrWhitespace(GetValue(RetentionKey, string.Empty))
              );
         }
 
@@ -327,13 +324,13 @@ namespace Hspi
         private void SetValue<T>(string key, T value, string section = DefaultSection)
         {
             string stringValue = System.Convert.ToString(value, CultureInfo.InvariantCulture);
-            HS.SaveINISetting(section, key, stringValue, fileName: FileName);
+            HS.SaveINISetting(section, key, stringValue, FileName);
         }
 
         private void SetValue<T>(string key, Nullable<T> value, string section = DefaultSection) where T : struct
         {
             string stringValue = value.HasValue ? System.Convert.ToString(value.Value, CultureInfo.InvariantCulture) : string.Empty;
-            HS.SaveINISetting(section, key, stringValue, fileName: FileName);
+            HS.SaveINISetting(section, key, stringValue, FileName);
         }
 
         private void SetValue<T>(string key, T value, ref T oldValue)
@@ -346,7 +343,7 @@ namespace Hspi
             if (!value.Equals(oldValue))
             {
                 string stringValue = System.Convert.ToString(value, CultureInfo.InvariantCulture);
-                HS.SaveINISetting(section, key, stringValue, fileName: FileName);
+                HS.SaveINISetting(section, key, stringValue, FileName);
                 oldValue = value;
             }
         }
@@ -364,7 +361,6 @@ namespace Hspi
         private const string DeviceRefIdKey = "DeviceRefId";
         private const string FieldKey = "Field";
         private const string FieldStringKey = "FieldString";
-        private const string FileName = PlugInData.SettingFileName;
         private const string ImportDevicesIdsKey = "ImportDeviceIds";
         private const char ImportDevicesIdsSeparator = ',';
         private const string InfluxDBDBKey = "InfluxDBDB";
@@ -375,15 +371,17 @@ namespace Hspi
         private const string MaxValidValueKey = "MaxValidValue";
         private const string MeasurementKey = "Measurement";
         private const string MinValidValueKey = "MinValidValue";
+        private const string TrackedTypeKey = "TrackedTyp";
         private const string NameKey = "Name";
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';
+        private const string RetentionKey = "Retention";
         private const string SqlKey = "Sql";
         private const string TagsKey = "Tags";
-        private const string TrackedTypeKey = "TrackedTyp";
         private const string UnitKey = "Unit";
+        private readonly static string FileName = Invariant($"{Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location)}.ini");
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
-        private readonly IHsController HS;
+        private readonly IHSApplication HS;
         private bool debugLogging;
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private Dictionary<string, ImportDeviceData> importDevicesData;

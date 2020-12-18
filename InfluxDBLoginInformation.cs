@@ -4,19 +4,21 @@ using System;
 namespace Hspi
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class InfluxDBLoginInformation : IEquatable<InfluxDBLoginInformation>
+    internal class InfluxDBLoginInformation : IEquatable<InfluxDBLoginInformation>
     {
-        public InfluxDBLoginInformation([AllowNull] System.Uri dBUri, [AllowNull] string user,
-                                        [AllowNull] string password, [AllowNull] string db)
+        public InfluxDBLoginInformation([AllowNull]System.Uri dBUri, [AllowNull]string user,
+                                        [AllowNull]string password, [AllowNull]string db,
+                                        [AllowNull]string retention)
         {
             DBUri = dBUri;
             User = user ?? string.Empty;
             Password = password ?? string.Empty;
             DB = db;
+            Retention = retention;
         }
 
         public string DB { get; }
-
+        public string Retention { get; }
         public System.Uri DBUri { get; }
         public string Password { get; }
         public string User { get; }
@@ -30,7 +32,7 @@ namespace Hspi
             }
         }
 
-        public bool Equals([AllowNull] InfluxDBLoginInformation other)
+        public bool Equals([AllowNull]InfluxDBLoginInformation other)
         {
             if (other == null)
             {
@@ -44,7 +46,8 @@ namespace Hspi
             return this.DBUri == other.DBUri &&
                 this.DB == other.DB &&
                 this.User == other.User &&
-                this.Password == other.Password;
+                this.Password == other.Password &&
+                this.Retention == other.Retention;
         }
 
         public override bool Equals([AllowNull] object other)
@@ -60,9 +63,11 @@ namespace Hspi
             return Equals(other as InfluxDBLoginInformation);
         }
 
+
         public override int GetHashCode()
         {
             return DB.GetHashCode() ^
+                   Retention.GetHashCode() ^
                    DBUri.GetHashCode() ^
                    Password.GetHashCode() ^
                    User.GetHashCode();

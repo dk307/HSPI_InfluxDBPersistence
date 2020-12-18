@@ -1,47 +1,33 @@
-﻿using HomeSeer.PluginSdk;
-using HomeSeer.PluginSdk.Devices;
+﻿using HomeSeerAPI;
 using NullGuard;
-using System;
-using System.Collections.Generic;
 
 namespace Hspi.DeviceData
 {
+    using static System.FormattableString;
+
+    /// <summary>
+    ///  Base class for Child Devices
+    /// </summary>
+    /// <seealso cref="Hspi.DeviceDataBase" />
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal abstract class DeviceData
+    internal abstract class DeviceData : DeviceDataBase
     {
-        public DeviceData(bool isFeatureInHS, ImportDeviceData data)
+        public DeviceData(ImportDeviceData data)
         {
-            this.isFeatureInHS = isFeatureInHS;
             Data = data;
         }
 
-        public ImportDeviceData Data { get; }
-
-        public virtual void Update(IHsController HS, int refId, in double? data)
+        public override void SetInitialData(IHSApplication HS, int refId)
         {
-            var changes = new Dictionary<EProperty, object>();
-
-            if (data.HasValue)
-            {
-                changes.Add(EProperty.InvalidValue, false);
-                changes.Add(EProperty.LastChange, DateTime.Now);
-                changes.Add(EProperty.Value, data);
-            }
-            else
-            {
-                changes.Add(EProperty.InvalidValue, true);
-            }
-
-            if (isFeatureInHS)
-            {
-                HS.UpdateFeatureByRef(refId, changes);
-            }
-            else
-            {
-                HS.UpdateDeviceByRef(refId, changes);
-            }
+            HS.SetDeviceValueByRef(refId, 0D, false);
+            HS.set_DeviceInvalidValue(refId, true);
         }
 
-        private readonly bool isFeatureInHS;
+        public abstract void Update(IHSApplication HS, int refId, in double? deviceValue);
+
+        public override int HSDeviceType => 0;
+        public override string HSDeviceTypeString => Invariant($"{PlugInData.PlugInName} Import Device");
+
+        public ImportDeviceData Data { get; }
     };
 }

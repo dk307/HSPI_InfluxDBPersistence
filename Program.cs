@@ -6,7 +6,14 @@ namespace Hspi
     /// Class for the main program.
     /// </summary>
     public static class Program
-    {       
+    {
+        /// <summary>
+        /// The homeseer server address.  Defaults to the local computer but can be changed through the command line argument, server=address.
+        /// </summary>
+        private static string serverAddress = "127.0.0.1";
+
+        private const int serverPort = 10400;
+
         private static ConsoleTraceListener consoleTracer = new ConsoleTraceListener();
 
         /// <summary>
@@ -18,11 +25,24 @@ namespace Hspi
             Trace.Listeners.Add(consoleTracer);
             Trace.WriteLine("Starting...");
 
+            // parse command line arguments
+            foreach (string sCmd in args)
+            {
+                string[] parts = sCmd.Split('=');
+                switch (parts[0].ToUpperInvariant())
+                {
+                    case "SERVER":
+                        serverAddress = parts[1];
+                        break;
+                }
+            }
+
             try
             {
                 using (var plugin = new HSPI_InfluxDBPersistence.HSPI())
                 {
-                    plugin.Connect(args);
+                    plugin.Connect(serverAddress, serverPort);
+                    plugin.WaitforShutDownOrDisconnect();
                 }
             }
             finally

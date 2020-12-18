@@ -1,8 +1,7 @@
-﻿
-using HomeSeer.PluginSdk;
+﻿using HomeSeerAPI;
 using Hspi.Utils;
 using NullGuard;
- 
+using Scheduler;
 using System;
 using System.Collections.Specialized;
 using System.Text;
@@ -11,9 +10,9 @@ using static System.FormattableString;
 
 namespace Hspi.Pages
 {
-    internal class PageHelper  
+    internal class PageHelper : PageBuilderAndMenu.clsPageBuilder
     {
-        public PageHelper(IHsController HS, PluginConfig pluginConfig, string pageName) : base(pageName)
+        public PageHelper(IHSApplication HS, PluginConfig pluginConfig, string pageName) : base(pageName)
         {
             this.HS = HS;
             this.pluginConfig = pluginConfig;
@@ -161,7 +160,7 @@ namespace Hspi.Pages
 
         protected const string PageTypeId = "type";
         protected const string RecordId = "RecordId";
-        protected readonly IHsController HS;
+        protected readonly IHSApplication HS;
         protected readonly PluginConfig pluginConfig;
         private const string IdPrefix = "id_";
     }

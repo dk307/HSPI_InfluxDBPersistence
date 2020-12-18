@@ -1,8 +1,8 @@
-﻿ 
+﻿using HomeSeerAPI;
 using Hspi.DeviceData;
 using Hspi.Utils;
 using NullGuard;
- 
+using Scheduler.Classes;
 using System;
 using System.Collections.Specialized;
 using System.Globalization;

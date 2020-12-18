@@ -29,12 +29,6 @@ namespace Hspi
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
 
-        public void Dispose()
-        {
-            influxDBClient?.Dispose();
-            tokenSource.Cancel();
-        }
-
         public bool IsTracked(int deviceRefId, TrackedType? trackedType)
         {
             if (peristenceDataMap != null)
@@ -103,12 +97,9 @@ namespace Hspi
                     AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation1Tag, data.Location1);
                     AddIfNotEmpty(influxDatapoint.Tags, PluginConfig.DeviceLocation2Tag, data.Location2);
 
-                    if (value.Tags != null)
+                    foreach (var tag in value.Tags)
                     {
-                        foreach (var tag in value.Tags)
-                        {
-                            AddIfNotEmpty(influxDatapoint.Tags, tag.Key, tag.Value);
-                        }
+                        AddIfNotEmpty(influxDatapoint.Tags, tag.Key, tag.Value);
                     }
 
                     await queue.EnqueueAsync(influxDatapoint, tokenSource.Token).ConfigureAwait(false);
@@ -140,30 +131,18 @@ namespace Hspi
             peristenceDataMap = map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>);
         }
 
-        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
-        {
-            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
-            {
-                dict.Add(key, value);
-            }
-        }
-
         private static bool IsValidRange(DevicePersistenceData value, double deviceValue)
         {
             double maxValidValue = value.MaxValidValue ?? double.MaxValue;
             double minValidValue = value.MinValidValue ?? double.MinValue;
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
-        private async Task<bool> IsConnectedToServer()
+
+        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
         {
-            try
+            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
             {
-                await influxDBClient.GetServerVersionAsync().ConfigureAwait(false);
-                return true;
-            }
-            catch
-            {
-                return false;
+                dict.Add(key, value);
             }
         }
 
@@ -200,10 +179,28 @@ namespace Hspi
                 }
             }
         }
-        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
+
+        private async Task<bool> IsConnectedToServer()
+        {
+            try
+            {
+                await influxDBClient.GetServerVersionAsync().ConfigureAwait(false);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public void Dispose()
+        {
+            influxDBClient?.Dispose();
+            tokenSource.Cancel();
+        }
 
         private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue
-                    = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
+            = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
 
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
@@ -211,5 +208,6 @@ namespace Hspi
         private readonly CancellationTokenSource tokenSource;
 #pragma warning restore CA2213 // Disposable fields should be disposed
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
+        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
     }
 }
