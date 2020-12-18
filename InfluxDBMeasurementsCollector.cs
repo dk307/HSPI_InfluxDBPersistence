@@ -1,5 +1,4 @@
 ﻿using AdysTech.InfluxDB.Client.Net;
-using Hspi.Exceptions;
 using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
@@ -59,7 +58,7 @@ namespace Hspi
         {
             if (peristenceDataMap == null)
             {
-                throw new HspiException("Collection not started");
+                throw new ArgumentException("Collection not started");
             }
             if (peristenceDataMap.TryGetValue(data.DeviceRefId, out var peristenceData))
             {
@@ -154,6 +153,7 @@ namespace Hspi
             double minValidValue = value.MinValidValue ?? double.MinValue;
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
+
         private async Task<bool> IsConnectedToServer()
         {
             try
@@ -200,6 +200,7 @@ namespace Hspi
                 }
             }
         }
+
         private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
 
         private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue

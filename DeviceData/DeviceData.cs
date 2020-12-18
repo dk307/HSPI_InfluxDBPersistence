@@ -17,6 +17,8 @@ namespace Hspi.DeviceData
 
         public ImportDeviceData Data { get; }
 
+        
+
         public virtual void Update(IHsController HS, int refId, in double? data)
         {
             var changes = new Dictionary<EProperty, object>();

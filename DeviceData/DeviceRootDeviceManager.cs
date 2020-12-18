@@ -17,23 +17,36 @@ namespace Hspi.DeviceData
     {
         public DeviceRootDeviceManager(IHsController HS,
                                        InfluxDBLoginInformation dbLoginInformation,
-                                       IReadOnlyDictionary<string, ImportDeviceData> importDevicesData,
+
                                        CancellationToken cancellationToken)
         {
             this.HS = HS;
             this.dbLoginInformation = dbLoginInformation;
-            this.importDevicesData = importDevicesData;
             this.cancellationToken = cancellationToken;
             this.combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            MigrateDevices();
+
             var hsDevices = GetCurrentDevices();
-            //CreateDevices(hsDevices);
-            StartDeviceFetchFromDB(hsDevices);
-            Children = hsDevices;
+
+            ImportDevices = hsDevices;
+
+            StartDeviceFetchFromDB();
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            if (!disposedValue)
+            {
+                combinedToken.Cancel();
+                disposedValue = true;
+            }
         }
 
         public async Task<bool> ImportDataForDevice(int refID)
         {
-            if (Children.TryGetValue(refID, out var data))
+            if (ImportDevices.TryGetValue(refID, out var data))
             {
                 await ImportDataForDevice(refID, data).ConfigureAwait(false);
                 return true;
@@ -41,14 +54,47 @@ namespace Hspi.DeviceData
             return false;
         }
 
-        private async Task ImportDataForDeviceInLoop(int refID, DeviceData deviceData)
+        private Dictionary<int, DeviceData> GetCurrentDevices()
         {
-            while (!combinedToken.Token.IsCancellationRequested)
+            var refIds = HS.GetAllRefs();
+
+            var currentChildDevices = new Dictionary<int, DeviceData>();
+
+            foreach (var refId in refIds)
             {
-                ImportDeviceData importDeviceData = await ImportDataForDevice(refID, deviceData).ConfigureAwait(false);
-                await Task.Delay((int)Math.Min(importDeviceData.Interval.TotalMilliseconds, TimeSpan.FromDays(1).TotalMilliseconds),
-                                 combinedToken.Token).ConfigureAwait(false);
+                var device = HS.GetDeviceByRef(refId);
+
+                if ((device != null) &&
+                    (device.Interface != null) &&
+                    (device.Interface == PlugInData.PlugInName))
+                {
+                    string name = HS.GetNameByRef(refId);
+                    if (device.PlugExtraData.ContainsNamed(PlugInData.DevicePlugInDataNamedKey))
+                    {
+                        try
+                        {
+                            var importDeviceData = device.PlugExtraData.GetNamed<ImportDeviceData>(PlugInData.DevicePlugInDataNamedKey);
+
+                            bool isFeature = device.Relationship == HomeSeer.PluginSdk.Devices.Identification.ERelationship.Feature;
+                            currentChildDevices.Add(device.Ref, new NumberDeviceData(isFeature, importDeviceData));
+                            Trace.TraceInformation(Invariant($"{device.Name} found"));
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.TraceWarning(Invariant($"{device.Name} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
+                        }
+                    }
+                    else
+                    {
+                        if (!device.PlugExtraData.ContainsNamed(PlugInData.DevicePlugInDataIgnoreKey))
+                        {
+                            Trace.TraceWarning(Invariant($"{device.Name} has invalid plugin data. Please recreate it."));
+                        }
+                    }
+                }
             }
+
+            return currentChildDevices;
         }
 
         private async Task<ImportDeviceData> ImportDataForDevice(int refID, DeviceData deviceData)
@@ -78,6 +124,16 @@ namespace Hspi.DeviceData
             }
 
             return importDeviceData;
+        }
+
+        private async Task ImportDataForDeviceInLoop(int refID, DeviceData deviceData)
+        {
+            while (!combinedToken.Token.IsCancellationRequested)
+            {
+                ImportDeviceData importDeviceData = await ImportDataForDevice(refID, deviceData).ConfigureAwait(false);
+                await Task.Delay((int)Math.Min(importDeviceData.Interval.TotalMilliseconds, TimeSpan.FromDays(1).TotalMilliseconds),
+                                 combinedToken.Token).ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -196,6 +252,12 @@ namespace Hspi.DeviceData
         //                string address = deviceIdentifier.Address;
         //                var childDevice = new NumberDeviceData(deviceImport.Value);
 
+        private void MigrateDevices()
+        {
+            var migrator = new HS3DeviceMigrator(HS, this.cancellationToken);
+            migrator.Migrate();
+        }
+
         //                var childHSDevice = CreateDevice(hsDevices.ParentRefId.Value, deviceImport.Value.Name, address, childDevice);
         //                hsDevices.Children[childHSDevice.Ref] = childDevice;
         //            }
@@ -206,46 +268,11 @@ namespace Hspi.DeviceData
         //        Trace.TraceError(Invariant($"Failed to Create Devices For PlugIn With {ex.GetFullMessage()}"));
         //    }
         //}
-
-        private Dictionary<int, DeviceData> GetCurrentDevices()
-        {
-           
-            var refIds = HS.GetAllRefs();
-
-            var currentChildDevices = new Dictionary<int, DeviceData>();
-
-            string parentAddress = DeviceIdentifier.CreateRootAddress();
-            foreach (var refId in refIds)
-            {
-                var device = HS.GetDeviceByRef(refId);
-
-                if ((device != null) &&
-                    (device.Interface != null) &&
-                    (device.Interface == PlugInData.PlugInName))
-                {
-                    string address = device.Address;
-
-                    var childDeviceData = DeviceIdentifier.Identify(device);
-                    if (childDeviceData != null)
-                    {
-                        if (importDevicesData.TryGetValue(childDeviceData.DeviceId, out var importDeviceData))
-                        {
-                            bool isFeature = device.Relationship == HomeSeer.PluginSdk.Devices.Identification.ERelationship.Feature;
-                            currentChildDevices.Add(device.Ref, new NumberDeviceData(isFeature, importDeviceData));
-                        }
-                    }
-                }
-            }
-
-            return currentChildDevices;
-            
-        }
-
-        private void StartDeviceFetchFromDB( Dictionary<int, DeviceData> hsDevices)
+        private void StartDeviceFetchFromDB()
         {
             using (var sync = collectionTasksLock.Lock())
             {
-                foreach (var childDeviceKeyValuePair in hsDevices)
+                foreach (var childDeviceKeyValuePair in ImportDevices)
                 {
                     int refID = childDeviceKeyValuePair.Key;
                     DeviceData deviceData = childDeviceKeyValuePair.Value;
@@ -256,33 +283,13 @@ namespace Hspi.DeviceData
             }
         }
 
-   
-
-        private readonly IReadOnlyDictionary<int, DeviceData> Children;
         private readonly CancellationToken cancellationToken;
-#pragma warning disable CA2213 // Disposable fields should be disposed
+        private readonly IReadOnlyDictionary<int, DeviceData> ImportDevices;
+        private readonly List<Task> collectionTasks = new List<Task>();
+        private readonly AsyncLock collectionTasksLock = new AsyncLock();
         private readonly CancellationTokenSource combinedToken;
-#pragma warning restore CA2213 // Disposable fields should be disposed
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
-        private readonly IReadOnlyDictionary<string, ImportDeviceData> importDevicesData;
-        private readonly AsyncLock collectionTasksLock = new AsyncLock();
-        private readonly List<Task> collectionTasks = new List<Task>();
-
-        #region IDisposable Support
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            if (!disposedValue)
-            {
-                combinedToken.Cancel();
-                disposedValue = true;
-            }
-        }
-
         private bool disposedValue; // To detect redundant calls
-
-        #endregion IDisposable Support
     };
 }
