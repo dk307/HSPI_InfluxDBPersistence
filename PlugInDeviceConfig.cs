@@ -21,7 +21,7 @@ namespace Hspi
         public string BuildAverageStatsData(string refIdString, string duration, string grouping)
         {
             StringBuilder stb = new StringBuilder();
-           
+
             stb.Append(@"<thead><tr>");
             stb.Append(@"<th>Type</th>");
             stb.Append(@"<th>Value</th>");
@@ -48,15 +48,14 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-                    string deviceName = hSHelper.GetName(refId);
+                    string deviceName = HomeSeerSystem.GetNameByRef(refId);
 
                     var queries = InfluxDbQueryBuilder.GetStatsQueries(data,
                                                                   queryDuration.Value,
                                                                   pluginConfig.DBLoginInformation,
                                                                   groupInterval,
                                                                   -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
-                    
+
                     foreach (var query in queries)
                     {
                         var queryData = GetData(query);
@@ -270,8 +269,7 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-                    string deviceName = hSHelper.GetName(refId);
+                    string deviceName = HomeSeerSystem.GetNameByRef(refId);
 
                     var queries = InfluxDbQueryBuilder.GetHistoryQueries(data, deviceName, maxRecords, queryDuration);
                     var queryData = GetData(queries.Item1);
@@ -292,6 +290,31 @@ namespace Hspi
             return stb.ToString();
         }
 
+        public IList<string> DeletePersistanceData(string refIdString)
+        {
+            var errors = new List<string>();
+            try
+            {
+                int refId = ParseRefId(refIdString);
+
+                Trace.WriteLine(Invariant($"Deleting persitence for Ref Id:{refId}"));
+
+                var dataKeyPairs = pluginConfig.DevicePersistenceData.Where(x => x.Value.DeviceRefId == refId);
+
+                foreach (var pair in dataKeyPairs)
+                {
+                    pluginConfig.RemoveDevicePersistenceData(pair.Key);
+                }
+
+                PluginConfigChanged();
+            }
+            catch (Exception ex)
+            {
+                errors.Add(ex.GetFullMessage());
+            }
+            return errors;
+        }
+
         public IList<IDictionary<string, object>> GetAllowedDisplays([AllowNull] string refIdString)
         {
             var graphs = new List<IDictionary<string, object>>();
@@ -304,9 +327,7 @@ namespace Hspi
             int refId = ParseRefId(refIdString);
 
             var device = HomeSeerSystem.GetDeviceByRef(refId);
-
-            HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-            AddToDisplayDetails(graphs, hSHelper, device);
+            AddToDisplayDetails(graphs, device);
 
             return graphs;
         }
@@ -316,36 +337,18 @@ namespace Hspi
             try
             {
                 int refId = ParseRefId(refIdString);
-                HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-                return hSHelper.GetName(refId);
+                return HomeSeerSystem.GetNameByRef(refId);
             }
-            catch (Exception)
+            catch
             {
-                return "Unknown";
+                return "<Unknown>";
             }
         }
 
         public override string GetJuiDeviceConfigPage(int deviceRef)
         {
-            StringBuilder stb = new StringBuilder();
-
-            stb.Append("<script> $('#save_device_config').hide(); </script>");
-
-            string iFrameUrl = Invariant($"{CreatePlugInUrl("feature.html")}?refId={deviceRef}");
-
-            // iframeSizer.min.js
-            stb.Append($"<script type=\"text/javascript\" src=\"{CreatePlugInUrl("iframeSizer.min.js")}\"></script>");
-            stb.Append($"<script type=\"text/javascript\" src=\"{CreatePlugInUrl("feature.js")}\"></script>");
-
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"about:blank\" scrolling=\"no\"></iframe>"));
-            stb.Append(Invariant($"<script>var iFrameUrl678='{iFrameUrl}';</script>"));
-            stb.Append(Invariant($"<script>$('#tableFrame').attr('src', iFrameUrl678 + '&feature=' + getUrlParameterOrEmpty('feature'));</script>"));
-            stb.Append(Invariant($"<script>iFrameResize({{log:true}});</script>"));
-
-            var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id", stb.ToString());
-
-            return page.Page.ToJsonString();
+            var device = HomeSeerSystem.GetDeviceByRef(deviceRef);
+            return CreateDeviceConfigPage(device, device.Interface == Id ? "editimport.html" : "feature.html");
         }
 
         public IDictionary<string, object> GetPersistanceData([AllowNull] string refIdString)
@@ -376,12 +379,16 @@ namespace Hspi
             return ScribanHelper.ToDictionary(data);
         }
 
+        public override bool HasJuiDeviceConfigPage(int deviceRef)
+        {
+            return true;
+        }
+
         public IList<string> SavePersistanceData(IDictionary<string, string> persistanceDataDict)
         {
             var errors = new List<string>();
             try
             {
-
                 var persistanceDataDict2 = ScribanHelper.ConvertToStringObjectDictionary(persistanceDataDict);
 
                 if (!persistanceDataDict.TryGetValue("id", out var value) || string.IsNullOrEmpty(value))
@@ -414,36 +421,6 @@ namespace Hspi
                 errors.Add(ex.GetFullMessage());
             }
             return errors;
-        }
-
-        public IList<string> DeletePersistanceData(string refIdString)
-        {
-            var errors = new List<string>();
-            try
-            {
-                int refId = ParseRefId(refIdString);
-
-                Trace.WriteLine(Invariant($"Deleting persitence for Ref Id:{refId}"));
-
-                var dataKeyPairs = pluginConfig.DevicePersistenceData.Where(x => x.Value.DeviceRefId == refId);
-
-                foreach (var pair in dataKeyPairs)
-                {
-                    pluginConfig.RemoveDevicePersistenceData(pair.Key);
-                }
-
-                PluginConfigChanged();
-            }
-            catch (Exception ex)
-            {
-                errors.Add(ex.GetFullMessage());
-            }
-            return errors;
-        }
-
-        public override bool HasJuiDeviceConfigPage(int deviceRef)
-        {
-            return true;
         }
 
         private static void BuildTable(StringBuilder stb, IList<IDictionary<string, object>> queryData)
@@ -556,15 +533,14 @@ namespace Hspi
         }
 
         private void AddToDisplayDetails(IList<IDictionary<string, object>> graphs,
-                                         HSHelper hSHelper,
-                                         AbstractHsDevice device)
+                                          AbstractHsDevice device)
         {
             var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == device.Ref);
             var data = dataKeyPair.Value;
 
             if (data != null)
             {
-                string featureName = hSHelper.GetName(device);
+                string featureName = HomeSeerSystem.GetNameByRef(device.Ref);
                 bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
 
                 var displayData = new Dictionary<string, object>();
@@ -587,6 +563,29 @@ namespace Hspi
                 displayData["displayTypes"] = displayTypes.ToArray();
                 graphs.Add(displayData);
             }
+        }
+
+        private string CreateDeviceConfigPage(AbstractHsDevice device, string iFrameName)
+        {
+            StringBuilder stb = new StringBuilder();
+
+            stb.Append("<script> $('#save_device_config').hide(); </script>");
+
+            string iFrameUrl = Invariant($"{CreatePlugInUrl(iFrameName)}?refId={device.Ref}");
+
+            // iframeSizer.min.js
+            stb.Append($"<script type=\"text/javascript\" src=\"{CreatePlugInUrl("iframeSizer.min.js")}\"></script>");
+            stb.Append($"<script type=\"text/javascript\" src=\"{CreatePlugInUrl("feature.js")}\"></script>");
+
+            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
+            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"about:blank\" scrolling=\"no\"></iframe>"));
+            stb.Append(Invariant($"<script>var iFrameUrl678='{iFrameUrl}';</script>"));
+            stb.Append(Invariant($"<script>$('#tableFrame').attr('src', iFrameUrl678 + '&feature=' + getUrlParameterOrEmpty('feature'));</script>"));
+            stb.Append(Invariant($"<script>iFrameResize({{log:true}});</script>"));
+
+            var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id", stb.ToString());
+
+            return page.Page.ToJsonString();
         }
 
         private string CreatePlugInUrl(string fileName)

@@ -74,11 +74,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DeviceData\DeviceData.cs" />
+    <Compile Include="DeviceData\HS3DeviceMigrator.cs" />
     <Compile Include="DeviceData\DeviceRootDeviceManager.cs" />
     <Compile Include="DeviceData\NumberDeviceData.cs" />
-    <Compile Include="DeviceData\DeviceIdentifier.cs" />
     <Compile Include="ImportDeviceData.cs" />
     <Compile Include="Pages\InfluxDbQueryBuilder.cs" />
+    <Compile Include="PluginConfigBase.cs" />
     <Compile Include="PlugInDBInformation.cs" />
     <Compile Include="PlugInDeviceConfig.cs" />
     <Compile Include="Utils\ScribanHelper.cs" />
@@ -92,14 +93,11 @@
     <Compile Include="ILogger.cs" />
     <Compile Include="InfluxDBLoginInformation.cs" />
     <Compile Include="InfluxDBMeasurementsCollector.cs" />
-    <Compile Include="Utils\Mapper.cs" />
     <Compile Include="Utils\ObjectSerialize.cs" />
     <Compile Include="PlugIn.cs" />
     <Compile Include="PlugInData.cs" />
     <Compile Include="PluginConfig.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="Exceptions\HspiConnectionException.cs" />
-    <Compile Include="Exceptions\HspiException.cs" />
     <Compile Include="HSPIBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecordData.cs" />

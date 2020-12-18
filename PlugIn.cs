@@ -112,22 +112,22 @@ namespace Hspi
             }
         }
 
+        public override EPollResponse UpdateStatusNow(int devOrFeatRef)
+        {
+            try
+            {
+                bool result = ImportDeviceFromDB(devOrFeatRef).ResultForSync();
+                return result ? EPollResponse.NotFound : EPollResponse.Ok;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(Invariant($"Failed to import value for Ref Id: {devOrFeatRef} with {ex.GetFullMessage()}"));
+                return EPollResponse.ErrorGettingStatus;
+            }
+        }
+
         //public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
         //{
-        //    if (ImportDeviceFromDB(deviceId))
-        //    {
-        //        var pollResult = new IPlugInAPI.PollResultInfo
-        //        {
-        //            Result = IPlugInAPI.enumPollResult.OK,
-        //            Value = HomeSeerSystem.DeviceValueEx(deviceId),
-        //        };
-
-        //        return pollResult;
-        //    }
-        //    else
-        //    {
-        //        return base.PollDevice(deviceId);
-        //    }
         //}
 
         //public override string PostBackProc(string page, string data, [AllowNull]string user, int userRights)
@@ -315,7 +315,6 @@ namespace Hspi
                 deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceRootDeviceManager(HomeSeerSystem,
                                                                       pluginConfig.DBLoginInformation,
-                                                                      pluginConfig.ImportDevicesData,
                                                                       ShutdownCancellationToken);
             }
         }
@@ -525,7 +524,7 @@ namespace Hspi
         //    }
         //}
 
-        private bool ImportDeviceFromDB(int deviceRefId)
+        private async Task<bool> ImportDeviceFromDB(int deviceRefId)
         {
             DeviceRootDeviceManager deviceRootDeviceManagerCopy;
             using (var sync = deviceRootDeviceManagerLock.Enter())
@@ -533,7 +532,7 @@ namespace Hspi
                 deviceRootDeviceManagerCopy = deviceRootDeviceManager;
             }
 
-            return deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ResultForSync();
+            return await deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ConfigureAwait(false);
         }
 
         protected override void BeforeReturnStatus()

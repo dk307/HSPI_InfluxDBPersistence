@@ -1,10 +1,6 @@
 ﻿using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
-using HomeSeer.PluginSdk.Devices.Identification;
-using Hspi.Utils;
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace Hspi
 {
@@ -13,7 +9,6 @@ namespace Hspi
         public HSHelper(IHsController hS)
         {
             HS = hS;
-            LoadSettings();
         }
 
         public void Fill(int deviceRefId,
@@ -73,42 +68,7 @@ namespace Hspi
             }
         }
 
-        public string GetName(int deviceRefId)
-        {
-            var device = HS.GetDeviceByRef(deviceRefId);
-            return device != null ? GetName(device) : null;
-        }
-
-        public string GetName(AbstractHsDevice device)
-        {
-            List<string> parts = new List<string>();
-
-            string location1 = device.Location;
-            if (location2Enabled)
-            {
-                string location2 = device.Location2;
-
-                if (location1First)
-                {
-                    AddIfNotEmpty(parts, location1);
-                    AddIfNotEmpty(parts, location2);
-                }
-                else
-                {
-                    AddIfNotEmpty(parts, location2);
-                    AddIfNotEmpty(parts, location1);
-                }
-            }
-            else
-            {
-                AddIfNotEmpty(parts, location1);
-            }
-
-            AddIfNotEmpty(parts, device.Name);
-
-            return string.Join(" ", parts);
-        }
-
+  
         private static void AddIfNotEmpty(List<string> parts, string name)
         {
             if (!string.IsNullOrWhiteSpace(name))
@@ -136,29 +96,10 @@ namespace Hspi
             return null;
         }
 
-        private void LoadSettings()
-        {
-            location2Enabled = Convert.ToBoolean(
-                HS.GetINISetting("Settings", "bUseLocation2", Convert.ToString(false, CultureInfo.InvariantCulture), ""),
-                CultureInfo.InvariantCulture);
-            if (location2Enabled)
-            {
-                location1First = Convert.ToBoolean(
-                    HS.GetINISetting("Settings", "bLocationFirst", Convert.ToString(false, CultureInfo.InvariantCulture), ""),
-                    CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                location1First = true;
-            }
-        }
-
         private static string[] measurementTypes = { "TEMPERATURE", "HUMIDITY", "WATTS", "KWH", "BATTERY",
                                                      "PRESSURE", "AMPERES", "CO2", "PM25", "VOLTS", "LUMINANCE",
                                                      "LOCK", "WINDOW", "DOOR", "LIGHT", "SWITCH" };
 
         private readonly IHsController HS;
-        private bool location1First;
-        private bool location2Enabled;
     }
 }
