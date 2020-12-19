@@ -81,6 +81,7 @@
     <Compile Include="Pages\InfluxDbQueryBuilder.cs" />
     <Compile Include="PluginConfigBase.cs" />
     <Compile Include="PlugInDBInformation.cs" />
+    <Compile Include="PlugInDeviceImport.cs" />
     <Compile Include="PlugInDeviceConfig.cs" />
     <Compile Include="Utils\ScribanHelper.cs" />
     <Compile Include="Utils\EnumHelper.cs" />
@@ -224,6 +225,8 @@
     <Content Include="html\configuration.html" />
     <Content Include="html\datatables.min.css" />
     <Content Include="html\datatables.min.js" />
+    <Content Include="html\dbconfiguration.html" />
+    <Content Include="html\deviceimport.html" />
     <Content Include="html\feature.html" />
     <Content Include="html\feature.js" />
   </ItemGroup>

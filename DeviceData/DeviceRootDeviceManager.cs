@@ -27,10 +27,7 @@ namespace Hspi.DeviceData
 
             MigrateDevices();
 
-            var hsDevices = GetCurrentDevices();
-
-            ImportDevices = hsDevices;
-
+            ImportDevices = GetCurrentDevices();
             StartDeviceFetchFromDB();
         }
 
@@ -44,11 +41,11 @@ namespace Hspi.DeviceData
             }
         }
 
-        public async Task<bool> ImportDataForDevice(int refID)
+        public async Task<bool> ImportDataForDevice(int refId)
         {
-            if (ImportDevices.TryGetValue(refID, out var data))
+            if (ImportDevices.TryGetValue(refId, out var data))
             {
-                await ImportDataForDevice(refID, data).ConfigureAwait(false);
+                await ImportDataForDevice(data).ConfigureAwait(false);
                 return true;
             }
             return false;
@@ -56,7 +53,7 @@ namespace Hspi.DeviceData
 
         private Dictionary<int, DeviceData> GetCurrentDevices()
         {
-            var refIds = HS.GetAllRefs();
+            var refIds = HS.GetRefsByInterface(PlugInData.PlugInId);
 
             var currentChildDevices = new Dictionary<int, DeviceData>();
 
@@ -66,29 +63,17 @@ namespace Hspi.DeviceData
 
                 if ((device != null) &&
                     (device.Interface != null) &&
-                    (device.Interface == PlugInData.PlugInName))
+                    (device.Interface == PlugInData.PlugInId))
                 {
-                    string name = HS.GetNameByRef(refId);
-                    if (device.PlugExtraData.ContainsNamed(PlugInData.DevicePlugInDataNamedKey))
+                    try
                     {
-                        try
-                        {
-                            var importDeviceData = device.PlugExtraData.GetNamed<ImportDeviceData>(PlugInData.DevicePlugInDataNamedKey);
-
-                            bool isFeature = device.Relationship == HomeSeer.PluginSdk.Devices.Identification.ERelationship.Feature;
-                            currentChildDevices.Add(device.Ref, new NumberDeviceData(isFeature, importDeviceData));
-                            Trace.TraceInformation(Invariant($"{device.Name} found"));
-                        }
-                        catch (Exception ex)
-                        {
-                            Trace.TraceWarning(Invariant($"{device.Name} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
-                        }
+                        currentChildDevices.Add(device.Ref, new NumberDeviceData(HS, device.Ref));
                     }
-                    else
+                    catch (Exception ex)
                     {
                         if (!device.PlugExtraData.ContainsNamed(PlugInData.DevicePlugInDataIgnoreKey))
                         {
-                            Trace.TraceWarning(Invariant($"{device.Name} has invalid plugin data. Please recreate it."));
+                            Trace.TraceWarning(Invariant($"{device.Name} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
                         }
                     }
                 }
@@ -97,9 +82,9 @@ namespace Hspi.DeviceData
             return currentChildDevices;
         }
 
-        private async Task<ImportDeviceData> ImportDataForDevice(int refID, DeviceData deviceData)
+        private async Task<ImportDeviceData> ImportDataForDevice(DeviceData deviceData)
         {
-            ImportDeviceData importDeviceData = deviceData.Data;
+            var importDeviceData = deviceData.Data;
 
             //start as task to fetch data
             double? deviceValue = null;
@@ -110,42 +95,32 @@ namespace Hspi.DeviceData
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning(Invariant($"Failed to get value from Db for {importDeviceData.Name} with {ex.GetFullMessage()}"));
+                Trace.TraceWarning(Invariant($"Failed to get value from Db for {deviceData.Name} with {ex.GetFullMessage()}"));
             }
 
             try
             {
-                Trace.WriteLine(Invariant($"Updating {importDeviceData.Name} with {deviceValue}"));
-                deviceData.Update(HS, refID, deviceValue);
+                Trace.WriteLine(Invariant($"Updating {deviceData.Name} with {deviceValue}"));
+                deviceData.Update(deviceValue);
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning(Invariant($"Failed to write value to HS for {importDeviceData.Name} with {ex.GetFullMessage()}"));
+                Trace.TraceWarning(Invariant($"Failed to write value to HS for {deviceData.Name} with {ex.GetFullMessage()}"));
             }
 
             return importDeviceData;
         }
 
-        private async Task ImportDataForDeviceInLoop(int refID, DeviceData deviceData)
+        private async Task ImportDataForDeviceInLoop(DeviceData deviceData)
         {
             while (!combinedToken.Token.IsCancellationRequested)
             {
-                ImportDeviceData importDeviceData = await ImportDataForDevice(refID, deviceData).ConfigureAwait(false);
-                await Task.Delay((int)Math.Min(importDeviceData.Interval.TotalMilliseconds, TimeSpan.FromDays(1).TotalMilliseconds),
+                var importDeviceData = await ImportDataForDevice(deviceData).ConfigureAwait(false);
+                await Task.Delay((int)Math.Min(importDeviceData.IntervalSeconds * 1000, TimeSpan.FromDays(1).TotalMilliseconds),
                                  combinedToken.Token).ConfigureAwait(false);
             }
         }
 
-        /// <summary>
-        /// Creates the HS device.
-        /// </summary>
-        /// <param name="optionalParentRefId">The optional parent reference identifier.</param>
-        /// <param name="name">The name of device</param>
-        /// <param name="deviceAddress">The device address.</param>
-        /// <param name="deviceData">The device data.</param>
-        /// <returns>
-        /// New Device
-        /// </returns>
         //private AbstractHsDevice CreateDevice(int? optionalParentRefId, string name, string deviceAddress, HSDeviceCore deviceData)
         //{
         //    Trace.TraceInformation(Invariant($"Creating Device with Address:{deviceAddress}"));
@@ -258,38 +233,29 @@ namespace Hspi.DeviceData
             migrator.Migrate();
         }
 
-        //                var childHSDevice = CreateDevice(hsDevices.ParentRefId.Value, deviceImport.Value.Name, address, childDevice);
-        //                hsDevices.Children[childHSDevice.Ref] = childDevice;
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Trace.TraceError(Invariant($"Failed to Create Devices For PlugIn With {ex.GetFullMessage()}"));
-        //    }
-        //}
         private void StartDeviceFetchFromDB()
         {
             using (var sync = collectionTasksLock.Lock())
             {
+                
+
                 foreach (var childDeviceKeyValuePair in ImportDevices)
                 {
-                    int refID = childDeviceKeyValuePair.Key;
                     DeviceData deviceData = childDeviceKeyValuePair.Value;
 
                     this.combinedToken.Token.ThrowIfCancellationRequested();
-                    collectionTasks.Add(ImportDataForDeviceInLoop(refID, deviceData));
+                    collectionTasks.Add(ImportDataForDeviceInLoop(deviceData));
                 }
             }
         }
 
-        private readonly CancellationToken cancellationToken;
         private readonly IReadOnlyDictionary<int, DeviceData> ImportDevices;
+        private readonly CancellationToken cancellationToken;
         private readonly List<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();
         private readonly CancellationTokenSource combinedToken;
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
-        private bool disposedValue; // To detect redundant calls
+        private bool disposedValue;
     };
 }

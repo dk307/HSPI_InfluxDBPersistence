@@ -53,7 +53,7 @@
 	
 		<div class="row mt-1 mb-1">
 			<div class="md-form col-md">	 
-				<input type="text" id="dburi" class="form-control" name="dburi" value="{{data['dburi']| html.escape}}" required>
+				<input type="url" id="dburi" class="form-control" name="dburi" value="{{data['dburi']| html.escape}}" required>
 				<label for="dburi">Database HTTP(S) Url</label>
 			</div>
 		</div>
@@ -61,7 +61,7 @@
 		<div class="row mt-1 mb-1">
 			<div class="md-form col-md">	 
 				<input type="text" id="user" class="form-control" name="user" value="{{data['user'] | html.escape}}">
-				<label for="user">User</label>
+				<label for="user">User for database</label>
 			</div>
 		</div>
 								
@@ -75,7 +75,7 @@
 		<div class="row mt-1 mb-1">
 			<div class="md-form col-md">	 
 				<input type="text" id="db" class="form-control" name="db" value="{{data['db'] | html.escape}}" required>
-				<label for="db">Database</label>
+				<label for="db">Database where data is stored</label>
 			</div>
 		</div>	
 		

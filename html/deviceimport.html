@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--This maintains the scale of the page based on the scale of the screen-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--This liquid tag loads all of the necessary css files for HomeSeer-->
+    {{includefile '/bootstrap/css/page_common.css'}}
+    <title>InfluxDB Device Edit</title>
+	
+    <link href="/css/hs.css" rel="stylesheet">
+</head>
+
+	{{	
+	refId=queries['refId'] ?? ""
+	feature=queries['feature'] ?? ""
+	 
+	if feature != ""
+		finalRefId=feature
+	else
+		finalRefId=refId
+	end		
+
+	id=queries['id'] ?? ""
+	
+	validation=[]
+	data={}
+	
+	if queries["save"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'SaveDeviceImportData' [queries]	
+	else
+		importDeviceData=plugin_function 'InfluxDBPersistence' 'GetDeviceImportData'[finalRefId]
+		data=importDeviceData	
+	end
+	}}
+	
+<body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
+
+<div class="container-fluid"> 
+	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [finalRefId] | html.escape}}</p>
+	
+	<form class="md-form" action="/InfluxDBPersistence/deviceimport.html" method="GET">		
+		<input type="hidden" id="refId" name="refId" value="{{finalRefId}}"> 
+		<input type="hidden" id="id" name="id" value="{{data["id"]}}"> 
+		
+		
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+		{{end}}
+			
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">
+				<label class="my-0">Sql for importing from database</label>
+				<textarea id="sql" class="form-control" name="sql" required>{{data['sql'] | html.escape}}</textarea>	
+			</div>
+		</div>
+								
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="number" id="intervalseconds" class="form-control" name="intervalseconds" value="{{data['intervalseconds'] | html.escape}}" required>
+				<label for="measurement">Interval in seconds for each update</label>
+			</div>
+		</div>
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="unit" class="form-control" name="unit" value="{{data['unit'] | html.escape}}">
+				<label for="measurement">Unit of value shown in device</label>
+			</div>
+		</div>	
+
+		<div class="row mt-1 mb-1">
+			<div class="col d-flex justify-content-end">
+ 				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
+			</div>
+		</div>		
+		
+	</form> 
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+
+{{includefile 'bootstrap/js/page_common.js'}}
+<script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
+</body>
+</html>

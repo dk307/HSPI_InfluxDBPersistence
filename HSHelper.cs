@@ -1,5 +1,4 @@
 ﻿using HomeSeer.PluginSdk;
-using HomeSeer.PluginSdk.Devices;
 using System.Collections.Generic;
 
 namespace Hspi
@@ -9,6 +8,18 @@ namespace Hspi
         public HSHelper(IHsController hS)
         {
             HS = hS;
+        }
+
+        public static string GetName(IHsController HS, int refId)
+        {
+            try
+            {
+                return HS.GetNameByRef(refId);
+            }
+            catch
+            {
+                return $"RefId:{refId}";
+            }
         }
 
         public void Fill(int deviceRefId,
@@ -68,7 +79,6 @@ namespace Hspi
             }
         }
 
-  
         private static void AddIfNotEmpty(List<string> parts, string name)
         {
             if (!string.IsNullOrWhiteSpace(name))

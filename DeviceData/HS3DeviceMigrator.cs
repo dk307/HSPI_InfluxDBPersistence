@@ -2,7 +2,6 @@ using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
 using Newtonsoft.Json;
 using NullGuard;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -32,7 +31,8 @@ namespace Hspi.DeviceData
 
                 if ((device != null) &&
                     (device.Interface != null) &&
-                    ((device.Interface == PlugInData.PlugInName) || ((device.Interface == PlugInData.PlugInId))))
+                    ((device.Interface == PlugInData.PlugInId) ||
+                    ((device.Interface == PlugInData.Hs3PlugInName))))
                 {
                     string address = device.Address;
 
@@ -42,17 +42,8 @@ namespace Hspi.DeviceData
                         if (oldPlugInConfig.ImportDevicesData.TryGetValue(childDeviceData.DeviceId,
                                                                           out var importDeviceData))
                         {
-                            Trace.TraceInformation(Invariant($"Migrating {device.Name} from HS3"));
-
-                            string data = JsonConvert.SerializeObject(importDeviceData, Formatting.Indented);
-
-                            device.PlugExtraData.RemoveAllNamed();
-                            device.PlugExtraData.RemoveAllUnNamed();
-                            device.PlugExtraData.AddNamed(PlugInData.DevicePlugInDataNamedKey, data);
-
-                            HS.UpdatePropertyByRef(device.Ref, EProperty.PlugExtraData, device.PlugExtraData);
-
-                            // oldPlgInConfig.RemoveImportDeviceData(importDeviceData.Id);
+                            DeviceData.UpdateImportDevice(HS, device, importDeviceData);
+                            oldPlugInConfig.RemoveImportDeviceData(importDeviceData.Id);
                         }
                     }
                     else
@@ -68,7 +59,7 @@ namespace Hspi.DeviceData
                             device.PlugExtraData.AddNamed(PlugInData.DevicePlugInDataIgnoreKey, data);
 
                             HS.UpdatePropertyByRef(device.Ref, EProperty.PlugExtraData, device.PlugExtraData);
-                        } 
+                        }
                     }
 
                     HS.UpdatePropertyByRef(device.Ref, EProperty.Interface, PlugInData.PlugInId);
@@ -177,7 +168,6 @@ namespace Hspi.DeviceData
                 var importDevicesData = new Dictionary<string, ImportDeviceData>();
                 foreach (var id in ids)
                 {
-                    string name = GetValue(NameKey, string.Empty, id);
                     string sql = GetValue(SqlKey, string.Empty, id);
                     string time = GetValue(IntervalKey, string.Empty, id);
                     string unit = GetValue(UnitKey, string.Empty, id);
@@ -187,7 +177,7 @@ namespace Hspi.DeviceData
                         continue;
                     }
 
-                    var data = new ImportDeviceData(id, name, sql, TimeSpan.FromSeconds(timeSeconds), unit);
+                    var data = new ImportDeviceData(id, sql, timeSeconds, unit);
                     importDevicesData.Add(id, data);
                 }
 
@@ -197,7 +187,6 @@ namespace Hspi.DeviceData
             private const string ImportDevicesIdsKey = "ImportDeviceIds";
             private const char ImportDevicesIdsSeparator = ',';
             private const string IntervalKey = "IntervalSeconds";
-            private const string NameKey = "Name";
             private const string SqlKey = "Sql";
             private const string UnitKey = "Unit";
             private readonly IDictionary<string, ImportDeviceData> importDevicesData;

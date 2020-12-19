@@ -48,7 +48,7 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    string deviceName = HomeSeerSystem.GetNameByRef(refId);
+                    string deviceName = HSHelper.GetName(HomeSeerSystem, refId);
 
                     var queries = InfluxDbQueryBuilder.GetStatsQueries(data,
                                                                   queryDuration.Value,
@@ -269,7 +269,7 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    string deviceName = HomeSeerSystem.GetNameByRef(refId);
+                    string deviceName = HSHelper.GetName(HomeSeerSystem, refId);
 
                     var queries = InfluxDbQueryBuilder.GetHistoryQueries(data, deviceName, maxRecords, queryDuration);
                     var queryData = GetData(queries.Item1);
@@ -337,7 +337,7 @@ namespace Hspi
             try
             {
                 int refId = ParseRefId(refIdString);
-                return HomeSeerSystem.GetNameByRef(refId);
+                return HSHelper.GetName(HomeSeerSystem, refId);
             }
             catch
             {
@@ -348,7 +348,7 @@ namespace Hspi
         public override string GetJuiDeviceConfigPage(int deviceRef)
         {
             var device = HomeSeerSystem.GetDeviceByRef(deviceRef);
-            return CreateDeviceConfigPage(device, device.Interface == Id ? "editimport.html" : "feature.html");
+            return CreateDeviceConfigPage(device, device.Interface == Id ? "deviceimport.html" : "feature.html");
         }
 
         public IDictionary<string, object> GetPersistanceData([AllowNull] string refIdString)

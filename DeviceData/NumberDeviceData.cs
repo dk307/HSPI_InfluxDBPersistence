@@ -1,8 +1,10 @@
-﻿namespace Hspi.DeviceData
+﻿using HomeSeer.PluginSdk;
+
+namespace Hspi.DeviceData
 {
     internal class NumberDeviceData : DeviceData
     {
-        public NumberDeviceData(bool isFeatureInHS, ImportDeviceData data) : base(isFeatureInHS, data)
+        public NumberDeviceData(IHsController HS, int refId) : base(HS, refId)
         {
         }
     }

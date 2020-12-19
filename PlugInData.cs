@@ -13,7 +13,12 @@
         /// <summary>
         /// The plugin name
         /// </summary>
-        public const string PlugInName = @"Influx DB Persistence";
+        public const string PlugInName = @"Influx DB History";
+
+        /// <summary>
+        /// The plugin name
+        /// </summary>
+        public const string Hs3PlugInName = @"Influx DB Persistence";
 
         /// <summary>
         /// The plugin Id

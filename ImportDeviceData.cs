@@ -1,24 +1,22 @@
 ﻿using NullGuard;
-using System;
 
 namespace Hspi
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal sealed class ImportDeviceData
     {
-        public ImportDeviceData(string id, string name, string sql, in TimeSpan interval, [AllowNull] string unit)
+        public ImportDeviceData(string id, string sql, in long intervalSeconds, [AllowNull] string unit)
         {
             Id = id;
-            Name = name;
             Sql = sql;
-            Interval = interval;
+            IntervalSeconds = intervalSeconds;
             Unit = unit;
         }
 
         public string Id { get; }
-        public string Name { get; }
+
+        public long IntervalSeconds { get; }
         public string Sql { get; }
-        public TimeSpan Interval { get; }
         public string Unit { get; }
 
 #pragma warning disable CA1822 // Mark members as static
