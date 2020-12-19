@@ -19,8 +19,7 @@ namespace Hspi.DeviceData
             Data = GetDeviceImportData(device);
         }
 
-
-        public string Name => HSHelper.GetName(HS, refId); 
+        public string Name => HSHelper.GetName(HS, refId);
 
         public ImportDeviceData Data
         {
