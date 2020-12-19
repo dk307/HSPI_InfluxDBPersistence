@@ -15,7 +15,7 @@
     "Author": "dk307",
     "Price": "Free",
     "ReleaseNotesURL": "https://github.com/dk307/HSPI_InfluxDBPersistence",
-    "ShortDescription": "Stores History in InfluxDB",
+    "ShortDescription": "Stores history of device values in InfluxDB",
     "SupportURL": "https://github.com/dk307/HSPI_InfluxDBPersistence/issues",
     "Tags": [
       "Free",
