@@ -1,0 +1,27 @@
+﻿<#@template hostspecific="true"#> 
+<#
+ string version = Host.ResolveParameterValue(null, null, "Version");
+#>
+{ 
+ "Version":"4.0.0.0",
+ "Packages":[
+  {
+    "PackageName": "InfluxDB History",
+    "EXEFile": "HSPI_InfluxDBPersistence.exe",
+    "ID": "InfluxDBPersistence",
+    "Version": "<#=version#>",
+    "UC": 63,
+    "ZipFile": "HSPI_InfluxDBPersistence_<#=version#>.zip",
+    "Author": "dk307",
+    "Price": "Free",
+    "ReleaseNotesURL": "https://github.com/dk307/HSPI_InfluxDBPersistence",
+    "ShortDescription": "Stores History in InfluxDB",
+    "SupportURL": "https://github.com/dk307/HSPI_InfluxDBPersistence/issues",
+    "Tags": [
+      "Free",
+      "History",
+      "Beta"
+    ]
+  } 
+]
+}

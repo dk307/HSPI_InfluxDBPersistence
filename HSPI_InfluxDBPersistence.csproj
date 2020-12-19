@@ -229,13 +229,74 @@
     <Content Include="html\deviceimport.html" />
     <Content Include="html\feature.html" />
     <Content Include="html\feature.js" />
+    <Content Include="install.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="updater_override.tt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="InstallFiles\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+
+  <PropertyGroup>
+    <ArtifactsDirectory>$(OutputPath)\Artifacts</ArtifactsDirectory>
+	<_TransformExe>$(DevEnvDir)\TextTransform.exe</_TransformExe>
+  </PropertyGroup> 
+  
+  
+  <Target Name="ZipHtmlFiles" AfterTargets="Build">
+    <ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\html" DestinationFile="$(OutputPath)\html.zip" Overwrite="true" />
   </Target>
-  <Target Name="AfterBuild">
+  <Target Name="ILMerge" AfterTargets="Build">
+    <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
+      <InputAssemblies Include="$(OutputPath)\Newtonsoft.Json.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Coordination.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Tasks.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.Collections.Deque.dll" />
+      <InputAssemblies Include="$(OutputPath)\Nito.Disposables.dll" />
+      <InputAssemblies Include="$(OutputPath)\System.Collections.Immutable.dll" />
+      <InputAssemblies Include="$(OutputPath)\System.Buffers.dll" />
+      <InputAssemblies Include="$(OutputPath)\System.Memory.dll" />
+      <InputAssemblies Include="$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll" />
+      <InputAssemblies Include="$(OutputPath)\AdysTech.InfluxDB.Client.Net.Core.dll" />
+    </ItemGroup>
+    <Message Importance="high" Text="Executing ILMerge in $(ProjectDir)..." />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(ILMergeConsolePath)&quot; /ndebug /target:winexe /out:@(MainAssembly) /internalize /targetplatform:v4 @(InputAssemblies->'&quot;%(FullPath)&quot;', ' ')" />
   </Target>
-  -->
+  <Target Name="CreateArtifactDirectories" AfterTargets="Build">
+    <RemoveDir Directories="$(ArtifactsDirectory)" />
+    <MakeDir Directories="$(ArtifactsDirectory)" />
+  </Target>
+  <Target Name="SelectReleaseFiles" DependsOnTargets="CreateArtifactDirectories;ILMerge;ZipHtmlFiles" AfterTargets="Build">
+    <ItemGroup>
+      <ReleaseFiles Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
+      <ReleaseFiles Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe.config" />
+      <ReleaseFiles Include="$(OutputPath)\html.zip" />
+      <ReleaseFiles Include="$(OutputPath)\install.txt" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ReleaseFiles)" DestinationFolder="$(ArtifactsDirectory)" />
+  </Target>
+  <Target Name="ZipFinalFiles" DependsOnTargets="SelectReleaseFiles" AfterTargets="Build">
+    <GetAssemblyIdentity AssemblyFiles="$(OutputPath)\HSPI_InfluxDBPersistence.exe">
+      <Output TaskParameter="Assemblies" ItemName="myAssemblyInfo" />
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <Pattern>(\d+)\.(\d+).(\d+)\.(\d+)</Pattern>
+      <In>%(myAssemblyInfo.Version)</In>
+      <OutVersion>$([System.Text.RegularExpressions.Regex]::Match($(In), $(Pattern)))</OutVersion>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(ArtifactsDirectory)" DestinationFile="$(OutputPath)\$(AssemblyName)_$(OutVersion).zip" Overwrite="true" />
+    <Error Text="Failed to find TextTransform.exe tool at '$(_TransformExe)."  Condition="!Exists('$(_TransformExe)')"/>
+    <Exec Command="&quot;$(_TransformExe)&quot; &quot;$(MSBuildProjectDirectory)\updater_override.tt&quot; -out &quot;$(OutputPath)\updater_override.json&quot; -a !!Version!$(OutVersion)"/>
+  </Target>
+  
+  
+
+
+  
 </Project>

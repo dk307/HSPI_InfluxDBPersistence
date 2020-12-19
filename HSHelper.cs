@@ -79,14 +79,6 @@ namespace Hspi
             }
         }
 
-        private static void AddIfNotEmpty(List<string> parts, string name)
-        {
-            if (!string.IsNullOrWhiteSpace(name))
-            {
-                parts.Add(name);
-            }
-        }
-
         private static string FindTypeString(IEnumerable<string> descriptionStrings)
         {
             foreach (var descriptionString in descriptionStrings)
