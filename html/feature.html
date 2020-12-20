@@ -293,12 +293,12 @@ function setUpChart() {
                     min_y_from_data: true,
                     color: '#329de4',
                     x_rollover_format: function(d) { return d.date.toLocaleString() + ' '; },
-					title:'{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [options[0]] | html.escape}}',
+					title:'{{device_name_full options[0] | html.escape}}',
 					full_width: true,
 					// full_height: true,
 					width: 300,
 					height: 500,
-					animate_on_load: true,
+					animate_on_load: false,
 				 });
 }
 

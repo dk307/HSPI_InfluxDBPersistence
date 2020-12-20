@@ -24,18 +24,23 @@
 	end
 	}}
 	
-<body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
+<body class="body homeseer-skin" aria-busy="true">	
     {{includefile 'header.html'}}
     {{includefile 'navbar.html'}}
 	
-<div class="container-fluid"> 
+<div class="container card mb-3"> 
 	
 	{{if !redirect}}
-	<form class="md-form" action="/InfluxDBPersistence/adddeviceimport.html" method="GET">		
+	
+	<nav class="navbar">  
+		<div class="navbar-brand">Add InfluxDB Import Device</div>
+	</nav>
+	
+	<form class="md-form ml-3" action="/InfluxDBPersistence/adddeviceimport.html" method="GET">		
 		
 		{{if !validation.empty?}}
 			<div class="row mt-1 mb-1">
-				<div class="md-form col-md-6 alert alert-danger" role="alert">
+				<div class="md-form col-md alert alert-danger" role="alert">
 					{{ for item in validation}}	
 						{{ item }}<BR>
 					{{end}}
@@ -44,35 +49,35 @@
 		{{end}}
 			
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md-6">	 
+			<div class="md-form col-md">	 
 				<input type="text" id="name" class="form-control" name="name" value="{{data['name'] | html.escape}}" required>
 				<label for="name">Name of the device</label>
 			</div>
 		</div>		
 		
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md-6">
-				<label class="my-0">Sql for importing from database</label>
-				<textarea id="sql" class="form-control" name="sql" required>{{data['sql'] | html.escape}}</textarea>	
+			<div class="md-form col-md">			
+				<textarea id="sql" class="md-textarea form-control" name="sql" required>{{data['sql'] | html.escape}}</textarea>
+				<label for="sql" >Sql for importing from database</label>				
 			</div>
 		</div>
 								
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md-6">	 
-				<input type="number" id="intervalseconds" class="form-control" name="intervalseconds" value="{{data['intervalseconds'] | html.escape}}" required>
+			<div class="md-form col-md">	 
+				<input type="number" id="intervalseconds" class="form-control" name="intervalseconds" value="{{data['intervalseconds'] ?? '60' | html.escape}}" required>
 				<label for="measurement">Interval in seconds for each update</label>
 			</div>
 		</div>
 
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md-6">	 
+			<div class="md-form col-md">	 
 				<input type="text" id="unit" class="form-control" name="unit" value="{{data['unit'] | html.escape}}">
 				<label for="measurement">Unit of value shown in device</label>
 			</div>
 		</div>	
 
 		<div class="row mt-1 mb-1">
-			<div class="col-md-6 d-flex justify-content-end">
+			<div class="col-md d-flex justify-content-end">
  				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
 			</div>
 		</div>		

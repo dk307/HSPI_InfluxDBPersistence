@@ -40,7 +40,7 @@
 <body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
 
 <div class="container-fluid"> 
-	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [finalRefId] | html.escape}}</p>
+	<p class="h4 text-left">{{device_name_full finalRefId | html.escape}}</p>
 	
 	
 	{{if data }}
@@ -61,9 +61,9 @@
 		{{end}}
 			
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">
-				<label class="my-0">Sql for importing from database</label>
-				<textarea id="sql" class="form-control" name="sql" required>{{data['sql'] | html.escape}}</textarea>	
+			<div class="md-form col-md">			
+				<textarea id="sql" class="md-textarea form-control" name="sql" required>{{data['sql'] | html.escape}}</textarea>
+				<label for="sql" >Sql for importing from database</label>				
 			</div>
 		</div>
 								

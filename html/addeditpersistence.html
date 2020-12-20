@@ -38,7 +38,7 @@
 <body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
 {{if !redirect}}
 <div class="container-fluid"> 
-	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [deviceRefId] | html.escape}}</p>
+	<p class="h4 text-left">{{device_name_full deviceRefId | html.escape}}</p>
 	
 	<form class="md-form" action="/InfluxDBPersistence/addeditpersistence.html" method="GET">		
 		<input type="hidden" id="devicerefid" name="devicerefid" value="{{data["devicerefid"]}}"> 

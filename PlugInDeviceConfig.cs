@@ -331,17 +331,30 @@ namespace Hspi
             return graphs;
         }
 
-        public string GetDisplayName(string refIdString)
+        public IDictionary<string, object> GetDeviceDetails(string refIdString)
         {
+            var data = new Dictionary<string, object>();
             try
             {
                 int refId = ParseRefId(refIdString);
-                return HSHelper.GetName(HomeSeerSystem, refId);
+
+                var device = HomeSeerSystem.GetDeviceByRef(refId);
+
+                if (HomeSeerSystem.IsRefDevice(refId))
+                {
+                    data.Add("ref", refId);
+                }
+                else
+                {
+                    var associatedDevices = (HashSet<int>)HomeSeerSystem.GetPropertyByRef(refId, EProperty.AssociatedDevices);
+                    data.Add("ref", associatedDevices.First());
+                    data.Add("feature", refId);
+                }
             }
             catch
             {
-                return "<Unknown>";
             }
+            return data;
         }
 
         public override string GetJuiDeviceConfigPage(int deviceRef)
@@ -596,6 +609,19 @@ namespace Hspi
         {
             var loginInformation = pluginConfig.DBLoginInformation;
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
+        }
+
+        public IList<IDictionary<string, object>> GetAllPersistantData()
+        {
+            var list = new List<IDictionary<string, object>>();
+
+            foreach (var pair in this.pluginConfig.DevicePersistenceData)
+            {
+                var data = ScribanHelper.ToDictionary(pair.Value);
+                list.Add(data);
+            }
+
+            return list;
         }
     }
 }

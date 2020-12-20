@@ -24,61 +24,6 @@ namespace Hspi
         {
         }
 
-        //public override string ConfigDevice(int deviceId, [AllowNull] string user, int userRights, bool newDevice)
-        //{
-        //    if (newDevice)
-        //    {
-        //        return string.Empty;
-        //    }
-
-        //    try
-        //    {
-        //        var deviceClass = (DeviceClass)HomeSeerSystem.GetDeviceByRef(deviceId);
-
-        //        if (deviceClass.get_Interface(HomeSeerSystem) == PlugInData.PlugInName)
-        //        {
-        //            var deviceIdentifier = DeviceIdentifier.Identify(deviceClass);
-        //            if (deviceIdentifier != null)
-        //            {
-        //                return configPage.GetDeviceImportTab(deviceIdentifier);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            return configPage.GetDeviceHistoryTab(deviceId);
-        //        }
-        //        return string.Empty;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        LogError(Invariant($"ConfigDevice for {deviceId} With {ex.Message}"));
-        //        return string.Empty;
-        //    }
-        //}
-
-        //public override Enums.ConfigDevicePostReturn ConfigDevicePost(int deviceId, [AllowNull] string data, [AllowNull] string user, int userRights)
-        //{
-        //    try
-        //    {
-        //        return configPage.GetDeviceHistoryPost(Callback, deviceId, data);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        LogError(Invariant($"ConfigDevicePost for {deviceId} With {ex.Message}"));
-        //        return Enums.ConfigDevicePostReturn.DoneAndCancelAndStay;
-        //    }
-        //}
-
-        //public override string GetPagePlugin(string page, [AllowNull]string user, int userRights, [AllowNull]string queryString)
-        //{
-        //    if (page == ConfigPage.Name)
-        //    {
-        //        return configPage.GetWebPage(queryString);
-        //    }
-
-        //    return string.Empty;
-        //}
-
         public override void HsEvent(Constants.HSEvent eventType, [AllowNull] object[] parameters)
         {
             HSEventImpl(eventType, parameters).Wait(ShutdownCancellationToken);
@@ -99,6 +44,7 @@ namespace Hspi
 
                 // Feature pages
                 HomeSeerSystem.RegisterFeaturePage(Id, "dbconfiguration.html", "Database configuration");
+                HomeSeerSystem.RegisterFeaturePage(Id, "persistentlist.html", "Persistence list");
 
                 // Device Add Page
                 HomeSeerSystem.RegisterDeviceIncPage(Id, "adddeviceimport.html", "Add Device Import Device");
@@ -129,24 +75,6 @@ namespace Hspi
             }
         }
 
-        //public override IPlugInAPI.PollResultInfo PollDevice(int deviceId)
-        //{
-        //}
-
-        //public override string PostBackProc(string page, string data, [AllowNull]string user, int userRights)
-        //{
-        //    if (page == ConfigPage.Name)
-        //    {
-        //        return configPage.PostBackProc(data, user, userRights);
-        //    }
-
-        //    return string.Empty;
-        //}
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources.
-        /// </summary>
-        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)

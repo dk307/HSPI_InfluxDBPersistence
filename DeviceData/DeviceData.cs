@@ -36,6 +36,8 @@ namespace Hspi.DeviceData
 
         public static DeviceData CreateNew(IHsController HS, string deviceName, ImportDeviceData data)
         {
+            string logo = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo.svg");
+            string logoCastle = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo_castle.svg");
             var newDeviceData = DeviceFactory.CreateDevice(PlugInData.PlugInId)
                   .WithName(deviceName)
                   .AsType(EDeviceType.Generic, 0)
@@ -45,7 +47,6 @@ namespace Hspi.DeviceData
             int refId = HS.CreateDevice(newDeviceData);
 
             var plugExtra = CreatePlugInExtraData(data);
-            string logo = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo.svg");
 
             var newFeatureData = FeatureFactory.CreateFeature(PlugInData.PlugInId)
                 .WithName("Value")
