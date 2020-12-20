@@ -47,7 +47,7 @@
 		
 		{{if !validation.empty?}}
 			<div class="row mt-1 mb-1">
-				<div class="md-form col-md alert alert-danger" role="alert">
+				<div class="md-form col-md-6 alert alert-danger" role="alert">
 					{{ for item in validation}}	
 						{{ item }}<BR>
 					{{end}}
@@ -56,14 +56,14 @@
 		{{end}}
 	
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="measurement" class="form-control" name="measurement" value="{{data['measurement']| html.escape}}" required>
 				<label for="measurement">Measurement</label>
 			</div>
 		</div>
 		
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="field" class="form-control" name="field" value="{{data['field'] | html.escape}}">
 				<label for="measurement">Field For Numeric Value</label>
 			</div>
@@ -71,28 +71,28 @@
 		
 							
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="fieldstring" class="form-control" name="fieldstring" value="{{data['fieldstring'] | html.escape}}">
 				<label for="measurement">Field For String Value</label>
 			</div>
 		</div>
 
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="maxvalidvalue" class="form-control" name="maxvalidvalue" value="{{data['maxvalidvalue'] | html.escape}}">
 				<label for="measurement">Max Valid Numeric Value</label>
 			</div>
 		</div>	
 
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="minvalidvalue" class="form-control" name="minvalidvalue" value="{{data['minvalidvalue'] | html.escape}}">
 				<label for="measurement">Min Valid Numeric Value</label>
 			</div>
 		</div>	
 
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	
+			<div class="md-form col-md-6">	
 				<select id="trackedtype" class="mdb-select md-form colorful-select dropdown-default" name="trackedtype">				 
 					<option value="Value" {{if data['trackedtype']=="Value";}}selected{{end}}>Numeric Value</option>	
 					<option value="String" {{if data['trackedtype']=="String";}}selected{{end}}>String Value</option>					 		
@@ -102,7 +102,7 @@
 		</div>
 			
 		<div class="row mt-1 mb-1">
-			<div class="col d-flex justify-content-end">
+			<div class="col-md-6 d-flex justify-content-end">
 				<button type="button" class="btn btn-cancel waves-effect waves-light" onclick="window.location.replace('/InfluxDBPersistence/feature.html?refId={{deviceRefId}}');">Cancel</button>
 				{{if data["id"]!=""}}
 					<button class="btn btn-secondary waves-effect waves-light" name="delete" type="submit" id="delete_button">Delete</button>

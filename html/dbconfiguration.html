@@ -37,7 +37,7 @@
 	<form class="md-form" action="/InfluxDBPersistence/dbconfiguration.html" method="GET">			
 		{{if !validation.empty?}}
 			<div class="row mt-1 mb-1">
-				<div class="md-form col-md alert alert-danger" role="alert">
+				<div class="md-form col-md-6 alert alert-danger" role="alert">
 					{{ for item in validation}}	
 						{{ item }}<BR>
 					{{end}}
@@ -45,42 +45,42 @@
 			</div>
 		{{else if queries["save"]}}
 			<div class="row mt-1 mb-1">
-				<div class="md-form col-md alert alert-success alert-dismissible fade show" role="alert">
+				<div class="md-form col-md-6 alert alert-success alert-dismissible fade show" role="alert">
 					Saved
 				</div>
 			</div>
 		{{end}}
 	
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="url" id="dburi" class="form-control" name="dburi" value="{{data['dburi']| html.escape}}" required>
 				<label for="dburi">Database HTTP(S) Url</label>
 			</div>
 		</div>
 		
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="user" class="form-control" name="user" value="{{data['user'] | html.escape}}">
 				<label for="user">User for database</label>
 			</div>
 		</div>
 								
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="password" id="fieldstring" class="form-control" name="password" value="{{data['password'] | html.escape}}">
 				<label for="password">Password</label>
 			</div>
 		</div>
 
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="db" class="form-control" name="db" value="{{data['db'] | html.escape}}" required>
 				<label for="db">Database where data is stored</label>
 			</div>
 		</div>	
 		
 		<div class="row mt-1 mb-1">
-			<div class="col d-flex justify-content-end">
+			<div class="col-md-6 d-flex justify-content-end">
 				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
 			</div>
 		</div>		

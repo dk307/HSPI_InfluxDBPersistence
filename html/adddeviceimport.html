@@ -8,51 +8,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!--This liquid tag loads all of the necessary css files for HomeSeer-->
     {{includefile '/bootstrap/css/page_common.css'}}
-    <title>InfluxDB Device Edit</title>
+    <title>InfluxDB Device Add</title>
 	
     <link href="/css/hs.css" rel="stylesheet">
 </head>
-
 	{{	
-	refId=queries['refId'] ?? ""
-	feature=queries['feature'] ?? ""
-	 
-	if feature != ""
-		finalRefId=feature
-	else
-		finalRefId=refId
-	end		
 
-	id=queries['id'] ?? ""
-	
 	validation=[]
 	data={}
 	
 	if queries["save"]
 		data=queries
-		validation=plugin_function 'InfluxDBPersistence' 'SaveDeviceImportData' [queries]	
-	else
-		importDeviceData=plugin_function 'InfluxDBPersistence' 'GetDeviceImportData'[finalRefId]
-		data=importDeviceData	
+		validation=plugin_function 'InfluxDBPersistence' 'AddDeviceImportData' [queries]	
+		redirect=validation.empty?
 	end
 	}}
 	
 <body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
-
+    {{includefile 'header.html'}}
+    {{includefile 'navbar.html'}}
+	
 <div class="container-fluid"> 
-	<p class="h4 text-left py-">{{plugin_function 'InfluxDBPersistence' 'GetDisplayName' [finalRefId] | html.escape}}</p>
 	
-	
-	{{if data }}
-	
-	<form class="md-form" action="/InfluxDBPersistence/deviceimport.html" method="GET">		
-		<input type="hidden" id="refId" name="refId" value="{{finalRefId}}"> 
-		<input type="hidden" id="id" name="id" value="{{data["id"]}}"> 
-		
+	{{if !redirect}}
+	<form class="md-form" action="/InfluxDBPersistence/adddeviceimport.html" method="GET">		
 		
 		{{if !validation.empty?}}
 			<div class="row mt-1 mb-1">
-				<div class="md-form col-md alert alert-danger" role="alert">
+				<div class="md-form col-md-6 alert alert-danger" role="alert">
 					{{ for item in validation}}	
 						{{ item }}<BR>
 					{{end}}
@@ -61,36 +44,49 @@
 		{{end}}
 			
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">
+			<div class="md-form col-md-6">	 
+				<input type="text" id="name" class="form-control" name="name" value="{{data['name'] | html.escape}}" required>
+				<label for="name">Name of the device</label>
+			</div>
+		</div>		
+		
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md-6">
 				<label class="my-0">Sql for importing from database</label>
 				<textarea id="sql" class="form-control" name="sql" required>{{data['sql'] | html.escape}}</textarea>	
 			</div>
 		</div>
 								
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="number" id="intervalseconds" class="form-control" name="intervalseconds" value="{{data['intervalseconds'] | html.escape}}" required>
 				<label for="measurement">Interval in seconds for each update</label>
 			</div>
 		</div>
 
 		<div class="row mt-1 mb-1">
-			<div class="md-form col-md">	 
+			<div class="md-form col-md-6">	 
 				<input type="text" id="unit" class="form-control" name="unit" value="{{data['unit'] | html.escape}}">
 				<label for="measurement">Unit of value shown in device</label>
 			</div>
 		</div>	
 
 		<div class="row mt-1 mb-1">
-			<div class="col d-flex justify-content-end">
+			<div class="col-md-6 d-flex justify-content-end">
  				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
 			</div>
 		</div>		
 		
 	</form> 
+	
 	{{else}}
-	Data is not valid
-	{{end}}
+
+	{{includefile 'bootstrap/js/page_common.js'}}
+	<script>
+	window.location.replace("/devices.html");
+	</script>
+
+{{end}}
 </div>
 
 <!-- Bootstrap core JavaScript
@@ -98,6 +94,5 @@
 <!-- Placed at the end of the document so the pages load faster -->
 
 {{includefile 'bootstrap/js/page_common.js'}}
-<script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
 </body>
 </html>

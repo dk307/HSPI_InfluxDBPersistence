@@ -6,7 +6,6 @@ namespace Hspi.Utils
 {
     internal static class ExceptionHelper
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals")]
         public static string GetFullMessage(this Exception ex)
         {
             switch (ex)

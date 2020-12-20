@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using NullGuard;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Hspi.DeviceData
 {
@@ -43,13 +44,14 @@ namespace Hspi.DeviceData
 
             int refId = HS.CreateDevice(newDeviceData);
 
-            PlugExtraData plugExtra = CreatePlugInExtraData(data);
+            var plugExtra = CreatePlugInExtraData(data);
+            string logo = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo.svg");
 
             var newFeatureData = FeatureFactory.CreateFeature(PlugInData.PlugInId)
                 .WithName("Value")
                 .WithLocation(PlugInData.PlugInName)
                 .WithMiscFlags(EMiscFlag.ShowValues, EMiscFlag.StatusOnly)
-                .AddGraphicForRange("nostatus.gif", int.MinValue, int.MaxValue)
+                .AddGraphicForRange(logo, int.MinValue, int.MaxValue)
                 .AsType(EFeatureType.Generic, 0)
                 .WithExtraData(plugExtra)
                 .PrepareForHsDevice(refId);
