@@ -100,6 +100,9 @@ namespace Hspi
                 // Feature pages
                 HomeSeerSystem.RegisterFeaturePage(Id, "dbconfiguration.html", "Database configuration");
 
+                // Device Add Page
+                HomeSeerSystem.RegisterDeviceIncPage(Id, "adddeviceimport.html", "Add Device Import Device");
+
                 RestartProcessing();
 
                 Trace.TraceInformation("Plugin Started");

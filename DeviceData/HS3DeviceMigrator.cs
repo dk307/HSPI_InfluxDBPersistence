@@ -1,9 +1,8 @@
 using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
-using Newtonsoft.Json;
+using HomeSeer.PluginSdk.Devices.Identification;
 using NullGuard;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using static System.FormattableString;
@@ -23,49 +22,42 @@ namespace Hspi.DeviceData
         public void Migrate()
         {
             var oldPlugInConfig = new OldPlugInConfig(HS);
-            var refIds = HS.GetAllRefs();
-
-            foreach (var refId in refIds)
+            if (oldPlugInConfig.ImportDevicesData.Count > 0)
             {
-                var device = HS.GetDeviceByRef(refId);
+                var refIds = HS.GetAllRefs();
 
-                if ((device != null) &&
-                    (device.Interface != null) &&
-                    ((device.Interface == PlugInData.PlugInId) ||
-                    ((device.Interface == PlugInData.Hs3PlugInName))))
+                foreach (var refId in refIds)
                 {
-                    string address = device.Address;
+                    var device = HS.GetDeviceByRef(refId);
 
-                    var childDeviceData = OldDeviceIdentifier.Identify(device);
-                    if (childDeviceData != null)
+                    if ((device != null) &&
+                        (device.Interface != null) &&
+                        ((device.Interface == PlugInData.PlugInId) ||
+                        ((device.Interface == PlugInData.Hs3PlugInName))))
                     {
-                        if (oldPlugInConfig.ImportDevicesData.TryGetValue(childDeviceData.DeviceId,
-                                                                          out var importDeviceData))
+                        string address = device.Address;
+
+                        var childDeviceData = OldDeviceIdentifier.Identify(device);
+                        if (childDeviceData != null)
                         {
-                            DeviceData.UpdateImportDevice(HS, device, importDeviceData);
-                            oldPlugInConfig.RemoveImportDeviceData(importDeviceData.Id);
+                            if (oldPlugInConfig.ImportDevicesData.TryGetValue(childDeviceData.DeviceId,
+                                                                              out var importDeviceData))
+                            {
+                                // only children has data
+                                if (device.Relationship == ERelationship.Feature)
+                                {
+                                    var deviceData = new DeviceData(HS, device.Ref);
+                                    deviceData.Data = importDeviceData;
+                                    oldPlugInConfig.RemoveImportDeviceData(importDeviceData.Id);
+                                }
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (address == OldDeviceIdentifier.CreateRootAddress())
-                        {
-                            Trace.TraceInformation(Invariant($"Migrating {device.Name} from HS3"));
 
-                            string data = JsonConvert.SerializeObject(null, Formatting.Indented);
-
-                            device.PlugExtraData.RemoveAllNamed();
-                            device.PlugExtraData.RemoveAllUnNamed();
-                            device.PlugExtraData.AddNamed(PlugInData.DevicePlugInDataIgnoreKey, data);
-
-                            HS.UpdatePropertyByRef(device.Ref, EProperty.PlugExtraData, device.PlugExtraData);
-                        }
+                        HS.UpdatePropertyByRef(device.Ref, EProperty.Interface, PlugInData.PlugInId);
                     }
 
-                    HS.UpdatePropertyByRef(device.Ref, EProperty.Interface, PlugInData.PlugInId);
+                    this.cancellationToken.ThrowIfCancellationRequested();
                 }
-
-                this.cancellationToken.ThrowIfCancellationRequested();
             }
         }
 

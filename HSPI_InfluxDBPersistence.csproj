@@ -76,7 +76,6 @@
     <Compile Include="DeviceData\DeviceData.cs" />
     <Compile Include="DeviceData\HS3DeviceMigrator.cs" />
     <Compile Include="DeviceData\DeviceRootDeviceManager.cs" />
-    <Compile Include="DeviceData\NumberDeviceData.cs" />
     <Compile Include="ImportDeviceData.cs" />
     <Compile Include="Pages\InfluxDbQueryBuilder.cs" />
     <Compile Include="PluginConfigBase.cs" />

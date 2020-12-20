@@ -30,7 +30,6 @@
         /// </summary>
 #pragma warning disable CA1308 // Normalize strings to uppercase
         public static readonly string DevicePlugInDataNamedKey = PlugInId.ToLowerInvariant() + ".plugindata";
-        public static readonly string DevicePlugInDataIgnoreKey = PlugInId.ToLowerInvariant() + ".ignore";
 #pragma warning restore CA1308 // Normalize strings to uppercase
     }
 }

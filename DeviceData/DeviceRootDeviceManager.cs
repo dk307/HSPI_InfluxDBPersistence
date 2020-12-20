@@ -1,4 +1,6 @@
 using HomeSeer.PluginSdk;
+using HomeSeer.PluginSdk.Devices;
+using HomeSeer.PluginSdk.Devices.Identification;
 using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
@@ -59,23 +61,19 @@ namespace Hspi.DeviceData
 
             foreach (var refId in refIds)
             {
-                var device = HS.GetDeviceByRef(refId);
-
-                if ((device != null) &&
-                    (device.Interface != null) &&
-                    (device.Interface == PlugInData.PlugInId))
+                try
                 {
-                    try
+                    ERelationship relationship = (ERelationship) HS.GetPropertyByRef(refId, EProperty.Relationship);
+
+                    //data is stored in feature(child)
+                    if (relationship == ERelationship.Feature)
                     {
-                        currentChildDevices.Add(device.Ref, new NumberDeviceData(HS, device.Ref));
+                        currentChildDevices.Add(refId, new DeviceData(HS, refId));
                     }
-                    catch (Exception ex)
-                    {
-                        if (!device.PlugExtraData.ContainsNamed(PlugInData.DevicePlugInDataIgnoreKey))
-                        {
-                            Trace.TraceWarning(Invariant($"{device.Name} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
-                        }
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(Invariant($"{HSHelper.GetName(HS, refId)} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
                 }
             }
 
@@ -121,112 +119,6 @@ namespace Hspi.DeviceData
             }
         }
 
-        //private AbstractHsDevice CreateDevice(int? optionalParentRefId, string name, string deviceAddress, HSDeviceCore deviceData)
-        //{
-        //    Trace.TraceInformation(Invariant($"Creating Device with Address:{deviceAddress}"));
-
-        //    //var plugExtraData = new PlugExtraData();
-        //plugExtraData.AddNamed(DeviceIdentifier.ExtraDataNamedData, deviceAddress);
-
-        //var deviceData = DeviceFactory.CreateDevice(PlugInData.PlugInId)
-        //                              .WithExtraData(plugExtraData)
-        //                              .AsType(deviceData.DeviceAPI,  )
-        //                              .WithLocation(PlugInData.PlugInName)
-        //                              .WithName(name)
-        //                              .PrepareForHs();
-
-        //int refId = HS.CreateDevice(deviceData);
-        //if (refId > 0)
-        //{
-        //    device.set_Device_Type_String(HS, deviceData.HSDeviceTypeString);
-        //    var deviceType = new DeviceTypeInfo_m.DeviceTypeInfo();
-        //    deviceType.Device_API = deviceData.DeviceAPI;
-        //    deviceType.Device_Type = deviceData.HSDeviceType;
-
-        //    device.set_DeviceType_Set(HS, deviceType);
-
-        //    device.set_Last_Change(HS, DateTime.Now);
-
-        //    if (!string.IsNullOrEmpty(deviceData.ScaleDisplayText))
-        //    {
-        //        device.set_ScaleText(HS, deviceData.ScaleDisplayText);
-        //    }
-
-        //    device.MISC_Set(HS, Enums.dvMISC.SHOW_VALUES);
-        //    if (deviceData.StatusDevice)
-        //    {
-        //        device.MISC_Set(HS, Enums.dvMISC.STATUS_ONLY);
-        //        device.MISC_Clear(HS, Enums.dvMISC.AUTO_VOICE_COMMAND);
-        //        device.MISC_Clear(HS, Enums.dvMISC.SET_DOES_NOT_CHANGE_LAST_CHANGE);
-        //        device.set_Status_Support(HS, true);
-        //    }
-        //    else
-        //    {
-        //        device.MISC_Set(HS, Enums.dvMISC.SET_DOES_NOT_CHANGE_LAST_CHANGE);
-        //        device.MISC_Set(HS, Enums.dvMISC.AUTO_VOICE_COMMAND);
-        //        device.set_Status_Support(HS, false);
-        //    }
-
-        //    var pairs = deviceData.StatusPairs;
-        //    foreach (var pair in pairs)
-        //    {
-        //        HS.DeviceVSP_AddPair(refId, pair);
-        //    }
-
-        //    var gPairs = deviceData.GraphicsPairs;
-        //    foreach (var gpair in gPairs)
-        //    {
-        //        HS.DeviceVGP_AddPair(refId, gpair);
-        //    }
-
-        //    DeviceClass parent = null;
-        //    if (optionalParentRefId.HasValue)
-        //    {
-        //        parent = (DeviceClass)HS.GetDeviceByRef(optionalParentRefId.Value);
-        //    }
-
-        //    if (parent != null)
-        //    {
-        //        parent.set_Relationship(HS, Enums.eRelationship.Parent_Root);
-        //        device.set_Relationship(HS, Enums.eRelationship.Child);
-        //        device.AssociatedDevice_Add(HS, parent.get_Ref(HS));
-        //        parent.AssociatedDevice_Add(HS, device.get_Ref(HS));
-        //    }
-
-        //    deviceData.SetInitialData(HS, refId);
-        //}
-
-        // return device;
-
-        //    throw new NotImplementedException();
-        //}
-
-        /// <summary>
-        /// Creates the devices based on configuration.
-        /// </summary>
-        //private void CreateDevices(PlugInDevices hsDevices)
-        //{
-        //    try
-        //    {
-        //        var existingDevices = hsDevices.Children.ToDictionary(x => x.Value.Data.Id);
-        //        foreach (var deviceImport in importDevicesData)
-        //        {
-        //            combinedToken.Token.ThrowIfCancellationRequested();
-
-        //            if (!existingDevices.TryGetValue(deviceImport.Key, out var device))
-        //            {
-        //                DeviceIdentifier deviceIdentifier = new DeviceIdentifier(deviceImport.Value.Id);
-        //                // lazy creation of parent device when child is created
-        //                if (!hsDevices.ParentRefId.HasValue)
-        //                {
-        //                    var parentDeviceClass = CreateDevice(null, Invariant($"{PlugInData.PlugInName} Root"),
-        //                                                         deviceIdentifier.RootDeviceAddress, new RootDeviceData());
-        //                    hsDevices.ParentRefId = parentDeviceClass.Ref;
-        //                }
-
-        //                string address = deviceIdentifier.Address;
-        //                var childDevice = new NumberDeviceData(deviceImport.Value);
-
         private void MigrateDevices()
         {
             var migrator = new HS3DeviceMigrator(HS, this.cancellationToken);
@@ -237,8 +129,6 @@ namespace Hspi.DeviceData
         {
             using (var sync = collectionTasksLock.Lock())
             {
-                
-
                 foreach (var childDeviceKeyValuePair in ImportDevices)
                 {
                     DeviceData deviceData = childDeviceKeyValuePair.Value;
