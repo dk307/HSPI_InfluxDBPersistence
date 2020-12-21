@@ -46,7 +46,7 @@
 	{{if data }}
 	
 	<form class="md-form" action="/InfluxDBPersistence/deviceimport.html" method="GET">		
-		<input type="hidden" id="refId" name="refId" value="{{finalRefId}}"> 
+		<input type="hidden" id="refId" name="refId" value="{{data['refId']}}"> 
 		<input type="hidden" id="id" name="id" value="{{data["id"]}}"> 
 		
 		

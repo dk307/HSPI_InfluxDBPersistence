@@ -1,8 +1,10 @@
-﻿using Hspi.Utils;
+﻿using HomeSeer.PluginSdk.Devices;
+using Hspi.Utils;
 using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using static System.FormattableString;
 
 namespace Hspi
@@ -14,9 +16,31 @@ namespace Hspi
         public IDictionary<string, object> GetDeviceImportData([AllowNull] string refIdString)
         {
             int refId = ParseRefId(refIdString);
-            var data = new DeviceData.DeviceData(HomeSeerSystem, refId);
 
-            return ScribanHelper.ToDictionary(data.Data);
+            int finalRefId;
+            if (HomeSeerSystem.IsRefDevice(refId))
+            {
+                // get the child one
+                var features = (HashSet<int>)HomeSeerSystem.GetPropertyByRef(refId, EProperty.AssociatedDevices);
+                if (features.Count > 0)
+                {
+                    finalRefId = features.First();
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid RefId");
+                }
+            }
+            else
+            {
+                finalRefId = refId;
+            }
+
+            var data = new DeviceData.DeviceData(HomeSeerSystem, finalRefId);
+
+            IDictionary<string, object> returnValue = ScribanHelper.ToDictionary(data.Data);
+            returnValue["refId"] = finalRefId;
+            return returnValue;
         }
 
         public IList<string> SaveDeviceImportData(IDictionary<string, string> deviceImportDataDict)
