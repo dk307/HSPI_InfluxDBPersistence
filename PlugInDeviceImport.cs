@@ -22,13 +22,13 @@ namespace Hspi
             {
                 // get the child one
                 var features = (HashSet<int>)HomeSeerSystem.GetPropertyByRef(refId, EProperty.AssociatedDevices);
-                if (features.Count > 0)
+                if (features.Count == 1)
                 {
                     finalRefId = features.First();
                 }
                 else
                 {
-                    throw new ArgumentException("Invalid RefId");
+                    throw new ArgumentException("Invalid Number of children");
                 }
             }
             else
@@ -36,7 +36,7 @@ namespace Hspi
                 finalRefId = refId;
             }
 
-            var data = new DeviceData.DeviceData(HomeSeerSystem, finalRefId);
+            var data = new DeviceData.DeviceImportDevice(HomeSeerSystem, finalRefId);
 
             IDictionary<string, object> returnValue = ScribanHelper.ToDictionary(data.Data);
             returnValue["refId"] = finalRefId;
@@ -56,7 +56,7 @@ namespace Hspi
                 if (errors.Count == 0)
                 {
                     // save
-                    var deviceData = new DeviceData.DeviceData(HomeSeerSystem, refId);
+                    var deviceData = new DeviceData.DeviceImportDevice(HomeSeerSystem, refId);
                     deviceData.Data = importDeviceData;
 
                     PluginConfigChanged();
@@ -84,7 +84,7 @@ namespace Hspi
                 if (errors.Count == 0)
                 {
                     // add
-                    DeviceData.DeviceData.CreateNew(HomeSeerSystem, deviceName, importDeviceData);
+                    DeviceData.DeviceImportDevice.CreateNew(HomeSeerSystem, deviceName, importDeviceData);
                     PluginConfigChanged();
                 }
             }
@@ -93,6 +93,11 @@ namespace Hspi
                 errors.Add(ex.GetFullMessage());
             }
             return errors;
+        }
+
+        public override string PostBackProc(string page, string data, string user, int userRights)
+        {
+            return base.PostBackProc(page, data, user, userRights);
         }
     }
 }

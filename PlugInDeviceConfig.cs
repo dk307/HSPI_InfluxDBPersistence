@@ -314,21 +314,18 @@ namespace Hspi
             return errors;
         }
 
-        public IList<IDictionary<string, object>> GetAllowedDisplays([AllowNull] string refIdString)
+        public IList<string> GetAllowedDisplays([AllowNull] string refIdString)
         {
-            var graphs = new List<IDictionary<string, object>>();
+            var displays = new List<string>();
 
             if (string.IsNullOrEmpty(refIdString))
             {
-                return graphs;
+                return displays;
             }
 
             int refId = ParseRefId(refIdString);
-
-            var device = HomeSeerSystem.GetDeviceByRef(refId);
-            AddToDisplayDetails(graphs, device);
-
-            return graphs;
+            AddToDisplayDetails(displays, refId);
+            return displays;
         }
 
         public IDictionary<string, object> GetDeviceDetails(string refIdString)
@@ -544,22 +541,15 @@ namespace Hspi
                                   CultureInfo.InvariantCulture);
         }
 
-        private void AddToDisplayDetails(IList<IDictionary<string, object>> graphs,
-                                          AbstractHsDevice device)
+        private void AddToDisplayDetails(IList<string> displayTypes, int refId)
         {
-            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == device.Ref);
+            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
 
             if (data != null)
             {
-                string featureName = HomeSeerSystem.GetNameByRef(device.Ref);
                 bool hasNumericData = !string.IsNullOrWhiteSpace(data.Field);
 
-                var displayData = new Dictionary<string, object>();
-                displayData.Add("refId", device.Ref);
-                displayData.Add("name", featureName);
-
-                var displayTypes = new List<string>();
                 displayTypes.Add("table");
 
                 if (hasNumericData)
@@ -571,9 +561,6 @@ namespace Hspi
                 {
                     displayTypes.Add("histogram");
                 }
-
-                displayData["displayTypes"] = displayTypes.ToArray();
-                graphs.Add(displayData);
             }
         }
 
@@ -622,6 +609,21 @@ namespace Hspi
             }
 
             return list;
+        }
+
+        public IDictionary<int, string> GetDeviceAndFeaturesNames(string refIdString)
+        {
+            int refId = ParseRefId(refIdString);
+            var device = HomeSeerSystem.GetDeviceWithFeaturesByRef(refId);
+            var idNames = new Dictionary<int, string>();
+
+            idNames.Add(refId, device.Name);
+
+            foreach (var feature in device.Features)
+            {
+                idNames.Add(feature.Ref, feature.Name);
+            }
+            return idNames;
         }
     }
 }

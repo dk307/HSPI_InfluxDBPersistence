@@ -10,9 +10,9 @@ using System.IO;
 namespace Hspi.DeviceData
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal class DeviceData
+    internal class DeviceImportDevice
     {
-        public DeviceData(IHsController HS, int refId)
+        public DeviceImportDevice(IHsController HS, int refId)
         {
             this.HS = HS;
             this.refId = refId;
@@ -34,7 +34,7 @@ namespace Hspi.DeviceData
 
         public string Name => HSHelper.GetName(HS, refId);
 
-        public static DeviceData CreateNew(IHsController HS, string deviceName, ImportDeviceData data)
+        public static DeviceImportDevice CreateNew(IHsController HS, string deviceName, ImportDeviceData data)
         {
             string logo = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo.svg");
             string logoCastle = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo_castle.svg");
@@ -62,7 +62,7 @@ namespace Hspi.DeviceData
 
             int featureId = HS.CreateFeatureForDevice(newFeatureData);
 
-            var deviceData = new DeviceData(HS, featureId);
+            var deviceData = new DeviceImportDevice(HS, featureId);
             deviceData.Data = data;
             deviceData.Update(null);
 
@@ -87,8 +87,16 @@ namespace Hspi.DeviceData
             UpdateInHS(changes);
         }
 
+        private static PlugExtraData CreatePlugInExtraData(ImportDeviceData importDeviceData)
+        {
+            string data = JsonConvert.SerializeObject(importDeviceData, Formatting.Indented);
+            var plugExtra = new PlugExtraData();
+            plugExtra.AddNamed(PlugInData.DevicePlugInDataNamedKey, data);
+            return plugExtra;
+        }
+
         private void UpdateImportDevice(IHsController HS,
-                                        int refId,
+                                                int refId,
                                         ImportDeviceData importDeviceData)
         {
             foreach (var statusGraphic in HS.GetStatusGraphicsByRef(refId))
@@ -111,15 +119,6 @@ namespace Hspi.DeviceData
 
             UpdateInHS(changes);
         }
-
-        private static PlugExtraData CreatePlugInExtraData(ImportDeviceData importDeviceData)
-        {
-            string data = JsonConvert.SerializeObject(importDeviceData, Formatting.Indented);
-            var plugExtra = new PlugExtraData();
-            plugExtra.AddNamed(PlugInData.DevicePlugInDataNamedKey, data);
-            return plugExtra;
-        }
-
         private void UpdateInHS(Dictionary<EProperty, object> changes)
         {
             HS.UpdateFeatureByRef(refId, changes);

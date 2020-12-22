@@ -46,7 +46,7 @@ namespace Hspi.DeviceData
                                 // only children has data
                                 if (device.Relationship == ERelationship.Feature)
                                 {
-                                    var deviceData = new DeviceData(HS, device.Ref);
+                                    var deviceData = new DeviceImportDevice(HS, device.Ref);
                                     deviceData.Data = importDeviceData;
                                     oldPlugInConfig.RemoveImportDeviceData(importDeviceData.Id);
                                 }

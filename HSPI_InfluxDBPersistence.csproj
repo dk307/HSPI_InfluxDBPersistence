@@ -73,7 +73,7 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DeviceData\DeviceData.cs" />
+    <Compile Include="DeviceData\DeviceImportDevice.cs" />
     <Compile Include="DeviceData\HS3DeviceMigrator.cs" />
     <Compile Include="DeviceData\DeviceRootDeviceManager.cs" />
     <Compile Include="ImportDeviceData.cs" />

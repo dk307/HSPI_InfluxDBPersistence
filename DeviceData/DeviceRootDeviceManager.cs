@@ -53,11 +53,11 @@ namespace Hspi.DeviceData
             return false;
         }
 
-        private Dictionary<int, DeviceData> GetCurrentDevices()
+        private Dictionary<int, DeviceImportDevice> GetCurrentDevices()
         {
             var refIds = HS.GetRefsByInterface(PlugInData.PlugInId);
 
-            var currentChildDevices = new Dictionary<int, DeviceData>();
+            var currentChildDevices = new Dictionary<int, DeviceImportDevice>();
 
             foreach (var refId in refIds)
             {
@@ -68,7 +68,7 @@ namespace Hspi.DeviceData
                     //data is stored in feature(child)
                     if (relationship == ERelationship.Feature)
                     {
-                        currentChildDevices.Add(refId, new DeviceData(HS, refId));
+                        currentChildDevices.Add(refId, new DeviceImportDevice(HS, refId));
                     }
                 }
                 catch (Exception ex)
@@ -80,7 +80,7 @@ namespace Hspi.DeviceData
             return currentChildDevices;
         }
 
-        private async Task<ImportDeviceData> ImportDataForDevice(DeviceData deviceData)
+        private async Task<ImportDeviceData> ImportDataForDevice(DeviceImportDevice deviceData)
         {
             var importDeviceData = deviceData.Data;
 
@@ -109,7 +109,7 @@ namespace Hspi.DeviceData
             return importDeviceData;
         }
 
-        private async Task ImportDataForDeviceInLoop(DeviceData deviceData)
+        private async Task ImportDataForDeviceInLoop(DeviceImportDevice deviceData)
         {
             while (!combinedToken.Token.IsCancellationRequested)
             {
@@ -131,7 +131,7 @@ namespace Hspi.DeviceData
             {
                 foreach (var childDeviceKeyValuePair in ImportDevices)
                 {
-                    DeviceData deviceData = childDeviceKeyValuePair.Value;
+                    DeviceImportDevice deviceData = childDeviceKeyValuePair.Value;
 
                     this.combinedToken.Token.ThrowIfCancellationRequested();
                     collectionTasks.Add(ImportDataForDeviceInLoop(deviceData));
@@ -139,7 +139,7 @@ namespace Hspi.DeviceData
             }
         }
 
-        private readonly IReadOnlyDictionary<int, DeviceData> ImportDevices;
+        private readonly IReadOnlyDictionary<int, DeviceImportDevice> ImportDevices;
         private readonly CancellationToken cancellationToken;
         private readonly List<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();

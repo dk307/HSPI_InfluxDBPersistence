@@ -8,7 +8,7 @@
     <!--This liquid tag loads all of the necessary css files for HomeSeer-->
 	
     {{includefile '/bootstrap/css/page_common.css'}}
-    <title>InfluxDB Persistence</title>
+    <title>InfluxDB History</title>
 	
     <link href="/css/hs.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/datatables.min.css"/>
@@ -18,52 +18,38 @@
 	{{
 	refId=queries['refId'] ?? ""
 	feature=queries['feature'] ?? ""
+	displayDeviceRefId=queries['displayDeviceRefId'] ?? ""
 	displaySelect=queries['displaySelect'] ?? ""
 	displayPeriod=queries['displayPeriod'] ?? ""
 	displayGroup=queries['displayGroup'] ?? ""
-
-	periodStart=queries['periodStart'] ?? ""
-	periodEnd=queries['periodEnd'] ?? ""
 	
-	
-	if feature != ""
+	if displayDeviceRefId != ""
+		finalRefId=displayDeviceRefId
+	else if feature != ""
 		finalRefId=feature
 	else
 		finalRefId=refId
 	end		
 	
-	deviceDisplayDetails=plugin_function 'InfluxDBPersistence' 'GetAllowedDisplays'[finalRefId]
-	
-	if displaySelect=="" && deviceDisplayDetails
-		if  !deviceDisplayDetails.empty?
-			element=array.first deviceDisplayDetails
-			displayType="table"
-			displayTypes=element['displayTypes']
-			
-			if array.contains displayTypes "chart"
-				displayType="chart"
-			end	
+	deviceDisplayDetails=plugin_function 'InfluxDBPersistence' 'GetAllowedDisplays'[finalRefId] 
 		
-			displaySelect=element['refId']+ '.' + displayType
-		end
+	if !deviceDisplayDetails
+		deviceDisplayDetails=[]
+	end
+	
+	if deviceDisplayDetails.empty? 
+		# there is no valid displays
+		displaySelect=""
+	else if !(deviceDisplayDetails | array.contains displaySelect)
+		# select default value if current value is not select
+		if array.contains deviceDisplayDetails "chart"
+			displaySelect="chart"
+		else
+			displaySelect="table"	
+		end	
 	end	
-	}}	
 	
-	
-<body class="body homeseer-skin ml-0 mr-0" style="min-height: 15rem" aria-busy="true">	
-
-<div class="hs_spinner" id="loading">
-        <div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
-            <div class="spinner-border" role="status">
-            	<span class="sr-only">Loading...</span>
-          	</div>
-        </div>
-</div>
-
-<div class="container-fluid"> 
-{{options=displaySelect | regex.split `\.` }}
-{{if options.size == 2}}
-	{{
+	if displaySelect != ""
 		rangeOptionsForTable=[ 
 						 ["Last 10 values", "10", "", "last10values"], 
 					 ]
@@ -77,7 +63,7 @@
 						 ["Last 365 days", "", "365.00:00:00", "365d"],
 					 ]
 									
-		if options[1]=="table"
+		if displaySelect=="table"
 			rangeOptions = rangeOptionsForTable | array.concat rangeOptionsForOthers
 		else
 			rangeOptions = rangeOptionsForOthers
@@ -103,24 +89,53 @@
 			 ["1 hour",  "01:00:00", "60m"],
 			 ["12 hours",  "12:00:00", "12hr"],
 			 ["1 day",  "1.00:00:00", "24hr"],
-			]		
-	}}
+			]				
+	end
+	}}	
+	
+<body class="body homeseer-skin ml-0 mr-0" style="min-height: 18rem" aria-busy="true">	
+<!-- refId={{refId}}<BR> -->
+<!-- finalRefId={{finalRefId}}<BR> -->
+<!-- deviceDisplayDetails={{deviceDisplayDetails}}<BR> -->
+<!-- displaySelect={{displaySelect}}<BR> -->
+<!-- displayPeriod={{displayPeriod}}<BR> -->
+<!-- displayGroup={{displayGroup}}<BR> -->
 
+<div class="hs_spinner" id="loading" hidden>
+	<div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
+		<div class="spinner-border" role="status">
+			<span class="sr-only">Loading...</span>
+		</div>
+	</div>
+</div>
+`
+<div class="container-fluid"> 
 	<nav class="navbar">
-		<form class="form-inline my-0 mx-0" action="/InfluxDBPersistence/feature.html" method="GET">	
+		<form class="form-inline my-0 mx-0" action="/InfluxDBPersistence/feature.html" method="GET" style="width:100%">	
 			<input type="hidden" id="refId" name="refId" value="{{refId}}"> 
-			<input type="hidden" id="feature" name="feature" value="{{feature}}"> 
+			<input type="hidden" id="feature" name="feature" value="{{feature}}">
+
+			{{device=plugin_function 'InfluxDBPersistence' 'GetDeviceAndFeaturesNames'[refId] }}
+			{{if device}}
+				<div class="md-form my-0 mr-3" style="width:100%">
+					<select id="displayDeviceRefId" class="mdb-select md-form colorful-select " name="displayDeviceRefId" >
+						{{for child in device}}
+							<option value="{{child.key}}" {{if child.key==finalRefId;}}selected{{end}} >{{child.value | html.escape}}</option>	
+						{{end}}			
+					</select> 
+					<label class="mdb-main-label" for="displayDeviceRefId">Feature</label>
+				</div>
+			{{else}}
+				{{refId}} Device not found {{device}}
+			{{end}}
+
 			
-			<div class="md-form my-0 mr-3">
-				<select id="displaySelect" class="mdb-select md-form md-outline colorful-select dropdown-primary" name="displaySelect">
-					{{ for item in deviceDisplayDetails }}				
-						{{ for displayType in item["displayTypes"] }}
-							{{thisOptionDisplaySelect=item["refId"] + "." + displayType}}
-							<option value="{{thisOptionDisplaySelect | html.escape}}" {{if thisOptionDisplaySelect==displaySelect;}}selected{{end}}>
+			{{if displaySelect != ""}}
+				<div class="md-form my-0 mr-3">
+					<select id="displaySelect" class="mdb-select md-form colorful-select" name="displaySelect">
+						{{ for displayType in deviceDisplayDetails }}									
+							<option value="{{displayType | html.escape}}" {{if displayType==displaySelect;}}selected{{end}}>
 							{{
-							if deviceDisplayDetails.size > 1
-								item["name"] + " - " | html.escape
-							end
 							case displayType
 								when "table"
 									"Table"
@@ -133,90 +148,96 @@
 								else
 									"Unknown"
 							end														
-							}}</option>	
-						{{end}}				 
-					{{ end }}
-				</select> 
-			</div>	
-			
-			<div class="md-form my-0 mr-3">
-				<select id="displayPeriod" class="mdb-select md-form md-outline colorful-select dropdown-secondary" name="displayPeriod">
-					{{for rangeOption in rangeOptions}}
-						<option value="{{rangeOption[3]}}" {{if rangeOption[3]==displayPeriod;}}selected{{end}}>{{rangeOption[0] | html.escape}}</option>	
-					{{end}}			
-				</select> 
-			</div>
+							}}</option>								
+						{{ end }}
+					</select> 
+					<label class="mdb-main-label" for="displaySelect">Display Type</label>
+				</div>	
+				
+				<div class="md-form my-0 mr-3">
+					<select id="displayPeriod" class="mdb-select md-form colorful-select" name="displayPeriod">
+						{{for rangeOption in rangeOptions}}
+							<option value="{{rangeOption[3]}}" {{if rangeOption[3]==displayPeriod;}}selected{{end}}>{{rangeOption[0] | html.escape}}</option>	
+						{{end}}			
+					</select> 
+					<label class="mdb-main-label" for="displayPeriod">Period</label>
+				</div>
 
-			{{if options[1]!="table" && options[1]!="histogram"}}
-			<div class="md-form my-0 mr-3">
-				<select id="displayGroup" class="mdb-select md-form md-outline colorful-select dropdown-secondary" name="displayGroup">
-					{{for groupOption in groupOptions}}
-						<option value="{{groupOption[2]}}" {{if groupOption[2]==displayGroup;}}selected{{end}}>{{groupOption[0] | html.escape}}</option>	
-					{{end}}			
-				</select> 
-			</div>
+				{{if displaySelect!="table" && displaySelect!="histogram"}}
+					<div class="md-form my-0 mr-3">
+						<select id="displayGroup" class="mdb-select md-form colorful-select" name="displayGroup">
+							{{for groupOption in groupOptions}}
+								<option value="{{groupOption[2]}}" {{if groupOption[2]==displayGroup;}}selected{{end}}>{{groupOption[0] | html.escape}}</option>	
+							{{end}}			
+						</select> 
+						<label class="mdb-main-label" for="displayGroup">Grouping</label>
+					</div>
+				{{end}}
 			{{end}}
+			{{if displaySelect != ""}}
+				<ul class="navbar-nav ml-auto nav-flex-icons nav-right"  >
+				  <li class="nav-item">	  
+					<a class="nav-link waves-effect waves-light" data-mdb-toggle="tooltip" title="Change InfluxDb persistence options for device"  href="/InfluxDBPersistence/addeditpersistence.html?devicerefid={{finalRefId}}">
+					  <i class="fa fa-edit"></i>
+					</a>
+				  </li>
+				</ul>
+			{{end}}		
 		</form>
 		
-		<ul class="navbar-nav ml-auto nav-flex-icons">
-		  <li class="nav-item">	  
-			<a class="nav-link waves-effect waves-light" href="/InfluxDBPersistence/addeditpersistence.html?devicerefid={{finalRefId}}">
-			  <i class="fas fa-edit"></i>
-			</a>
-		  </li>
-		</ul>
+
 	</nav>	  
 
-	{{
-		recordLimit = ""
-		duration = ""
-		grouping = ""
-	
-		for rangeOption in rangeOptions
-			if rangeOption[3]==displayPeriod
-				recordLimit=rangeOption[1]
-				duration=rangeOption[2]
-				break
-			end
-		end
+	{{if displaySelect != ""}}
+		{{			
+			recordLimit = ""
+			duration = ""
+			grouping = ""
 		
-		for groupOption in groupOptions
-			if groupOption[2]==displayGroup
-				grouping=groupOption[1]
-				break
+			for rangeOption in rangeOptions
+				if rangeOption[3]==displayPeriod
+					recordLimit=rangeOption[1]
+					duration=rangeOption[2]
+					break
+				end
 			end
-		end
-	}}
+			
+			for groupOption in groupOptions
+				if groupOption[2]==displayGroup
+					grouping=groupOption[1]
+					break
+				end
+			end
+		}}
 
-	{{needDataTables=false}}
-	{{if options[1]=="table"}}
-		{{tableData=plugin_function 'InfluxDBPersistence' 'BuildHistoryTableData' [options[0], recordLimit, duration]}}
-		{{if !tableData.empty? }}
+		{{needDataTables=false}}
+		{{if displaySelect=="table"}}
+			{{tableData=plugin_function 'InfluxDBPersistence' 'BuildHistoryTableData' [finalRefId, recordLimit, duration]}}
+			{{if !tableData.empty? }}
+				<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
+					{{tableData}}
+				<table>	
+			{{else}}
+			<div class="text-center my-3"><p>No data found</p></div>	
+			{{end}}		
+			{{needDataTables=true}}
+		{{else if displaySelect=="chart"}}
+			<div id='chartGraph2' align="center"></div>
+			{{plugin_function 'InfluxDBPersistence' 'BuildChartData' [finalRefId, duration, grouping] }}
+		{{else if displaySelect=="averageStats"}}
 			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
-				{{tableData}}
-			<table>	
-		{{else}}
-		<div class="text-center my-3"><p>No data found</p></div>	
+				{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [finalRefId, duration, grouping] }}
+			<table>		
+			{{needDataTables=true}}	
+		{{else if displaySelect=="histogram"}}
+			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">	
+				{{plugin_function 'InfluxDBPersistence' 'BuildHistogramData' [finalRefId, duration] }}
+			<table>		
+			{{needDataTables=true}}	
 		{{end}}		
-		{{needDataTables=true}}
-	{{else if options[1]=="chart"}}
-		<div id='chartGraph2' align="center"></div> 
-		{{plugin_function 'InfluxDBPersistence' 'BuildChartData' [options[0], duration, grouping] }}
-	{{else if options[1]=="averageStats"}}
-		<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
-			{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [options[0], duration, grouping] }}
-		<table>		
-		{{needDataTables=true}}	
-	{{else if options[1]=="histogram"}}
-		<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">	
-			{{plugin_function 'InfluxDBPersistence' 'BuildHistogramData' [options[0], duration] }}
-		<table>		
-		{{needDataTables=true}}	
+	{{else if device}}
+		<a class="btn btn-primary" role="button" href="/InfluxDBPersistence/addeditpersistence.html?devicerefid={{finalRefId}}">Store History</a>
 	{{end}}
-	
-{{else}}
-<a class="btn btn-primary" role="button" href="/InfluxDBPersistence/addeditpersistence.html?devicerefid={{finalRefId}}">Add Persistence</a>
-{{end}}
 
 </div>
  
@@ -227,23 +248,26 @@
 <script type="text/javascript" src="/InfluxDBPersistence/datatables.min.js"></script>
 {{end}}
 
-{{if options[1]=="chart"}}
+{{if displaySelect=="chart"}}
 <script type="text/javascript" src="/InfluxDBPersistence/d3.min.js"></script>
 <script type="text/javascript" src="/InfluxDBPersistence/metricsgraphics.min.js"></script>
 {{end}}
 
 <script>
 $(function() {
-    $('#displaySelect').change(function() {
+    $('#displayDeviceRefId').change(function() {
+        this.form.submit();
+    });  
+
+	$('#displaySelect').change(function() {
         this.form.submit();
     });	
 	
     $('#displayPeriod').change(function() {
         this.form.submit();
     });	
-
     
-{{if options[1]!="table" && options[1]!="histogram"}}	
+{{if displaySelect!="table" && displaySelect!="histogram"}}	
 	$('#displayGroup').change(function() {
         this.form.submit();
     });	
@@ -256,6 +280,7 @@ function setUpPersistanceTable() {
   $('#dt-persistence').dataTable({
 	'order': [],
 	'paging': false,
+	'bInfo': {{displaySelect == 'table'}}, 
   });
   
   // the following may break in future
@@ -276,11 +301,12 @@ function setUpPersistanceTable() {
 }
 
 $(document).ready(function () {
+	$('#loading').show();
 	setUpPersistanceTable();
 	$('#loading').hide();
 });	
 
-{{else if options[1]=="chart"}}
+{{else if displaySelect=="chart"}}
 
 function setUpChart() {
  var chartDataFromDB = chartData();
@@ -293,7 +319,7 @@ function setUpChart() {
                     min_y_from_data: true,
                     color: '#329de4',
                     x_rollover_format: function(d) { return d.date.toLocaleString() + ' '; },
-					title:'{{device_name_full options[0] | html.escape}}',
+					title:'{{device_name_full finalRefId | html.escape}}',
 					full_width: true,
 					// full_height: true,
 					width: 300,
@@ -303,6 +329,7 @@ function setUpChart() {
 }
 
 $(document).ready(function () {
+	$('#loading').show();
 	setUpChart();
 	$('#loading').hide();
 });
@@ -311,12 +338,13 @@ $( window ).resize(function() {
 	$('#loading').show();
     setUpChart();
 	$('#loading').hide();
-});	 	
-{{end}}
+});	 
 
+{{else}}	
 $(document).ready(function () {
 	$('#loading').hide();
 });
+{{end}}
 
 </script>
 </body>

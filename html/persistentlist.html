@@ -10,7 +10,7 @@
     <title>InfluxDB Persistence</title>
 	
     <link href="/css/hs.css" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="="/InfluxDBPersistence/datatables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/datatables.min.css"/>
 </head>
 
 <body class="body homeseer-skin" aria-busy="true">
@@ -19,6 +19,14 @@
 {{includefile 'navbar.html'}}
 <!--Primary container for the page content
     The .container class ensures the page content is fit and centered to the screen-->
+	
+	{{
+		validation=[]
+		if queries["action"]=="delete"		 
+			validation=plugin_function 'InfluxDBPersistence' 'DeletePersistanceData' [queries["refId"]]
+		end
+	}}
+	
 	
 <div class="container card mb-3">
 
@@ -38,15 +46,28 @@
 				<th>FieldString</th>
 				<th>Range</th>
 				<th>Tracked</th>
+				<th></th>
 			</tr>
 		</thead>	
 		
 		<tbody>	
+		
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+			<BR>
+		{{end}}
+
+		{{i=0}}
 		{{for row in tableData}}
 			<tr>
 				{{refId=row["devicerefid"] | string.strip}}
 				{{deviceDetails=plugin_function 'InfluxDBPersistence' 'GetDeviceDetails' [refId] 
-					
 					deviceLink=""
 					if deviceDetails['ref'] && deviceDetails['feature']
 						deviceLink="ref=" + deviceDetails['ref'] + "&feature=" + deviceDetails['feature']
@@ -55,13 +76,19 @@
 					end
 				}}
 				
-				<td><a href="/devices.html?{{deviceLink}}&subpage=devprop">{{device_name_full refId  | html.escape}}</a></td>	
+				<td><a id="{{i}}" href="/devices.html?{{deviceLink}}&subpage=devprop">{{device_name_full refId  | html.escape}}</a></td>	
 				<td>{{row["measurement"] | html.escape}}</td>	
 				<td>{{row["field"] | html.escape}}</td>	
 				<td>{{row["fieldstring"] | html.escape}}</td>
 				<td>{{row["minvalidvalue"]}} - {{row["maxvalidvalue"] | html.escape}}</td>
 				<td>{{row["trackedtype"] | html.escape}}</td>
-			</tr>		
+				<td>
+					<a data-mdb-toggle="tooltip" title="Delete InfluxDb persistence options for device" href="/InfluxDBPersistence/persistentlist.html?action=delete&refId={{refId}}#{{i-1}}">
+					  <i class="fas fa-trash-alt fa-point"></i>
+					</a>
+				</td>	
+			</tr>
+			{{i=i+1}}			
 		{{end}}		
 		</tbody>
 	</table>	
@@ -78,6 +105,9 @@ function setUpPersistanceTable() {
   $('#dt-persistence').dataTable({
 	'order': [],
 	'paging': false,
+	columnDefs: [
+		{ orderable: false, targets: 6 },
+	],
   });
   
   // the following may break in future
