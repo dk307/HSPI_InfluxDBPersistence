@@ -7,12 +7,12 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly: AssemblyTitle("HSPI Influx DB Persistence")]
-[assembly: AssemblyDescription("HomeSeer Influx DB Persistence")]
+[assembly: AssemblyTitle("InfluxDB History Plugin")]
+[assembly: AssemblyDescription("HomeSeer 4 InfluxDB History Plugin")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("HSPI Influx DB Persistence")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyProduct("HomeSeer 4 InfluxDB History Plugin")]
+[assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
