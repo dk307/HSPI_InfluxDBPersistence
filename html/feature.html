@@ -101,15 +101,16 @@
 <!-- displayPeriod={{displayPeriod}}<BR> -->
 <!-- displayGroup={{displayGroup}}<BR> -->
 
-<div class="hs_spinner" id="loading" hidden>
-	<div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
-		<div class="spinner-border" role="status">
-			<span class="sr-only">Loading...</span>
-		</div>
-	</div>
-</div>
+
 `
 <div class="container-fluid"> 
+	<div class="hs_spinner" id="loading">
+		<div class="hs_spinner d-flex justify-content-center align-items-center align-content-center">
+			<div class="spinner-border" role="status">
+				<span class="sr-only">Loading...</span>
+			</div>
+		</div>
+	</div>	
 	<nav class="navbar">
 		<form class="form-inline my-0 mx-0" action="/InfluxDBPersistence/feature.html" method="GET" style="width:100%">	
 			<input type="hidden" id="refId" name="refId" value="{{refId}}"> 
@@ -215,6 +216,12 @@
 			{{tableData=plugin_function 'InfluxDBPersistence' 'BuildHistoryTableData' [finalRefId, recordLimit, duration]}}
 			{{if !tableData.empty? }}
 				<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
+				<thead>
+					<tr>
+						<th>Time</th> 
+						<th>{{device_name_full finalRefId | html.escape}}</th> 
+					</tr>
+				</thead> 
 					{{tableData}}
 				<table>	
 			{{else}}
@@ -223,14 +230,29 @@
 			{{needDataTables=true}}
 		{{else if displaySelect=="chart"}}
 			<div id='chartGraph2' align="center"></div>
-			{{plugin_function 'InfluxDBPersistence' 'BuildChartData' [finalRefId, duration, grouping] }}
+			<script>
+			    var chartDataFromDB = {{plugin_function 'InfluxDBPersistence' 'GetRegularDataAsJSArray' [finalRefId, duration, grouping] }};
+			</script>
 		{{else if displaySelect=="averageStats"}}
 			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
+				<thead>
+					<tr>
+						<th></th> 
+						<th></th> 
+					</tr>
+				</thead> 
 				{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [finalRefId, duration, grouping] }}
 			<table>		
 			{{needDataTables=true}}	
 		{{else if displaySelect=="histogram"}}
 			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">	
+				<thead>
+					<tr>
+						<th>Value</th> 
+						<th>Total Time</th> 
+						<th>Percentage</th> 
+					</tr>
+				</thead> 
 				{{plugin_function 'InfluxDBPersistence' 'BuildHistogramData' [finalRefId, duration] }}
 			<table>		
 			{{needDataTables=true}}	
@@ -301,15 +323,13 @@ function setUpPersistanceTable() {
 }
 
 $(document).ready(function () {
-	$('#loading').show();
 	setUpPersistanceTable();
 	$('#loading').hide();
 });	
 
 {{else if displaySelect=="chart"}}
 
-function setUpChart() {
- var chartDataFromDB = chartData();
+function setUpChart() { 
  var graph = MG.data_graphic({
                     data: chartDataFromDB,
                     target: document.getElementById('chartGraph2'),
@@ -329,7 +349,6 @@ function setUpChart() {
 }
 
 $(document).ready(function () {
-	$('#loading').show();
 	setUpChart();
 	$('#loading').hide();
 });
@@ -337,7 +356,7 @@ $(document).ready(function () {
 $( window ).resize(function() {
 	$('#loading').show();
     setUpChart();
-	$('#loading').hide();
+	 $('#loading').hide();
 });	 
 
 {{else}}	

@@ -20,11 +20,6 @@ namespace Hspi
         public string BuildAverageStatsData(string refIdString, string duration, string grouping)
         {
             StringBuilder stb = new StringBuilder();
-
-            stb.Append(@"<thead><tr>");
-            stb.Append(@"<th>Type</th>");
-            stb.Append(@"<th>Value</th>");
-            stb.Append(@"</tr></thead>");
             stb.Append("<tbody>");
 
             try
@@ -67,7 +62,7 @@ namespace Hspi
                                 {
                                     stb.Append(@"<tr>");
                                     stb.Append(@"<td>");
-                                    stb.Append(WebUtility.HtmlEncode(FirstCharToUpper(pair.Key, CultureInfo.InvariantCulture)));
+                                    stb.Append(WebUtility.HtmlEncode(pair.Key));
                                     stb.Append(@"</td>");
 
                                     stb.Append(@"<td>");
@@ -87,11 +82,10 @@ namespace Hspi
             }
 
             stb.Append("</tbody>");
-
             return stb.ToString();
         }
 
-        public string BuildChartData(string refIdString, string duration, string grouping)
+        public string GetRegularDataAsJSArray(string refIdString, string duration, string grouping)
         {
             StringBuilder stb = new StringBuilder();
             try
@@ -121,20 +115,10 @@ namespace Hspi
 
                     var queryData = GetData(chartQuery);
 
-                    stb.AppendLine("<script>");
-                    stb.AppendLine(@"function chartData() {");
-
-                    var legands = new List<string>();
                     if (queryData.Count > 0)
                     {
                         var nonTimeColumns = queryData.First().Keys.Where(x => (0 != string.CompareOrdinal(x, InfluxDBHelper.TimeColumn)));
 
-                        foreach (var nonTimeColumn in nonTimeColumns)
-                        {
-                            legands.Add(Invariant($"'{FirstCharToUpper(nonTimeColumn, CultureInfo.CurrentUICulture)}'"));
-                        }
-
-                        var limit = DateTimeOffset.UtcNow - queryDuration.Value;
                         var dataStrings = new Dictionary<string, StringBuilder>();
                         foreach (var row in queryData)
                         {
@@ -145,12 +129,6 @@ namespace Hspi
                                 {
                                     var timePoint = (DateTime)pair.Value;
                                     DateTimeOffset timeForPoint = new DateTimeOffset(timePoint);
-                                    if (timeForPoint < limit)
-                                    {
-                                        // time is before the range
-                                        // break;
-                                    }
-
                                     jsMilliseconds = timeForPoint.ToLocalTime().ToUnixTimeMilliseconds();
                                 }
                                 else
@@ -168,7 +146,7 @@ namespace Hspi
                             }
                         }
 
-                        stb.AppendLine("return [");
+                        stb.AppendLine("[");
                         foreach (var nonTimeColumn in nonTimeColumns)
                         {
                             stb.AppendLine("[");
@@ -177,9 +155,6 @@ namespace Hspi
                         }
                         stb.AppendLine("]");
                     }
-
-                    stb.AppendLine(@"}");
-                    stb.AppendLine("</script>");
                 }
             }
             catch (Exception ex)
@@ -202,23 +177,12 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    HSHelper hSHelper = new HSHelper(HomeSeerSystem);
-
                     var query = InfluxDbQueryBuilder.GetHistogramQuery(data, queryDuration.Value, pluginConfig.DBLoginInformation).ResultForSync();
-
-                    var culture = CultureInfo.CurrentUICulture;
                     var queryData = GetData(query);
-
                     var histogram = InfluxDBHelper.CreateHistogram(queryData, queryDuration.Value);
 
                     if (histogram.Count > 0)
                     {
-                        stb.Append(@"<thead><tr>");
-                        stb.Append(@"<th>Value</th>");
-                        stb.Append(@"<th>Total time</th>");
-                        stb.Append(@"<th>Percentage</th>");
-                        stb.Append(@"</tr></thead>");
-
                         stb.Append(@"<tbody>");
 
                         var firstRow = queryData[0];
@@ -227,15 +191,15 @@ namespace Hspi
                         {
                             stb.Append(@"<tr>");
                             stb.Append(@"<td>");
-                            stb.Append(WebUtility.HtmlEncode(FirstCharToUpper(pair.Key, culture)));
+                            stb.Append(WebUtility.HtmlEncode(pair.Key));
                             stb.Append(@"</td>");
 
                             stb.Append(@"<td>");
-                            stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(culture, pair.Value)));
+                            stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, pair.Value)));
                             stb.Append(@"</td>");
                             stb.Append(@"<td>");
                             double percentage = 100 * pair.Value.TotalMilliseconds / queryDuration.Value.TotalMilliseconds;
-                            stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(culture, percentage)));
+                            stb.Append(WebUtility.HtmlEncode(InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, percentage)));
                             stb.Append(@"</td>");
                             stb.Append(@"</tr>");
                         }
@@ -468,14 +432,6 @@ namespace Hspi
             {
                 var columns = queryData[0].Keys;
 
-                stb.Append(@"<thead><tr>");
-                foreach (var column in columns)
-                {
-                    stb.Append(Invariant($"<th>{ WebUtility.HtmlEncode(FirstCharToUpper(column, culture))}</th>"));
-                }
-                stb.Append(@"</tr></thead>");
-                stb.Append(@"<tbody>");
-
                 DateTimeOffset today = DateTimeOffset.Now.Date;
                 foreach (var row in queryData)
                 {
@@ -537,16 +493,6 @@ namespace Hspi
                          " " + culture.DateTimeFormat.LongTimePattern;
 
             return dateTime.ToString(dateTimePattern, culture);
-        }
-
-        private static string FirstCharToUpper(string input, CultureInfo culture)
-        {
-            switch (input)
-            {
-                case null: return null;
-                case "": return string.Empty;
-                default: return input.First().ToString(culture).ToUpper(culture) + input.Substring(1);
-            }
         }
 
         private static (int, TimeSpan?) ParseDataCallValues(string refIdString, string duration)
