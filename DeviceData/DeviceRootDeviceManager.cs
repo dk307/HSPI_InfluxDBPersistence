@@ -63,7 +63,7 @@ namespace Hspi.DeviceData
             {
                 try
                 {
-                    ERelationship relationship = (ERelationship) HS.GetPropertyByRef(refId, EProperty.Relationship);
+                    ERelationship relationship = (ERelationship)HS.GetPropertyByRef(refId, EProperty.Relationship);
 
                     //data is stored in feature(child)
                     if (relationship == ERelationship.Feature)
@@ -82,14 +82,21 @@ namespace Hspi.DeviceData
 
         private async Task<ImportDeviceData> ImportDataForDevice(DeviceImportDevice deviceData)
         {
-            var importDeviceData = deviceData.Data;
-
             //start as task to fetch data
+            ImportDeviceData importDeviceData = null;
             double? deviceValue = null;
             try
             {
-                var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
-                deviceValue = Convert.ToDouble(queryData, CultureInfo.InvariantCulture);
+                importDeviceData = deviceData.Data;
+                if (importDeviceData != null)
+                {
+                    var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
+                    deviceValue = Convert.ToDouble(queryData, CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    Trace.WriteLine(Invariant($"Not importing from Db for {deviceData.Name} as it is deleted"));
+                }
             }
             catch (Exception ex)
             {
@@ -114,8 +121,16 @@ namespace Hspi.DeviceData
             while (!combinedToken.Token.IsCancellationRequested)
             {
                 var importDeviceData = await ImportDataForDevice(deviceData).ConfigureAwait(false);
-                await Task.Delay((int)Math.Min(importDeviceData.IntervalSeconds * 1000, TimeSpan.FromDays(1).TotalMilliseconds),
-                                 combinedToken.Token).ConfigureAwait(false);
+                if (importDeviceData != null)
+                {
+                    await Task.Delay((int)Math.Min(importDeviceData.IntervalSeconds * 1000, TimeSpan.FromDays(1).TotalMilliseconds),
+                                     combinedToken.Token).ConfigureAwait(false);
+                }
+                else
+                {
+                    // device is not valid anymore
+                    break;
+                }
             }
         }
 

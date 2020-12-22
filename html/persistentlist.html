@@ -40,13 +40,13 @@
 	<table id="dt-persistence" class="table table-sm mb-0" cellspacing="0" width="100%">
 		<thead>
 			<tr>
-				<th>Device</th>
-				<th>Measurement</th>
+				<th data-priority="1">Device</th>
+				<th data-priority="3">Measurement</th>
 				<th>Field</th>
 				<th>FieldString</th>
 				<th>Range</th>
 				<th>Tracked</th>
-				<th></th>
+				<th data-priority="2"></th>
 			</tr>
 		</thead>	
 		
@@ -105,8 +105,9 @@ function setUpPersistanceTable() {
   $('#dt-persistence').dataTable({
 	'order': [],
 	'paging': false,
+	responsive: true,
 	columnDefs: [
-		{ orderable: false, targets: 6 },
+		{ orderable: false, targets: 6 },	
 	],
   });
   

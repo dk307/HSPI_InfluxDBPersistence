@@ -1,4 +1,5 @@
 ﻿using HomeSeer.PluginSdk.Devices;
+using Hspi.DeviceData;
 using Hspi.Utils;
 using NullGuard;
 using System;
@@ -69,8 +70,9 @@ namespace Hspi
             return errors;
         }
 
-        public IList<string> AddDeviceImportData(IDictionary<string, string> deviceImportDataDict)
+        public IDictionary<string, object> AddDeviceImportData(IDictionary<string, string> deviceImportDataDict)
         {
+            DeviceImportDevice device = null;
             var errors = new List<string>();
             try
             {
@@ -84,7 +86,7 @@ namespace Hspi
                 if (errors.Count == 0)
                 {
                     // add
-                    DeviceData.DeviceImportDevice.CreateNew(HomeSeerSystem, deviceName, importDeviceData);
+                    device = DeviceImportDevice.CreateNew(HomeSeerSystem, deviceName, importDeviceData);
                     PluginConfigChanged();
                 }
             }
@@ -92,12 +94,12 @@ namespace Hspi
             {
                 errors.Add(ex.GetFullMessage());
             }
-            return errors;
-        }
+             
+            var data = new Dictionary<string, object>();
+            data.Add("refId", device?.RefId);
+            data.Add("error", errors);
 
-        public override string PostBackProc(string page, string data, string user, int userRights)
-        {
-            return base.PostBackProc(page, data, user, userRights);
+            return data;
         }
     }
 }

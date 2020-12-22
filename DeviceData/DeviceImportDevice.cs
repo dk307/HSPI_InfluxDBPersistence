@@ -34,6 +34,8 @@ namespace Hspi.DeviceData
 
         public string Name => HSHelper.GetName(HS, refId);
 
+        public int RefId => refId;
+
         public static DeviceImportDevice CreateNew(IHsController HS, string deviceName, ImportDeviceData data)
         {
             string logo = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo.svg");
