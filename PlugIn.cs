@@ -43,6 +43,7 @@ namespace Hspi
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
 
                 // Feature pages
+                HomeSeerSystem.RegisterFeaturePage(Id, "configuration.html", "Configuration");
                 HomeSeerSystem.RegisterFeaturePage(Id, "dbconfiguration.html", "Database configuration");
                 HomeSeerSystem.RegisterFeaturePage(Id, "persistentlist.html", "Persistence list");
 

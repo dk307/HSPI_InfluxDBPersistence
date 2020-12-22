@@ -328,6 +328,34 @@ namespace Hspi
             return displays;
         }
 
+        public IList<IDictionary<string, object>> GetAllPersistantData()
+        {
+            var list = new List<IDictionary<string, object>>();
+
+            foreach (var pair in this.pluginConfig.DevicePersistenceData)
+            {
+                var data = ScribanHelper.ToDictionary(pair.Value);
+                list.Add(data);
+            }
+
+            return list;
+        }
+
+        public IDictionary<int, string> GetDeviceAndFeaturesNames(string refIdString)
+        {
+            int refId = ParseRefId(refIdString);
+            var device = HomeSeerSystem.GetDeviceWithFeaturesByRef(refId);
+            var idNames = new Dictionary<int, string>();
+
+            idNames.Add(refId, device.Name);
+
+            foreach (var feature in device.Features)
+            {
+                idNames.Add(feature.Ref, feature.Name);
+            }
+            return idNames;
+        }
+
         public IDictionary<string, object> GetDeviceDetails(string refIdString)
         {
             var data = new Dictionary<string, object>();
@@ -596,34 +624,6 @@ namespace Hspi
         {
             var loginInformation = pluginConfig.DBLoginInformation;
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
-        }
-
-        public IList<IDictionary<string, object>> GetAllPersistantData()
-        {
-            var list = new List<IDictionary<string, object>>();
-
-            foreach (var pair in this.pluginConfig.DevicePersistenceData)
-            {
-                var data = ScribanHelper.ToDictionary(pair.Value);
-                list.Add(data);
-            }
-
-            return list;
-        }
-
-        public IDictionary<int, string> GetDeviceAndFeaturesNames(string refIdString)
-        {
-            int refId = ParseRefId(refIdString);
-            var device = HomeSeerSystem.GetDeviceWithFeaturesByRef(refId);
-            var idNames = new Dictionary<int, string>();
-
-            idNames.Add(refId, device.Name);
-
-            foreach (var feature in device.Features)
-            {
-                idNames.Add(feature.Ref, feature.Name);
-            }
-            return idNames;
         }
     }
 }
