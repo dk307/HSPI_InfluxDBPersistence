@@ -12,7 +12,7 @@
 	
     <link href="/css/hs.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/datatables.min.css"/>
-	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/metricsgraphics.css"/>
+	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/metricsgraphics.min.css"/>
 </head>
 
 	{{
@@ -237,8 +237,8 @@
 			<table id="dt-persistence" class="table table-sm mb-0"cellspacing="0" width="100%">
 				<thead>
 					<tr>
-						<th></th> 
-						<th></th> 
+						<th>Type</th> 
+						<th>Value</th> 
 					</tr>
 				</thead> 
 				{{plugin_function 'InfluxDBPersistence' 'BuildAverageStatsData' [finalRefId, duration, grouping] }}
@@ -341,10 +341,10 @@ function setUpChart() {
                     x_rollover_format: function(d) { return d.date.toLocaleString() + ' '; },
 					title:'{{device_name_full finalRefId | html.escape}}',
 					full_width: true,
-					// full_height: true,
 					width: 300,
 					height: 500,
 					animate_on_load: false,
+					european_clock: false,
 				 });
 }
 

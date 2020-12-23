@@ -141,9 +141,6 @@
     <None Include="html\iframeSizer.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\metricsgraphics.css" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="html\metricsgraphics.min.js" />
   </ItemGroup>
   <ItemGroup>
@@ -221,6 +218,8 @@
     <Content Include="html\feature.js" />
     <Content Include="html\images\Influxdb_logo.svg" />
     <Content Include="html\images\Influxdb_logo_castle.svg" />
+    <Content Include="html\metricsgraphics.min.css" />
+    <Content Include="html\persistentlist.html" />
     <Content Include="install.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
