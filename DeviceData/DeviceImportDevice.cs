@@ -39,15 +39,13 @@ namespace Hspi.DeviceData
         public static DeviceImportDevice CreateNew(IHsController HS, string deviceName, ImportDeviceData data)
         {
             string logo = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo.svg");
-            string logoCastle = Path.Combine(PlugInData.PlugInId, "images", "Influxdb_logo_castle.svg");
 
             var newDeviceData = DeviceFactory.CreateDevice(PlugInData.PlugInId)
                   .WithName(deviceName)
                   .AsType(EDeviceType.Generic, 0)
                   .WithLocation(PlugInData.PlugInName)
+                  .WithMiscFlags(EMiscFlag.StatusOnly)
                   .PrepareForHs();
-
-            newDeviceData.Device.Add(EProperty.Image, logoCastle);
 
             int refId = HS.CreateDevice(newDeviceData);
 
@@ -73,20 +71,21 @@ namespace Hspi.DeviceData
 
         public virtual void Update(in double? data)
         {
-            var changes = new Dictionary<EProperty, object>();
-
+            
             if (data.HasValue)
             {
-                changes.Add(EProperty.InvalidValue, false);
-                changes.Add(EProperty.LastChange, DateTime.Now);
-                changes.Add(EProperty.Value, data);
+                HS.UpdatePropertyByRef(refId, EProperty.InvalidValue, false);
+
+                // only this call triggers events
+                if (!HS.UpdateFeatureValueByRef(refId, data.Value))
+                {
+                    throw new Exception("Failed to update device");
+                }
             }
             else
             {
-                changes.Add(EProperty.InvalidValue, true);
+                HS.UpdatePropertyByRef(refId, EProperty.InvalidValue, true);
             }
-
-            UpdateInHS(changes);
         }
 
         private static PlugExtraData CreatePlugInExtraData(ImportDeviceData importDeviceData)
@@ -107,7 +106,7 @@ namespace Hspi.DeviceData
 
                 if (statusGraphic.IsRange)
                 {
-                    statusGraphic.TargetRange.Suffix = HsFeature.GetAdditionalDataToken(0);
+                    statusGraphic.TargetRange.Suffix = " " + HsFeature.GetAdditionalDataToken(0);
                 }
 
                 HS.AddStatusGraphicToFeature(refId, statusGraphic);
@@ -119,10 +118,6 @@ namespace Hspi.DeviceData
             changes.Add(EProperty.AdditionalStatusData, new List<string>() { importDeviceData.Unit });
             changes.Add(EProperty.PlugExtraData, plugExtra);
 
-            UpdateInHS(changes);
-        }
-        private void UpdateInHS(Dictionary<EProperty, object> changes)
-        {
             HS.UpdateFeatureByRef(refId, changes);
         }
 
