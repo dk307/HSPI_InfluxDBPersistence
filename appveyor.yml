@@ -1,4 +1,4 @@
-version: 0.1.{build}
+version: 4.0.{build}
 image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
@@ -16,7 +16,7 @@ build_script:
 
     msbuild "C:\projects\hspi-influxdbpersistence\HSPI_InfluxDBPersistence.sln" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=Release /p:Platform="Any CPU"
 artifacts:
-- path: bin\Release\HSPI_InfluxDBPersistence.exe
+- path: bin\Release\HSPI_InfluxDBPersistence_{version}.zip
   name: exe
-- path: bin\Release\HSPI_InfluxDBPersistence.exe.config
+- path: bin\Release\updater_override.json
   name: config
