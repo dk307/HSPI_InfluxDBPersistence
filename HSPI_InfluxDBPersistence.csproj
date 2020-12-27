@@ -109,6 +109,7 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="appveyor.yml" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>

@@ -1,0 +1,22 @@
+version: 0.1.{build}
+image: Visual Studio 2019
+configuration: Release
+platform: Any CPU
+assembly_info:
+  patch: true
+  file: '**\AssemblyInfo.*'
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+  assembly_informational_version: '{version}'
+build_script:
+- cmd: >-
+    "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+    nuget restore
+
+    msbuild "C:\projects\hspi-influxdbpersistence\HSPI_InfluxDBPersistence.sln" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=Release /p:Platform="Any CPU"
+artifacts:
+- path: bin\Release\HSPI_InfluxDBPersistence.exe
+  name: exe
+- path: bin\Release\HSPI_InfluxDBPersistence.exe.config
+  name: config
