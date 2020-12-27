@@ -96,9 +96,9 @@ namespace Hspi.DeviceData
             return plugExtra;
         }
 
-        private void UpdateImportDevice(IHsController HS,
-                                                int refId,
-                                        ImportDeviceData importDeviceData)
+        private static void UpdateImportDevice(IHsController HS,
+                                               int refId,
+                                               ImportDeviceData importDeviceData)
         {
             foreach (var statusGraphic in HS.GetStatusGraphicsByRef(refId))
             {

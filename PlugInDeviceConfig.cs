@@ -307,17 +307,23 @@ namespace Hspi
 
         public IDictionary<int, string> GetDeviceAndFeaturesNames(string refIdString)
         {
-            int refId = ParseRefId(refIdString);
-            var device = HomeSeerSystem.GetDeviceWithFeaturesByRef(refId);
             var idNames = new Dictionary<int, string>();
+            int refId = ParseRefId(refIdString);
 
-            idNames.Add(refId, device.Name);
+            idNames.Add(refId, GetNameOfDevice(refId));
 
-            foreach (var feature in device.Features)
+            var featureRefIds = (HashSet<int>)HomeSeerSystem.GetPropertyByRef(refId, EProperty.AssociatedDevices);
+
+            foreach (var featureRefId in featureRefIds)
             {
-                idNames.Add(feature.Ref, feature.Name);
+                idNames.Add(featureRefId, GetNameOfDevice(featureRefId));
             }
             return idNames;
+
+            string GetNameOfDevice(int deviceRefId)
+            {
+                return HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.Name).ToString() ?? Invariant($"RefId:{deviceRefId}");
+            }
         }
 
         public IDictionary<string, object> GetDeviceDetails(string refIdString)
