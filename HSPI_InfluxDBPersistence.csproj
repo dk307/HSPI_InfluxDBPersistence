@@ -236,7 +236,7 @@
     <_TransformExe>$(DevEnvDir)\TextTransform.exe</_TransformExe>
   </PropertyGroup>
   <Target Name="ZipHtmlFiles" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
-    <ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\html" DestinationFile="$(OutputPath)\html.zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\Hspi\html" DestinationFile="$(OutputPath)\html.zip" Overwrite="true" />
   </Target>
   <Target Name="ILMerge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
