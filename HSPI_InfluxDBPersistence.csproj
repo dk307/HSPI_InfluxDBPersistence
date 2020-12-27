@@ -73,36 +73,36 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DeviceData\DeviceImportDevice.cs" />
-    <Compile Include="DeviceData\HS3DeviceMigrator.cs" />
-    <Compile Include="DeviceData\DeviceRootDeviceManager.cs" />
-    <Compile Include="ImportDeviceData.cs" />
-    <Compile Include="PlugInGeneralConfiguration.cs" />
-    <Compile Include="Utils\InfluxDbQueryBuilder.cs" />
-    <Compile Include="PluginConfigBase.cs" />
-    <Compile Include="PlugInDBInformation.cs" />
-    <Compile Include="PlugInDeviceImport.cs" />
-    <Compile Include="PlugInDeviceConfig.cs" />
-    <Compile Include="Utils\ScribanHelper.cs" />
-    <Compile Include="Utils\EnumHelper.cs" />
-    <Compile Include="Utils\InfluxDBHelper.cs" />
-    <Compile Include="DevicePersistenceData.cs" />
-    <Compile Include="Utils\ExceptionHelper.cs" />
-    <Compile Include="HSHelper.cs" />
-    <Compile Include="HSPI.cs" />
-    <Compile Include="HSTraceListener.cs" />
-    <Compile Include="ILogger.cs" />
-    <Compile Include="InfluxDBLoginInformation.cs" />
-    <Compile Include="InfluxDBMeasurementsCollector.cs" />
-    <Compile Include="Utils\ObjectSerialize.cs" />
-    <Compile Include="PlugIn.cs" />
-    <Compile Include="PlugInData.cs" />
-    <Compile Include="PluginConfig.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="HSPIBase.cs" />
+    <Compile Include="Hspi\DeviceData\DeviceImportDevice.cs" />
+    <Compile Include="Hspi\DeviceData\HS3DeviceMigrator.cs" />
+    <Compile Include="Hspi\DeviceData\DeviceRootDeviceManager.cs" />
+    <Compile Include="Hspi\ImportDeviceData.cs" />
+    <Compile Include="Hspi\PlugInGeneralConfiguration.cs" />
+    <Compile Include="Hspi\Utils\InfluxDbQueryBuilder.cs" />
+    <Compile Include="Hspi\PluginConfigBase.cs" />
+    <Compile Include="Hspi\PlugInDBInformation.cs" />
+    <Compile Include="Hspi\PlugInDeviceImport.cs" />
+    <Compile Include="Hspi\PlugInDeviceConfig.cs" />
+    <Compile Include="Hspi\Utils\ScribanHelper.cs" />
+    <Compile Include="Hspi\Utils\EnumHelper.cs" />
+    <Compile Include="Hspi\Utils\InfluxDBHelper.cs" />
+    <Compile Include="Hspi\DevicePersistenceData.cs" />
+    <Compile Include="Hspi\Utils\ExceptionHelper.cs" />
+    <Compile Include="Hspi\HSHelper.cs" />
+    <Compile Include="Hspi\HSPI.cs" />
+    <Compile Include="Hspi\HSTraceListener.cs" />
+    <Compile Include="Hspi\ILogger.cs" />
+    <Compile Include="Hspi\InfluxDBLoginInformation.cs" />
+    <Compile Include="Hspi\InfluxDBMeasurementsCollector.cs" />
+    <Compile Include="Hspi\Utils\ObjectSerialize.cs" />
+    <Compile Include="Hspi\PlugIn.cs" />
+    <Compile Include="Hspi\PlugInData.cs" />
+    <Compile Include="Hspi\PluginConfig.cs" />
+    <Compile Include="Hspi\Program.cs" />
+    <Compile Include="Hspi\HSPIBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RecordData.cs" />
-    <Compile Include="Utils\TaskHelper.cs" />
+    <Compile Include="Hspi\RecordData.cs" />
+    <Compile Include="Hspi\Utils\TaskHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
@@ -130,22 +130,22 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\jquery.dataTables.css" />
+    <None Include="Hspi\html\jquery.dataTables.css" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\jquery.dataTables.min.js" />
+    <None Include="Hspi\html\jquery.dataTables.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\iframeResizer.contentWindow.min.js" />
+    <None Include="Hspi\html\iframeResizer.contentWindow.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\iframeSizer.min.js" />
+    <None Include="Hspi\html\iframeSizer.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\metricsgraphics.min.js" />
+    <None Include="Hspi\html\metricsgraphics.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="html\d3.min.js" />
+    <None Include="Hspi\html\d3.min.js" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AdysTech.InfluxDB.Client.Net.Core">
@@ -208,19 +208,19 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="html\adddeviceimport.html" />
-    <Content Include="html\addeditpersistence.html" />
-    <Content Include="html\configuration.html" />
-    <Content Include="html\datatables.min.css" />
-    <Content Include="html\datatables.min.js" />
-    <Content Include="html\dbconfiguration.html" />
-    <Content Include="html\deviceimport.html" />
-    <Content Include="html\feature.html" />
-    <Content Include="html\feature.js" />
-    <Content Include="html\images\Influxdb_logo.svg" />
-    <Content Include="html\images\Influxdb_logo_castle.svg" />
-    <Content Include="html\metricsgraphics.min.css" />
-    <Content Include="html\persistentlist.html" />
+    <Content Include="Hspi\html\adddeviceimport.html" />
+    <Content Include="Hspi\html\addeditpersistence.html" />
+    <Content Include="Hspi\html\configuration.html" />
+    <Content Include="Hspi\html\datatables.min.css" />
+    <Content Include="Hspi\html\datatables.min.js" />
+    <Content Include="Hspi\html\dbconfiguration.html" />
+    <Content Include="Hspi\html\deviceimport.html" />
+    <Content Include="Hspi\html\feature.html" />
+    <Content Include="Hspi\html\feature.js" />
+    <Content Include="Hspi\html\images\Influxdb_logo.svg" />
+    <Content Include="Hspi\html\images\Influxdb_logo_castle.svg" />
+    <Content Include="Hspi\html\metricsgraphics.min.css" />
+    <Content Include="Hspi\html\persistentlist.html" />
     <Content Include="install.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
