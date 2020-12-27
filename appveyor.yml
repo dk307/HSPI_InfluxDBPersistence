@@ -16,7 +16,7 @@ build_script:
 
     msbuild "C:\projects\hspi-influxdbpersistence\HSPI_InfluxDBPersistence.sln" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=Release /p:Platform="Any CPU"
 after_build:
- - ps: Get-ChildItem .\HSPI_InfluxDBPersistence*.zip | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+ - ps: Get-ChildItem bin\Release\HSPI_InfluxDBPersistence*.zip | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
 artifacts:
 - path: bin\Release\updater_override.json
   name: config
