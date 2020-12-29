@@ -559,11 +559,10 @@ namespace Hspi
             stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
             stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"about:blank\" scrolling=\"no\"></iframe>"));
             stb.Append(Invariant($"<script>var iFrameUrl678='{iFrameUrl}';</script>"));
-            stb.Append(Invariant($"<script>$('#tableFrame').attr('src', iFrameUrl678 + '&feature=' + getUrlParameterOrEmpty('feature'));</script>"));
+            stb.Append(Invariant($"<script>$('#tableFrame')[0].contentWindow.location.replace(iFrameUrl678 + '&feature=' + getUrlParameterOrEmpty('feature'));</script>"));
             stb.Append(Invariant($"<script>iFrameResize({{log:true}});</script>"));
 
             var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id", stb.ToString());
-
             return page.Page.ToJsonString();
         }
 
