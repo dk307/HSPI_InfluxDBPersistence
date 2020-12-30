@@ -74,7 +74,7 @@ namespace Hspi
                 case "window":
                 case "door":
                 case "lock":
-                    fieldString = "fieldString";
+                    fieldString = "valueString";
                     break;
             }
         }
