@@ -159,6 +159,9 @@
     <PackageReference Include="HomeSeer-PluginSDK">
       <Version>1.2.1</Version>
     </PackageReference>
+    <PackageReference Include="ILMerge">
+      <Version>3.0.41</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers">
       <Version>3.3.1</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -240,17 +243,15 @@
   <Target Name="ZipHtmlFiles" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\Hspi\html" DestinationFile="$(OutputPath)\html.zip" Overwrite="true" />
   </Target>
-  <Target Name="ZipDllFiles" DependsOnTargets="Build" Condition="'$(Configuration)' == 'Release'">
-    <RemoveDir Directories="$(ArtifactsDirectory)" />
-    <MakeDir Directories="$(ArtifactsDirectory)" />
+  <Target Name="ILMerge" DependsOnTargets="Build" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
-      <DllFiles Include="$(OutputPath)\*.dll" Exclude="**\HSCF.dll;**\NullGuard.dll;**\PluginSdk.dll" />
+      <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
+      <InputAssemblies Include="$(OutputPath)\*.dll" Exclude="**\HSCF.dll;**\NullGuard.dll;**\PluginSdk.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(ArtifactsDirectory)" />
-    <ZipDirectory SourceDirectory="$(ArtifactsDirectory)" DestinationFile="$(OutputPath)\dlls.zip" Overwrite="true" />
-    <RemoveDir Directories="$(ArtifactsDirectory)" />
+    <Message Importance="high" Text="Executing ILMerge in $(ProjectDir)..." />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(ILMergeConsolePath)&quot; /ndebug /target:winexe /out:@(MainAssembly) /internalize /targetplatform:v4 @(InputAssemblies->'&quot;%(FullPath)&quot;', ' ')" />
   </Target>
-  <Target Name="ZipFinalFiles" DependsOnTargets="Build;ZipHtmlFiles;ZipDllFiles" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="ZipFinalFiles" DependsOnTargets="Build;ZipHtmlFiles;ILMerge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <RemoveDir Directories="$(ArtifactsDirectory)" />
     <MakeDir Directories="$(ArtifactsDirectory)" />
     <GetAssemblyIdentity AssemblyFiles="$(OutputPath)\HSPI_InfluxDBPersistence.exe">
@@ -265,7 +266,6 @@
       <ReleaseFiles Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
       <ReleaseFiles Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe.config" />
       <ReleaseFiles Include="$(OutputPath)\html.zip" />
-      <ReleaseFiles Include="$(OutputPath)\dlls.zip" />
       <ReleaseFiles Include="$(OutputPath)\install.txt" />
     </ItemGroup>
     <Copy SourceFiles="@(ReleaseFiles)" DestinationFolder="$(ArtifactsDirectory)" />
