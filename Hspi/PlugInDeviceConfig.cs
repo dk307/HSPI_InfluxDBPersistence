@@ -547,22 +547,10 @@ namespace Hspi
         private string CreateDeviceConfigPage(AbstractHsDevice device, string iFrameName)
         {
             StringBuilder stb = new StringBuilder();
-
-            stb.Append("<script> $('#save_device_config').hide(); </script>");
-
-            string iFrameUrl = Invariant($"{CreatePlugInUrl(iFrameName)}?refId={device.Ref}");
-
-            // iframeSizer.min.js
-            stb.Append($"<script type=\"text/javascript\" src=\"{CreatePlugInUrl("iframeSizer.min.js")}\"></script>");
-            stb.Append($"<script type=\"text/javascript\" src=\"{CreatePlugInUrl("feature.js")}\"></script>");
-
-            stb.Append(@"<style>iframe{width: 1px;min-width: 100%;border: none; width: 100%; height: 475px}</style>");
-            stb.Append(Invariant($"<iframe id=\"tableFrame\" src=\"about:blank\" scrolling=\"no\"></iframe>"));
-            stb.Append(Invariant($"<script>var iFrameUrl678='{iFrameUrl}';</script>"));
-            stb.Append(Invariant($"<script>$('#tableFrame')[0].contentWindow.location.replace(iFrameUrl678 + '&feature=' + getUrlParameterOrEmpty('feature'));</script>"));
-            stb.Append(Invariant($"<script>iFrameResize({{log:true}});</script>"));
-
-            var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id", stb.ToString());
+            stb.Append($"<script src=\"{CreatePlugInUrl("iframeSizer.min.js")}\"></script>");
+            stb.Append($"<script src=\"{CreatePlugInUrl("feature.js")}\"></script>");
+            stb.Append($"<script>setupIFrame({device.Ref}, '{iFrameName}');</script>");
+            var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id_influxdbpersistance", stb.ToString());
             return page.Page.ToJsonString();
         }
 
