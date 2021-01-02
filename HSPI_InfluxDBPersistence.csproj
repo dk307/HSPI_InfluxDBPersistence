@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Hspi</RootNamespace>
     <AssemblyName>HSPI_InfluxDBPersistence</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <IsWebBootstrapper>false</IsWebBootstrapper>
@@ -243,7 +243,21 @@
   <Target Name="ZipHtmlFiles" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\Hspi\html" DestinationFile="$(OutputPath)\html.zip" Overwrite="true" />
   </Target>
-  <Target Name="ILMerge" DependsOnTargets="Build" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="ILMerge" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <!-- <ItemGroup> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\Newtonsoft.Json.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Coordination.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\Nito.AsyncEx.Tasks.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\Nito.Collections.Deque.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\Nito.Disposables.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\System.Collections.Immutable.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\System.Buffers.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\System.Memory.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\System.Numerics.Vectors.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll" /> -->
+    <!-- <InputAssemblies Include="$(OutputPath)\AdysTech.InfluxDB.Client.Net.Core.dll" /> -->
+    <!-- </ItemGroup> -->
     <ItemGroup>
       <InputAssemblies Include="$(OutputPath)\HSPI_InfluxDBPersistence.exe" />
       <InputAssemblies Include="$(OutputPath)\*.dll" Exclude="**\HSCF.dll;**\NullGuard.dll;**\PluginSdk.dll" />

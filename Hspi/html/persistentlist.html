@@ -83,8 +83,8 @@
 				<td>{{row["minvalidvalue"]}} - {{row["maxvalidvalue"] | html.escape}}</td>
 				<td>{{row["trackedtype"] | html.escape}}</td>
 				<td>
-					<a data-mdb-toggle="tooltip" title="Delete InfluxDb persistence options for device" href="/InfluxDBPersistence/persistentlist.html?action=delete&refId={{refId}}#{{i-1}}">
-					  <i class="fas fa-trash-alt fa-point"></i>
+					<a data-mdb-toggle="tooltip" title="Delete InfluxDb persistence for device" href="#">
+					  <i class="fas fa-trash-alt fa-point deletePersistance" refId="{{refId}}" tableLocation="{{i-1}}"></i>
 					</a>
 				</td>	
 			</tr>
@@ -131,7 +131,26 @@ function setUpPersistanceTable() {
 $(document).ready(function () {
 	setUpPersistanceTable();
 });	
-	
+
+$('.deletePersistance').on('click',function(e){
+    e.preventDefault();
+	 
+    swal.fire({
+			title: 'Warning!',
+			text: 'Are you sure?',
+			position: 'top',
+			focusConfirm: false,
+			reverseButtons: true,
+			showCancelButton: true,
+			cancelButtonText: 'No',
+			confirmButtonText: 'Yes',
+    }).then((result) => {
+        if (result.isConfirmed) {
+			var location = "/InfluxDBPersistence/persistentlist.html?action=delete&refId=" + $(this).attr('refId') + "#" + $(this).attr('tableLocation');
+			window.location.replace(location);  
+		}
+    }); 
+}); 
 </script>
 
 </body>

@@ -48,7 +48,7 @@
 	
 <body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
 {{if !redirect}}
-<div class="container-fluid"> 
+<div class="container-fluid custom-scrollbar"> 
 	<p class="h4 text-left ml-0">{{device_name_full deviceRefId | html.escape}}</p>
 	
 	<form class="md-form" action="/InfluxDBPersistence/addeditpersistence.html" method="GET">		
@@ -104,18 +104,18 @@
 
 		<div class="row mt-1 mb-1">
 			<div class="md-form col-md">	
-				<select id="trackedtype" class="md-form mdb-select jui-select colorful-select" name="trackedtype">				 
+				<select id="trackedtype" class="md-form mdb-select colorful-select" name="trackedtype">				 
 					<option value="Value" {{if data['trackedtype']=="Value";}}selected{{end}}>Numeric Value</option>	
 					<option value="String" {{if data['trackedtype']=="String";}}selected{{end}}>String Value</option>					 		
 				</select> 	
-				<label class="mdb-main-label" for="trackedtype">Persist on Change of</label>
+				<label class="mdb-main-label" for="trackedtype" style="left:0px">Persist on Change of</label>
 			</div>
 		</div>
 			
 		<div class="row mt-1 mb-1">		
 			{{if data["id"]!=""}}
 				<div class="col d-flex justify-content-start">
-						<button class="btn btn-danger waves-effect waves-light" name="delete" type="submit" id="delete_button">Delete</button>
+					<button class="btn btn-danger waves-effect waves-light" id="delete_button">Delete</button>
 				</div>
 			{{end}}
 			
@@ -134,22 +134,34 @@
 
 {{includefile 'bootstrap/js/page_common.js'}}
 <script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
-
-<script>
-$(function() {
-   $("#delete_button").click(function(){
-      //if (confirm("Click OK to continue?")){
-         $('form#delete').submit();
-      //}
-   });
-});
+<script type="text/javascript">
+$('#delete_button').on('click',function(e){
+    e.preventDefault();
+    var form = $(this).parents('form');
+	
+    swal.fire({
+			title: 'Warning!',
+			text: 'Are you sure?',
+			position: 'top',
+			focusConfirm: false,
+			reverseButtons: true,
+			showCancelButton: true,
+			cancelButtonText: 'No',
+			confirmButtonText: 'Yes',
+    }).then((result) => {
+        if (result.isConfirmed) {
+			form.append('<input type="hidden" name="delete" value="" /> '); 
+			form.submit();
+		}
+    }); 
+}); 
 </script>
 
 
 {{else}}
 
 {{includefile 'bootstrap/js/page_common.js'}}
-<script>
+<script type="text/javascript">
 window.location.replace("/InfluxDBPersistence/feature.html?{{returnUrl}}");
 </script>
 
