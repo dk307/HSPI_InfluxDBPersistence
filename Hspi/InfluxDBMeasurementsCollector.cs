@@ -27,7 +27,6 @@ namespace Hspi
         }
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
-
         public void Dispose()
         {
             influxDBClient?.Dispose();
@@ -81,7 +80,7 @@ namespace Hspi
                         }
                         else
                         {
-                            Trace.TraceInformation(Invariant($"Not Recording Value for {data.Name} as there is no it does not have valid ranged value at {deviceValue}"));
+                            logger.Info(Invariant($"Not Recording Value for {data.Name} as there is no it does not have valid ranged value at {deviceValue}"));
                         }
                     }
 
@@ -178,7 +177,7 @@ namespace Hspi
                 {
                     if (!await influxDBClient.PostPointAsync(loginInformation.DB, point).ConfigureAwait(false))
                     {
-                        Trace.TraceWarning(Invariant($"Failed to update {loginInformation.DB} for {point.ToString()}"));
+                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} for {point.ToString()}"));
                     }
                 }
                 catch (Exception ex)
@@ -188,12 +187,12 @@ namespace Hspi
                         throw;
                     }
 
-                    Trace.TraceWarning(Invariant($"Failed to update {loginInformation.DB} with {ExceptionHelper.GetFullMessage(ex)} for {point.ToString()}"));
+                    logger.Warn(Invariant($"Failed to update {loginInformation.DB} with {ExceptionHelper.GetFullMessage(ex)} for {point.ToString()}"));
                     bool connected = await IsConnectedToServer().ConfigureAwait(false);
 
                     if (!connected)
                     {
-                        Trace.TraceWarning(Invariant($"DB is down. Waiting for {connectFailureDelay} before sending message"));
+                        logger.Error(Invariant($"{loginInformation?.DBUri.ToString() ?? "DB"} is not connectable. Waiting for {connectFailureDelay.TotalSeconds} seconds before sending messages again"));
                         await queue.EnqueueAsync(point, token).ConfigureAwait(false);
                         await Task.Delay(connectFailureDelay, token).ConfigureAwait(false);
                     }
@@ -202,10 +201,10 @@ namespace Hspi
         }
 
         private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
-
         private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue
                     = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
 
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
 #pragma warning disable CA2213 // Disposable fields should be disposed

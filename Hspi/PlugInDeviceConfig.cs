@@ -4,7 +4,6 @@ using Hspi.Utils;
 using NullGuard;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -159,7 +158,7 @@ namespace Hspi
             }
             catch (Exception ex)
             {
-                Trace.TraceError(Invariant($"Error {ex.GetFullMessage()}"));
+                logger.Error(Invariant($"Error {ex.GetFullMessage()}"));
             }
 
             return stb.ToString();
@@ -260,7 +259,7 @@ namespace Hspi
             {
                 int refId = ParseRefId(refIdString);
 
-                Trace.WriteLine(Invariant($"Deleting persitence for Ref Id:{refId}"));
+                logger.Debug(Invariant($"Deleting persitence for Ref Id:{refId}"));
 
                 var dataKeyPairs = pluginConfig.DevicePersistenceData.Where(x => x.Value.DeviceRefId == refId);
 
@@ -400,12 +399,12 @@ namespace Hspi
 
                 if (!persistanceDataDict.TryGetValue("id", out var value) || string.IsNullOrEmpty(value))
                 {
-                    Trace.WriteLine(Invariant($"Adding new persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
+                    logger.Debug(Invariant($"Adding new persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
                     persistanceDataDict2["id"] = Guid.NewGuid().ToString();
                 }
                 else
                 {
-                    Trace.WriteLine(Invariant($"Adding existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
+                    logger.Debug(Invariant($"Adding existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
                 }
 
                 var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict2);

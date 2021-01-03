@@ -18,7 +18,7 @@ namespace Hspi
             var errors = new List<string>();
             try
             {
-                Trace.WriteLine(Invariant($"Updating DB Information"));
+                logger.Debug(Invariant($"Updating DB Information"));
 
                 if (!Uri.TryCreate(dbInformationDBDict["dburi"], UriKind.Absolute, out var uri))
                 {

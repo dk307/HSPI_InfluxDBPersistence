@@ -5,7 +5,6 @@ using Hspi.Utils;
 using Nito.AsyncEx;
 using NullGuard;
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
 using static System.FormattableString;
@@ -34,7 +33,7 @@ namespace Hspi
             }
             catch (Exception ex)
             {
-                Trace.TraceError(Invariant($"Failed to import value for Ref Id: {devOrFeatRef} with {ex.GetFullMessage()}"));
+                logger.Error(Invariant($"Failed to import value for Ref Id: {devOrFeatRef} with {ex.GetFullMessage()}"));
                 return EPollResponse.ErrorGettingStatus;
             }
         }
@@ -56,12 +55,13 @@ namespace Hspi
 
         protected override void Initialize()
         {
-            base.Initialize();
             string result = string.Empty;
             try
             {
                 pluginConfig = new PluginConfig(HomeSeerSystem);
-                Trace.TraceInformation("Starting Plugin");
+                UpdateDebugLevel();
+
+                logger.Info("Starting Plugin");
                 LogConfiguration();
 
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
@@ -77,15 +77,16 @@ namespace Hspi
 
                 RestartProcessing();
 
-                Trace.TraceInformation("Plugin Started");
+                logger.Info("Plugin Started");
             }
             catch (Exception ex)
             {
                 result = Invariant($"Failed to initialize PlugIn with {ex.GetFullMessage()}");
-                Trace.TraceError(result);
+                logger.Error(result);
                 throw;
             }
         }
+
         private async Task<InfluxDBMeasurementsCollector> GetInfluxDBMeasurementsCollector()
         {
             using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync().ConfigureAwait(false))
@@ -111,7 +112,7 @@ namespace Hspi
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning(Invariant($"Failed to process HSEvent {eventType} with {ex.GetFullMessage()}"));
+                logger.Warn(Invariant($"Failed to process HSEvent {eventType} with {ex.GetFullMessage()}"));
             }
         }
 
@@ -129,17 +130,17 @@ namespace Hspi
         private void LogConfiguration()
         {
             var dbConfig = pluginConfig.DBLoginInformation;
-            Trace.WriteLine(Invariant($"Url:{dbConfig.DBUri} User:{dbConfig.User} Database:{dbConfig.DB}"));
+            logger.Info(Invariant($"Url:{dbConfig.DBUri} User:{dbConfig.User} Database:{dbConfig.DB}"));
         }
 
         private void PluginConfigChanged()
         {
-            this.EnableLogDebug = pluginConfig.DebugLogging;
+            UpdateDebugLevel(); 
             RestartProcessing();
         }
 
         private async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
-                                                                                     AbstractHsDevice device)
+                                             AbstractHsDevice device)
         {
             if (device != null)
             {
@@ -157,7 +158,7 @@ namespace Hspi
                             deviceString = status.Label;
                         }
                     }
-                    Trace.WriteLine(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
+                    logger.Debug(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
 
                     DateTime lastChange = device.LastChange;
 
@@ -173,10 +174,11 @@ namespace Hspi
                 }
                 else
                 {
-                    Trace.TraceWarning(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
+                    logger.Warn(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
                 }
             }
         }
+
         private async Task RecordDeviceValue(int deviceRefId, TrackedType trackedType)
         {
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
@@ -207,7 +209,7 @@ namespace Hspi
                             throw;
                         }
 
-                        Trace.TraceError(Invariant($"Error in recording RefId:{refId} Error:{ex.GetFullMessage()}"));
+                        logger.Error(Invariant($"Error in recording RefId:{refId} Error:{ex.GetFullMessage()}"));
                     }
 
                     ShutdownCancellationToken.ThrowIfCancellationRequested();
@@ -284,6 +286,13 @@ namespace Hspi
 
             await RecordTrackedDevices().ConfigureAwait(false);
         }
+
+        private void UpdateDebugLevel()
+        {
+            this.LogDebug = pluginConfig.DebugLogging;
+            Logger.ConfigureLogging(LogDebug, HomeSeerSystem);
+        }
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
         private DeviceRootDeviceManager deviceRootDeviceManager;

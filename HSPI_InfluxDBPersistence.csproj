@@ -77,6 +77,7 @@
     <Compile Include="Hspi\DeviceData\HS3DeviceMigrator.cs" />
     <Compile Include="Hspi\DeviceData\DeviceRootDeviceManager.cs" />
     <Compile Include="Hspi\ImportDeviceData.cs" />
+    <Compile Include="Hspi\Logger.cs" />
     <Compile Include="Hspi\PlugInGeneralConfiguration.cs" />
     <Compile Include="Hspi\Utils\InfluxDbQueryBuilder.cs" />
     <Compile Include="Hspi\PluginConfigBase.cs" />
@@ -90,8 +91,6 @@
     <Compile Include="Hspi\Utils\ExceptionHelper.cs" />
     <Compile Include="Hspi\HSHelper.cs" />
     <Compile Include="Hspi\HSPI.cs" />
-    <Compile Include="Hspi\HSTraceListener.cs" />
-    <Compile Include="Hspi\ILogger.cs" />
     <Compile Include="Hspi\InfluxDBLoginInformation.cs" />
     <Compile Include="Hspi\InfluxDBMeasurementsCollector.cs" />
     <Compile Include="Hspi\Utils\ObjectSerialize.cs" />
@@ -186,6 +185,9 @@
     </PackageReference>
     <PackageReference Include="Nito.Disposables">
       <Version>2.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="NLog">
+      <Version>4.7.6</Version>
     </PackageReference>
     <PackageReference Include="NullGuard.Fody">
       <Version>3.0.0</Version>

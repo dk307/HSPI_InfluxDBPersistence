@@ -73,7 +73,7 @@ namespace Hspi.DeviceData
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning(Invariant($"{HSHelper.GetName(HS, refId)} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
+                    logger.Warn(Invariant($"{HSHelper.GetName(HS, refId)} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
                 }
             }
 
@@ -95,22 +95,22 @@ namespace Hspi.DeviceData
                 }
                 else
                 {
-                    Trace.WriteLine(Invariant($"Not importing from Db for {deviceData.Name} as it is deleted"));
+                    logger.Debug(Invariant($"Not importing from Db for {deviceData.Name} as it is deleted"));
                 }
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning(Invariant($"Failed to get value from Db for {deviceData.Name} with {ex.GetFullMessage()}"));
+                logger.Warn(Invariant($"Failed to get value from Db for {deviceData.Name} with {ex.GetFullMessage()}"));
             }
 
             try
             {
-                Trace.WriteLine(Invariant($"Updating {deviceData.Name} with {deviceValue}"));
+                logger.Debug(Invariant($"Updating {deviceData.Name} with {deviceValue}"));
                 deviceData.Update(deviceValue);
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning(Invariant($"Failed to write value to HS for {deviceData.Name} with {ex.GetFullMessage()}"));
+                logger.Warn(Invariant($"Failed to write value to HS for {deviceData.Name} with {ex.GetFullMessage()}"));
             }
 
             return importDeviceData;
@@ -154,13 +154,14 @@ namespace Hspi.DeviceData
             }
         }
 
-        private readonly IReadOnlyDictionary<int, DeviceImportDevice> ImportDevices;
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly CancellationToken cancellationToken;
         private readonly List<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();
         private readonly CancellationTokenSource combinedToken;
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
+        private readonly IReadOnlyDictionary<int, DeviceImportDevice> ImportDevices;
         private bool disposedValue;
     };
 }

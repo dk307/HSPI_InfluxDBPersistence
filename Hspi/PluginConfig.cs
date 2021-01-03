@@ -186,7 +186,7 @@ namespace Hspi
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning(Invariant($"Failed to load tags for {deviceRefIdString} with {ex.GetFullMessage()}"));
+                    logger.Warn(Invariant($"Failed to load tags for {deviceRefIdString} with {ex.GetFullMessage()}"));
                 }
 
                 double? maxValidValue = null;
@@ -221,13 +221,10 @@ namespace Hspi
         public const string DeviceRefIdTag = "refid";
         public const string DeviceStringValueDefaultField = "valueString";
         public const string DeviceValueDefaultField = "value";
-
         private const string DebugLoggingKey = "DebugLogging";
-
         private const string DeviceRefIdKey = "DeviceRefId";
         private const string FieldKey = "Field";
         private const string FieldStringKey = "FieldString";
-
         private const string InfluxDBDBKey = "InfluxDBDB";
         private const string InfluxDBPasswordKey = "InfluxDBPassword";
         private const string InfluxDBUriKey = "InfluxDBUri";
@@ -239,6 +236,7 @@ namespace Hspi
         private const char PersistenceIdsSeparator = ',';
         private const string TagsKey = "Tags";
         private const string TrackedTypeKey = "TrackedTyp";
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
 
         private bool debugLogging;

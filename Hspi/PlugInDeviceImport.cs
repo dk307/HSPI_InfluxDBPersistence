@@ -50,7 +50,7 @@ namespace Hspi
             try
             {
                 int refId = ParseRefId(deviceImportDataDict["refId"]);
-                Trace.WriteLine(Invariant($"Updating device import data for Ref Id:{refId}"));
+                logger.Debug(Invariant($"Updating device import data for Ref Id:{refId}"));
 
                 var importDeviceData = ScribanHelper.FromDictionary<ImportDeviceData>(deviceImportDataDict);
 
@@ -77,7 +77,7 @@ namespace Hspi
             try
             {
                 string deviceName = deviceImportDataDict["name"];
-                Trace.WriteLine(Invariant($"Creating new influxdb import device with name {deviceName}"));
+                logger.Debug(Invariant($"Creating new influxdb import device with name {deviceName}"));
 
                 deviceImportDataDict["id"] = Guid.NewGuid().ToString();
 

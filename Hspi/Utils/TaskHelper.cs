@@ -8,6 +8,8 @@ namespace Hspi.Utils
 {
     internal static class TaskHelper
     {
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         public static T ResultForSync<T>(this Task<T> @this)
         {
             // https://blogs.msdn.microsoft.com/pfxteam/2012/04/13/should-i-expose-synchronous-wrappers-for-asynchronous-methods/
@@ -30,9 +32,9 @@ namespace Hspi.Utils
             {
                 try
                 {
-                    Trace.WriteLine(Invariant($"{taskName} Starting"));
+                    logger.Debug(Invariant($"{taskName} Starting"));
                     await taskAction().ConfigureAwait(false);
-                    Trace.WriteLine(Invariant($"{taskName} Finished"));
+                    logger.Debug(Invariant($"{taskName} Finished"));
                     loop = false;  //finished sucessfully
                 }
                 catch (Exception ex)
@@ -42,7 +44,7 @@ namespace Hspi.Utils
                         throw;
                     }
 
-                    Trace.TraceError(Invariant($"{taskName} failed with {ex.GetFullMessage()}. Restarting ..."));
+                    logger.Error(Invariant($"{taskName} failed with {ex.GetFullMessage()}. Restarting ..."));
                 }
             }
         }
