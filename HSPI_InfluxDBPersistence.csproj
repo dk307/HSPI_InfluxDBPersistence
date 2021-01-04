@@ -73,10 +73,11 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Hspi\DeviceData\InfluxDbDevice.cs" />
     <Compile Include="Hspi\DeviceData\DeviceImportDevice.cs" />
     <Compile Include="Hspi\DeviceData\HS3DeviceMigrator.cs" />
-    <Compile Include="Hspi\DeviceData\DeviceRootDeviceManager.cs" />
-    <Compile Include="Hspi\ImportDeviceData.cs" />
+    <Compile Include="Hspi\DeviceData\DeviceImportDeviceManager.cs" />
+    <Compile Include="Hspi\DeviceData\ImportDeviceData.cs" />
     <Compile Include="Hspi\Logger.cs" />
     <Compile Include="Hspi\PlugInGeneralConfiguration.cs" />
     <Compile Include="Hspi\Utils\InfluxDbQueryBuilder.cs" />

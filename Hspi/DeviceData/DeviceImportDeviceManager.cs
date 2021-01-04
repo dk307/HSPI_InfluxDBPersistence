@@ -14,12 +14,12 @@ using static System.FormattableString;
 namespace Hspi.DeviceData
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class DeviceRootDeviceManager : IDisposable
+    internal sealed class DeviceImportDeviceManager : IDisposable
     {
-        public DeviceRootDeviceManager(IHsController HS,
-                                       InfluxDBLoginInformation dbLoginInformation,
-                                       PluginStatusCalculator pluginStatusCalculator,
-                                       CancellationToken cancellationToken)
+        public DeviceImportDeviceManager(IHsController HS,
+                                         InfluxDBLoginInformation dbLoginInformation,
+                                         PluginStatusCalculator pluginStatusCalculator,
+                                         CancellationToken cancellationToken)
         {
             this.HS = HS;
             this.dbLoginInformation = dbLoginInformation;
@@ -29,7 +29,7 @@ namespace Hspi.DeviceData
 
             MigrateDevices();
 
-            ImportDevices = GetCurrentDevices();
+            importDevices = GetCurrentDevices();
             StartDeviceFetchFromDB();
         }
 
@@ -45,7 +45,7 @@ namespace Hspi.DeviceData
 
         public async Task<bool> ImportDataForDevice(int refId)
         {
-            if (ImportDevices.TryGetValue(refId, out var data))
+            if (importDevices.TryGetValue(refId, out var data))
             {
                 await ImportDataForDevice(data).ConfigureAwait(false);
                 return true;
@@ -68,7 +68,22 @@ namespace Hspi.DeviceData
                     //data is stored in feature(child)
                     if (relationship == ERelationship.Feature)
                     {
-                        currentChildDevices.Add(refId, new DeviceImportDevice(HS, refId));
+                        string deviceType = null;
+
+                        var plugInExtra = HS.GetPropertyByRef(refId, EProperty.PlugExtraData) as PlugExtraData;
+                        if (plugInExtra != null)
+                        {
+                            if (plugInExtra.NamedKeys.Contains(PlugInData.DevicePlugInDataTypeKey))
+                            {
+                                deviceType = plugInExtra[PlugInData.DevicePlugInDataTypeKey];
+
+                                if (deviceType == DeviceImportDevice.DeviceType)
+                                {
+                                    DeviceImportDevice importDevice = new DeviceImportDevice(HS, refId);
+                                    currentChildDevices.Add(refId, importDevice);
+                                }
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -148,7 +163,7 @@ namespace Hspi.DeviceData
         {
             using (var sync = collectionTasksLock.Lock())
             {
-                foreach (var childDeviceKeyValuePair in ImportDevices)
+                foreach (var childDeviceKeyValuePair in importDevices)
                 {
                     DeviceImportDevice deviceData = childDeviceKeyValuePair.Value;
 
@@ -160,12 +175,12 @@ namespace Hspi.DeviceData
 
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly CancellationToken cancellationToken;
-        private readonly List<Task> collectionTasks = new List<Task>();
+        private readonly IList<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();
         private readonly CancellationTokenSource combinedToken;
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
-        private readonly IReadOnlyDictionary<int, DeviceImportDevice> ImportDevices;
+        private readonly IReadOnlyDictionary<int, DeviceImportDevice> importDevices;
         private readonly PluginStatusCalculator pluginStatusCalculator;
         private bool disposedValue;
     };

@@ -10,13 +10,15 @@ using System.IO;
 namespace Hspi.DeviceData
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal class DeviceImportDevice
+    internal sealed class DeviceImportDevice
     {
         public DeviceImportDevice(IHsController HS, int refId)
         {
             this.HS = HS;
             this.refId = refId;
         }
+
+        public static string DeviceType => "import";
 
         public ImportDeviceData Data
         {
@@ -69,9 +71,8 @@ namespace Hspi.DeviceData
             return deviceData;
         }
 
-        public virtual void Update(in double? data)
+        public void Update(in double? data)
         {
-            
             if (data.HasValue)
             {
                 HS.UpdatePropertyByRef(refId, EProperty.InvalidValue, false);
@@ -93,6 +94,7 @@ namespace Hspi.DeviceData
             string data = JsonConvert.SerializeObject(importDeviceData, Formatting.Indented);
             var plugExtra = new PlugExtraData();
             plugExtra.AddNamed(PlugInData.DevicePlugInDataNamedKey, data);
+            plugExtra.AddNamed(PlugInData.DevicePlugInDataTypeKey, DeviceType);
             return plugExtra;
         }
 

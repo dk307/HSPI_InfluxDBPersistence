@@ -120,7 +120,7 @@ namespace Hspi
 
         private async Task<bool> ImportDeviceFromDB(int deviceRefId)
         {
-            DeviceRootDeviceManager deviceRootDeviceManagerCopy;
+            DeviceImportDeviceManager deviceRootDeviceManagerCopy;
             using (var sync = deviceRootDeviceManagerLock.Enter())
             {
                 deviceRootDeviceManagerCopy = deviceRootDeviceManager;
@@ -259,7 +259,7 @@ namespace Hspi
             using (var sync = await deviceRootDeviceManagerLock.EnterAsync(ShutdownCancellationToken))
             {
                 deviceRootDeviceManager?.Dispose();
-                deviceRootDeviceManager = new DeviceRootDeviceManager(HomeSeerSystem,
+                deviceRootDeviceManager = new DeviceImportDeviceManager(HomeSeerSystem,
                                                                       pluginConfig.DBLoginInformation,
                                                                       pluginStatusCalculator,
                                                                       ShutdownCancellationToken);
@@ -302,7 +302,7 @@ namespace Hspi
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
-        private DeviceRootDeviceManager deviceRootDeviceManager;
+        private DeviceImportDeviceManager deviceRootDeviceManager;
         private bool disposedValue;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;

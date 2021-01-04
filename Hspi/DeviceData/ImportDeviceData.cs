@@ -1,6 +1,6 @@
 ﻿using NullGuard;
 
-namespace Hspi
+namespace Hspi.DeviceData
 {
     [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal sealed class ImportDeviceData
