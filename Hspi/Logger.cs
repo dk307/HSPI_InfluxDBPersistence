@@ -1,14 +1,16 @@
 ﻿using HomeSeer.PluginSdk;
 using NLog;
 using NLog.Targets;
+using NullGuard;
 using System;
 using System.Globalization;
 
 namespace Hspi
 {
+    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal static class Logger
     {
-        public static void ConfigureLogging(bool enableLogging, IHsController hsController = null)
+        public static void ConfigureLogging(bool enableLogging, [AllowNull] IHsController hsController = null)
         {
             var config = new NLog.Config.LoggingConfiguration();
             config.DefaultCultureInfo = CultureInfo.InvariantCulture;
@@ -44,19 +46,19 @@ namespace Hspi
                 {
                     if (logEvent.Level.Equals(LogLevel.Debug))
                     {
-                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Debug, logEvent.FormattedMessage, Name);
+                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Debug, logEvent.FormattedMessage, PlugInData.PlugInName);
                     }
                     else if (logEvent.Level.Equals(LogLevel.Info))
                     {
-                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Info, logEvent.FormattedMessage, Name);
+                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Info, logEvent.FormattedMessage, PlugInData.PlugInName);
                     }
                     else if (logEvent.Level.Equals(LogLevel.Warn))
                     {
-                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Warning, logEvent.FormattedMessage, Name, "#D58000");
+                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Warning, logEvent.FormattedMessage, PlugInData.PlugInName, "#D58000");
                     }
                     else if (logEvent.Level >= LogLevel.Error)
                     {
-                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Error, logEvent.FormattedMessage, Name, "#FF0000");
+                        logger?.WriteLog(HomeSeer.PluginSdk.Logging.ELogType.Error, logEvent.FormattedMessage, PlugInData.PlugInName, "#FF0000");
                     }
                 }
             }

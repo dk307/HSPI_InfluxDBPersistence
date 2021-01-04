@@ -4,7 +4,6 @@ using Nito.AsyncEx;
 using NullGuard;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -17,9 +16,11 @@ namespace Hspi
     internal sealed class InfluxDBMeasurementsCollector : IDisposable
     {
         public InfluxDBMeasurementsCollector(InfluxDBLoginInformation loginInformation,
+                                             PluginStatusCalculator pluginStatusCalculator,
                                              CancellationToken shutdownToken)
         {
             this.loginInformation = loginInformation;
+            this.pluginStatusCalculator = pluginStatusCalculator;
             tokenSource = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
             influxDBClient = new InfluxDBClient(loginInformation.DBUri.ToString(),
                                                 loginInformation.User,
@@ -27,6 +28,7 @@ namespace Hspi
         }
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
+
         public void Dispose()
         {
             influxDBClient?.Dispose();
@@ -59,6 +61,7 @@ namespace Hspi
             {
                 throw new ArgumentException("Collection not started");
             }
+
             if (peristenceDataMap.TryGetValue(data.DeviceRefId, out var peristenceData))
             {
                 foreach (var value in peristenceData)
@@ -91,7 +94,7 @@ namespace Hspi
 
                     if (influxDatapoint.Fields.Count == 0)
                     {
-                        Trace.TraceInformation(Invariant($"Not Recording Value for {data.Name} as there is no valid value to record."));
+                        logger.Info(Invariant($"Not Recording Value for {data.Name} as there is no valid value to record."));
                         continue;
                     }
 
@@ -109,7 +112,13 @@ namespace Hspi
                         }
                     }
 
-                    await queue.EnqueueAsync(influxDatapoint, tokenSource.Token).ConfigureAwait(false);
+                    var queueElement = new QueueElement()
+                    {
+                        datapoint = influxDatapoint,
+                        refId = data.DeviceRefId,
+                    };
+
+                    await queue.EnqueueAsync(queueElement, tokenSource.Token).ConfigureAwait(false);
                 }
             }
 
@@ -171,13 +180,17 @@ namespace Hspi
             CancellationToken token = tokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                var point = await queue.DequeueAsync(token).ConfigureAwait(false);
+                var queueElement = await queue.DequeueAsync(token).ConfigureAwait(false);
 
                 try
                 {
-                    if (!await influxDBClient.PostPointAsync(loginInformation.DB, point).ConfigureAwait(false))
+                    if (!await influxDBClient.PostPointAsync(loginInformation.DB, queueElement.datapoint).ConfigureAwait(false))
                     {
-                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} for {point.ToString()}"));
+                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} for RefId: {queueElement.refId}"));
+                    }
+                    else
+                    {
+                        await pluginStatusCalculator.DeviceWorked(queueElement.refId, token).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)
@@ -187,29 +200,37 @@ namespace Hspi
                         throw;
                     }
 
-                    logger.Warn(Invariant($"Failed to update {loginInformation.DB} with {ExceptionHelper.GetFullMessage(ex)} for {point.ToString()}"));
-                    bool connected = await IsConnectedToServer().ConfigureAwait(false);
+                    await pluginStatusCalculator.DeviceErrored(queueElement.refId, token).ConfigureAwait(false);
 
+                    bool connected = await IsConnectedToServer().ConfigureAwait(false);
                     if (!connected)
                     {
-                        logger.Error(Invariant($"{loginInformation?.DBUri.ToString() ?? "DB"} is not connectable. Waiting for {connectFailureDelay.TotalSeconds} seconds before sending messages again"));
-                        await queue.EnqueueAsync(point, token).ConfigureAwait(false);
+                        logger.Warn(Invariant($"{loginInformation?.DBUri.ToString() ?? "DB"} is not connectable. Waiting for {connectFailureDelay.TotalSeconds} seconds before sending messages again"));
+                        await queue.EnqueueAsync(queueElement, token).ConfigureAwait(false);
+                        await pluginStatusCalculator.DBConnectionFailed(token).ConfigureAwait(false);
                         await Task.Delay(connectFailureDelay, token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} with {ExceptionHelper.GetFullMessage(ex)} for RefId: {queueElement.refId}"));
                     }
                 }
             }
         }
 
-        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
-        private static readonly AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>> queue
-                    = new AsyncProducerConsumerQueue<InfluxDatapoint<InfluxValueField>>();
+        private struct QueueElement
+        {
+            public InfluxDatapoint<InfluxValueField> datapoint;
+            public int refId;
+        };
 
+        private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
+        private static readonly AsyncProducerConsumerQueue<QueueElement> queue = new AsyncProducerConsumerQueue<QueueElement>();
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
-#pragma warning disable CA2213 // Disposable fields should be disposed
+        private readonly PluginStatusCalculator pluginStatusCalculator;
         private readonly CancellationTokenSource tokenSource;
-#pragma warning restore CA2213 // Disposable fields should be disposed
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
     }
 }

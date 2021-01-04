@@ -6,7 +6,6 @@ using Nito.AsyncEx;
 using NullGuard;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,11 +18,12 @@ namespace Hspi.DeviceData
     {
         public DeviceRootDeviceManager(IHsController HS,
                                        InfluxDBLoginInformation dbLoginInformation,
-
+                                       PluginStatusCalculator pluginStatusCalculator,
                                        CancellationToken cancellationToken)
         {
             this.HS = HS;
             this.dbLoginInformation = dbLoginInformation;
+            this.pluginStatusCalculator = pluginStatusCalculator;
             this.cancellationToken = cancellationToken;
             this.combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -92,15 +92,18 @@ namespace Hspi.DeviceData
                 {
                     var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
                     deviceValue = Convert.ToDouble(queryData, CultureInfo.InvariantCulture);
+                    await pluginStatusCalculator.DeviceWorked(deviceData.RefId, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     logger.Debug(Invariant($"Not importing from Db for {deviceData.Name} as it is deleted"));
+                    await pluginStatusCalculator.DeviceWorked(deviceData.RefId, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
                 logger.Warn(Invariant($"Failed to get value from Db for {deviceData.Name} with {ex.GetFullMessage()}"));
+                await pluginStatusCalculator.DeviceErrored(deviceData.RefId, cancellationToken).ConfigureAwait(false);
             }
 
             try
@@ -111,6 +114,7 @@ namespace Hspi.DeviceData
             catch (Exception ex)
             {
                 logger.Warn(Invariant($"Failed to write value to HS for {deviceData.Name} with {ex.GetFullMessage()}"));
+                await pluginStatusCalculator.DeviceErrored(deviceData.RefId, cancellationToken).ConfigureAwait(false);
             }
 
             return importDeviceData;
@@ -162,6 +166,7 @@ namespace Hspi.DeviceData
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
         private readonly IReadOnlyDictionary<int, DeviceImportDevice> ImportDevices;
+        private readonly PluginStatusCalculator pluginStatusCalculator;
         private bool disposedValue;
     };
 }

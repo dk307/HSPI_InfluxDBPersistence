@@ -5,5 +5,5 @@ dotnet_diagnostic.CA1707.severity = silent
 
 
 # CA1031: Modify 'HandleAction' to catch a more specific allowed exception type, or rethrow the exception.
-dotnet_diagnostic.CA1031.severity = suggestion
+dotnet_diagnostic.CA1031.severity = none
 

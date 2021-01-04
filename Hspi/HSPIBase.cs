@@ -25,16 +25,6 @@ namespace Hspi
             Dispose(true);
         }
 
-        protected override void OnShutdown()
-        {
-            cancellationTokenSource.Cancel();
-        }
-
-        protected override bool OnSettingChange(string pageId, AbstractView currentView, AbstractView changedView)
-        {
-            return true;
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -47,6 +37,15 @@ namespace Hspi
             }
         }
 
+        protected override bool OnSettingChange(string pageId, AbstractView currentView, AbstractView changedView)
+        {
+            return true;
+        }
+
+        protected override void OnShutdown()
+        {
+            cancellationTokenSource.Cancel();
+        }
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly string id;
         private readonly string name;

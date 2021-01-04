@@ -99,6 +99,7 @@
     <Compile Include="Hspi\PluginConfig.cs" />
     <Compile Include="Hspi\Program.cs" />
     <Compile Include="Hspi\HSPIBase.cs" />
+    <Compile Include="Hspi\PluginStatusCalculator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Hspi\RecordData.cs" />
     <Compile Include="Hspi\Utils\TaskHelper.cs" />

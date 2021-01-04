@@ -40,6 +40,8 @@ namespace Hspi
 
         protected override void BeforeReturnStatus()
         {
+            this.Status = pluginStatusCalculator.PluginStatus;
+            // this.Status = PluginStatus.Fatal(DateTime.Now.ToString());
         }
 
         protected override void Dispose(bool disposing)
@@ -135,7 +137,8 @@ namespace Hspi
 
         private void PluginConfigChanged()
         {
-            UpdateDebugLevel(); 
+            UpdateDebugLevel();
+            this.pluginStatusCalculator.PluginConfigurationChanged(ShutdownCancellationToken).ResultForSync(); 
             RestartProcessing();
         }
 
@@ -258,6 +261,7 @@ namespace Hspi
                 deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceRootDeviceManager(HomeSeerSystem,
                                                                       pluginConfig.DBLoginInformation,
+                                                                      pluginStatusCalculator,
                                                                       ShutdownCancellationToken);
             }
         }
@@ -274,7 +278,9 @@ namespace Hspi
                     if (pluginConfig.DBLoginInformation.IsValid)
                     {
                         influxDBMeasurementsCollector?.Dispose();
-                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation, ShutdownCancellationToken);
+                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation,
+                                                                                          this.pluginStatusCalculator,
+                                                                                          ShutdownCancellationToken);
                         influxDBMeasurementsCollector.Start(pluginConfig.DevicePersistenceData.Values);
                     }
                 }
@@ -292,6 +298,7 @@ namespace Hspi
             this.LogDebug = pluginConfig.DebugLogging;
             Logger.ConfigureLogging(LogDebug, HomeSeerSystem);
         }
+
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
@@ -299,5 +306,6 @@ namespace Hspi
         private bool disposedValue;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;
+        private readonly PluginStatusCalculator pluginStatusCalculator = new PluginStatusCalculator();
     }
 }

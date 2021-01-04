@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
@@ -14,6 +13,11 @@ namespace Hspi.Utils
         {
             // https://blogs.msdn.microsoft.com/pfxteam/2012/04/13/should-i-expose-synchronous-wrappers-for-asynchronous-methods/
             return Task.Run(() => @this).Result;
+        }
+
+        public static void ResultForSync(this Task @this)
+        {
+            Task.Run(() => @this).Wait();
         }
 
         public static void StartAsyncWithErrorChecking(string taskName,
