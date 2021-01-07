@@ -1,88 +1,60 @@
 ﻿using HomeSeer.PluginSdk;
+using Hspi.DeviceData;
 using Nito.AsyncEx;
-using System.Collections.Generic;
+using NullGuard;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hspi
 {
-    public sealed class PluginStatusCalculator
+    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
+    internal sealed class PluginStatusCalculator
     {
-        public PluginStatus PluginStatus => pluginStatus;
-
-        public async Task DBConnectionFailed(CancellationToken cancellationToken)
+        public PluginStatusCalculator(IHsController hs)
         {
-            using (var lockInterval = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
+            statusDevice = InfluxDbStatusDevice.CreateOrGet(hs);
+        }
+
+        public PluginStatus PluginStatus
+        {
+            get
             {
-                if (pluginStatus.Status != PluginStatus.EPluginStatus.Critical)
+                if (exportWorkingStatus.HasValue && !exportWorkingStatus.Value)
                 {
-                    logger.Error("Plugin is in critical state as connection to Influx DB is lost");
-                    pluginStatus = PluginStatus.Critical("Influx DB is inaccessible");
+                    return PluginStatus.Warning("Exporting to InfluxDB is failing");
                 }
+
+                return PluginStatus.Ok();
             }
         }
 
-        public async Task DeviceErrored(int refId, CancellationToken cancellationToken)
+        public async Task ExportErrored(CancellationToken cancellationToken)
         {
             using (var lockInterval = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
             {
-                lock (erroredDevices)
-                {
-                    erroredDevices.Add(refId);
-                }
-
-                SetOkState();
+                UpdateExportworkingStatus(false);
             }
         }
 
-        public async Task DeviceWorked(int refId, CancellationToken cancellationToken)
+        public async Task ExportWorked(CancellationToken cancellationToken)
         {
             using (var lockInterval = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
             {
-                lock (erroredDevices)
-                {
-                    erroredDevices.Remove(refId);
-                }
-
-                SetOkState();
+                UpdateExportworkingStatus(true);
             }
         }
 
-        public async Task PluginConfigurationChanged(CancellationToken cancellationToken)
+        private void UpdateExportworkingStatus(bool connected)
         {
-            using (var lockInterval = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
+            if (!exportWorkingStatus.HasValue || (exportWorkingStatus.Value != connected))
             {
-                erroredDevices.Clear();
-                SetOkState();
-            }
-        }
-
-        private void SetOkState()
-        {
-            if (pluginStatus.Status == PluginStatus.EPluginStatus.Critical)
-            {
-                logger.Info("Plugin is back in working state");
-            }
-
-            if (erroredDevices.Count > 0)
-            {
-                if (pluginStatus.Status != PluginStatus.EPluginStatus.Warning)
-                {
-                    pluginStatus = PluginStatus.Warning("Some Devices Errored");
-                }
-            }
-            else
-            {
-                if (pluginStatus.Status != PluginStatus.EPluginStatus.Ok)
-                {
-                    pluginStatus = PluginStatus.Ok();
-                }
+                exportWorkingStatus = connected;
+                statusDevice.UpdateExportConnectionStatus(connected);
             }
         }
 
         private readonly AsyncLock instanceLock = new AsyncLock();
-        private readonly HashSet<int> erroredDevices = new HashSet<int>();
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-        private volatile PluginStatus pluginStatus = PluginStatus.Ok();
+        private readonly InfluxDbStatusDevice statusDevice;
+        private bool? exportWorkingStatus;
     }
 }

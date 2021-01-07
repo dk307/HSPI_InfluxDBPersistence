@@ -3,7 +3,6 @@ using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
 using Newtonsoft.Json;
 using NullGuard;
-using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -18,6 +17,7 @@ namespace Hspi.DeviceData
             this.refId = refId;
         }
 
+        public static string RootDeviceType => "root-import";
         public static string DeviceType => "import";
 
         public ImportDeviceData Data
@@ -47,6 +47,7 @@ namespace Hspi.DeviceData
                   .AsType(EDeviceType.Generic, 0)
                   .WithLocation(PlugInData.PlugInName)
                   .WithMiscFlags(EMiscFlag.StatusOnly)
+                  .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataFroDeviceType(RootDeviceType))
                   .PrepareForHs();
 
             int refId = HS.CreateDevice(newDeviceData);
@@ -73,28 +74,14 @@ namespace Hspi.DeviceData
 
         public void Update(in double? data)
         {
-            if (data.HasValue)
-            {
-                HS.UpdatePropertyByRef(refId, EProperty.InvalidValue, false);
-
-                // only this call triggers events
-                if (!HS.UpdateFeatureValueByRef(refId, data.Value))
-                {
-                    throw new Exception("Failed to update device");
-                }
-            }
-            else
-            {
-                HS.UpdatePropertyByRef(refId, EProperty.InvalidValue, true);
-            }
+            HSDeviceHelper.UpdateDeviceValue(HS, refId, data);
         }
 
         private static PlugExtraData CreatePlugInExtraData(ImportDeviceData importDeviceData)
         {
             string data = JsonConvert.SerializeObject(importDeviceData, Formatting.Indented);
-            var plugExtra = new PlugExtraData();
+            var plugExtra = HSDeviceHelper.CreatePlugInExtraDataFroDeviceType(DeviceType);
             plugExtra.AddNamed(PlugInData.DevicePlugInDataNamedKey, data);
-            plugExtra.AddNamed(PlugInData.DevicePlugInDataTypeKey, DeviceType);
             return plugExtra;
         }
 

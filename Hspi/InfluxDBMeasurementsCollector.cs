@@ -190,7 +190,7 @@ namespace Hspi
                     }
                     else
                     {
-                        await pluginStatusCalculator.DeviceWorked(queueElement.refId, token).ConfigureAwait(false);
+                        await pluginStatusCalculator.ExportWorked(token).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)
@@ -200,14 +200,13 @@ namespace Hspi
                         throw;
                     }
 
-                    await pluginStatusCalculator.DeviceErrored(queueElement.refId, token).ConfigureAwait(false);
+                    await pluginStatusCalculator.ExportErrored(token).ConfigureAwait(false);
 
                     bool connected = await IsConnectedToServer().ConfigureAwait(false);
                     if (!connected)
                     {
                         logger.Warn(Invariant($"{loginInformation?.DBUri.ToString() ?? "DB"} is not connectable. Waiting for {connectFailureDelay.TotalSeconds} seconds before sending messages again"));
                         await queue.EnqueueAsync(queueElement, token).ConfigureAwait(false);
-                        await pluginStatusCalculator.DBConnectionFailed(token).ConfigureAwait(false);
                         await Task.Delay(connectFailureDelay, token).ConfigureAwait(false);
                     }
                     else

@@ -68,21 +68,12 @@ namespace Hspi.DeviceData
                     //data is stored in feature(child)
                     if (relationship == ERelationship.Feature)
                     {
-                        string deviceType = null;
+                        string deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
 
-                        var plugInExtra = HS.GetPropertyByRef(refId, EProperty.PlugExtraData) as PlugExtraData;
-                        if (plugInExtra != null)
+                        if (deviceType == DeviceImportDevice.DeviceType)
                         {
-                            if (plugInExtra.NamedKeys.Contains(PlugInData.DevicePlugInDataTypeKey))
-                            {
-                                deviceType = plugInExtra[PlugInData.DevicePlugInDataTypeKey];
-
-                                if (deviceType == DeviceImportDevice.DeviceType)
-                                {
-                                    DeviceImportDevice importDevice = new DeviceImportDevice(HS, refId);
-                                    currentChildDevices.Add(refId, importDevice);
-                                }
-                            }
+                            DeviceImportDevice importDevice = new DeviceImportDevice(HS, refId);
+                            currentChildDevices.Add(refId, importDevice);
                         }
                     }
                 }
@@ -107,18 +98,15 @@ namespace Hspi.DeviceData
                 {
                     var queryData = await InfluxDBHelper.GetSingleValueForQuery(importDeviceData.Sql, dbLoginInformation).ConfigureAwait(false);
                     deviceValue = Convert.ToDouble(queryData, CultureInfo.InvariantCulture);
-                    await pluginStatusCalculator.DeviceWorked(deviceData.RefId, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     logger.Debug(Invariant($"Not importing from Db for {deviceData.Name} as it is deleted"));
-                    await pluginStatusCalculator.DeviceWorked(deviceData.RefId, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
                 logger.Warn(Invariant($"Failed to get value from Db for {deviceData.Name} with {ex.GetFullMessage()}"));
-                await pluginStatusCalculator.DeviceErrored(deviceData.RefId, cancellationToken).ConfigureAwait(false);
             }
 
             try
@@ -129,7 +117,6 @@ namespace Hspi.DeviceData
             catch (Exception ex)
             {
                 logger.Warn(Invariant($"Failed to write value to HS for {deviceData.Name} with {ex.GetFullMessage()}"));
-                await pluginStatusCalculator.DeviceErrored(deviceData.RefId, cancellationToken).ConfigureAwait(false);
             }
 
             return importDeviceData;

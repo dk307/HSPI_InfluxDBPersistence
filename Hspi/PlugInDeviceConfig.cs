@@ -1,5 +1,6 @@
 ﻿using HomeSeer.Jui.Views;
 using HomeSeer.PluginSdk.Devices;
+using Hspi.DeviceData;
 using Hspi.Utils;
 using NullGuard;
 using System;
@@ -387,7 +388,24 @@ namespace Hspi
 
         public override bool HasJuiDeviceConfigPage(int deviceRef)
         {
-            return true;
+            try
+            {
+                string deviceInterface = (string)HomeSeerSystem.GetPropertyByRef(deviceRef, EProperty.Interface);
+
+                if (deviceInterface == PlugInData.PlugInId)
+                {
+                    string deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HomeSeerSystem, deviceRef);
+                    return DeviceImportDevice.DeviceType == deviceType ||
+                           DeviceImportDevice.RootDeviceType == deviceType;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(Invariant($"Failed to determine Device ConfigPage for {deviceRef} with {ex.GetFullMessage()}"));
+                return true;
+            }
         }
 
         public IList<string> SavePersistanceData(IDictionary<string, string> persistanceDataDict)

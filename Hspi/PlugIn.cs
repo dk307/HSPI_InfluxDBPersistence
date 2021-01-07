@@ -66,6 +66,8 @@ namespace Hspi
                 logger.Info("Starting Plugin");
                 LogConfiguration();
 
+                pluginStatusCalculator = new PluginStatusCalculator(HomeSeerSystem);
+
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
 
@@ -138,7 +140,6 @@ namespace Hspi
         private void PluginConfigChanged()
         {
             UpdateDebugLevel();
-            this.pluginStatusCalculator.PluginConfigurationChanged(ShutdownCancellationToken).ResultForSync(); 
             RestartProcessing();
         }
 
@@ -306,6 +307,6 @@ namespace Hspi
         private bool disposedValue;
         private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
         private PluginConfig pluginConfig;
-        private readonly PluginStatusCalculator pluginStatusCalculator = new PluginStatusCalculator();
+        private PluginStatusCalculator pluginStatusCalculator;
     }
 }
