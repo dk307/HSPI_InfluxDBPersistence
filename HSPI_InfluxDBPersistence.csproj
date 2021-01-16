@@ -73,38 +73,38 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Hspi\DeviceData\HSDeviceHelper.cs" />
     <Compile Include="Hspi\DeviceData\InfluxDbStatusDevice.cs" />
     <Compile Include="Hspi\DeviceData\DeviceImportDevice.cs" />
     <Compile Include="Hspi\DeviceData\HS3DeviceMigrator.cs" />
     <Compile Include="Hspi\DeviceData\DeviceImportDeviceManager.cs" />
     <Compile Include="Hspi\DeviceData\ImportDeviceData.cs" />
-    <Compile Include="Hspi\Logger.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Logger.cs" />
     <Compile Include="Hspi\PlugInGeneralConfiguration.cs" />
+    <Compile Include="Hspi\Shared\Hspi\DeviceData\HSDeviceHelper.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Utils\EnumHelper.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Utils\ExceptionHelper.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Utils\ObjectSerialize.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Utils\ScribanHelper.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Utils\TaskHelper.cs" />
     <Compile Include="Hspi\Utils\InfluxDbQueryBuilder.cs" />
-    <Compile Include="Hspi\PluginConfigBase.cs" />
+    <Compile Include="Hspi\Shared\Hspi\PluginConfigBase.cs" />
     <Compile Include="Hspi\PlugInDBInformation.cs" />
     <Compile Include="Hspi\PlugInDeviceImport.cs" />
     <Compile Include="Hspi\PlugInDeviceConfig.cs" />
-    <Compile Include="Hspi\Utils\ScribanHelper.cs" />
-    <Compile Include="Hspi\Utils\EnumHelper.cs" />
     <Compile Include="Hspi\Utils\InfluxDBHelper.cs" />
     <Compile Include="Hspi\DevicePersistenceData.cs" />
-    <Compile Include="Hspi\Utils\ExceptionHelper.cs" />
     <Compile Include="Hspi\HSHelper.cs" />
     <Compile Include="Hspi\HSPI.cs" />
     <Compile Include="Hspi\InfluxDBLoginInformation.cs" />
     <Compile Include="Hspi\InfluxDBMeasurementsCollector.cs" />
-    <Compile Include="Hspi\Utils\ObjectSerialize.cs" />
     <Compile Include="Hspi\PlugIn.cs" />
     <Compile Include="Hspi\PlugInData.cs" />
     <Compile Include="Hspi\PluginConfig.cs" />
     <Compile Include="Hspi\Program.cs" />
-    <Compile Include="Hspi\HSPIBase.cs" />
+    <Compile Include="Hspi\Shared\Hspi\HSPIBase.cs" />
     <Compile Include="Hspi\PluginStatusCalculator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Hspi\RecordData.cs" />
-    <Compile Include="Hspi\Utils\TaskHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
@@ -112,6 +112,11 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="appveyor.yml" />
+    <None Include="Hspi\Shared\.git" />
+    <None Include="Hspi\Shared\HS4PlugInHelper.projitems" />
+    <None Include="Hspi\Shared\HS4PlugInHelper.shproj" />
+    <None Include="Hspi\Shared\LICENSE" />
+    <None Include="Hspi\Shared\README.md" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -231,6 +236,7 @@
     <Content Include="Hspi\html\images\Influxdb_logo_castle.svg" />
     <Content Include="Hspi\html\metricsgraphics.min.css" />
     <Content Include="Hspi\html\persistentlist.html" />
+    <Content Include="Hspi\Shared\HS4PlugInHelper.sln" />
     <Content Include="install.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
