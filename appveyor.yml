@@ -2,11 +2,10 @@ version: 4.0.{build}
 image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
+clone_depth: 1
 
-
-# scripts that are called at very beginning, before repo cloning
-init:
-- git config --global submodule.recurse true
+install:
+- git submodule update --init --recurserve
 assembly_info:
   patch: true
   file: '**\AssemblyInfo.*'
