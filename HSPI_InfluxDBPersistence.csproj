@@ -112,11 +112,6 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="appveyor.yml" />
-    <None Include="Hspi\Shared\.git" />
-    <None Include="Hspi\Shared\HS4PlugInHelper.projitems" />
-    <None Include="Hspi\Shared\HS4PlugInHelper.shproj" />
-    <None Include="Hspi\Shared\LICENSE" />
-    <None Include="Hspi\Shared\README.md" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -236,7 +231,6 @@
     <Content Include="Hspi\html\images\Influxdb_logo_castle.svg" />
     <Content Include="Hspi\html\metricsgraphics.min.css" />
     <Content Include="Hspi\html\persistentlist.html" />
-    <Content Include="Hspi\Shared\HS4PlugInHelper.sln" />
     <Content Include="install.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -5,7 +5,6 @@ using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using static System.FormattableString;
 
@@ -16,16 +15,10 @@ namespace Hspi
     /// </summary>
     internal sealed class PluginConfig : PluginConfigBase
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PluginConfig"/> class.
-        /// </summary>
-        /// <param name="HS">The homeseer application.</param>
         public PluginConfig(IHsController HS) : base(HS)
         {
             LoadDBSettings();
             LoadPersistenceSettings();
-
-            debugLogging = GetValue(DebugLoggingKey, false);
         }
 
         public InfluxDBLoginInformation DBLoginInformation
@@ -52,31 +45,6 @@ namespace Hspi
                     SetValue(InfluxDBUsernameKey, value.User);
                     SetValue(InfluxDBPasswordKey, EncryptString(value.Password));
                     SetValue(InfluxDBDBKey, value.DB);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether debug logging is enabled.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [debug logging]; otherwise, <c>false</c>.
-        /// </value>
-        public bool DebugLogging
-        {
-            get
-            {
-                using (var sync = configLock.ReaderLock())
-                {
-                    return debugLogging;
-                }
-            }
-
-            set
-            {
-                using (var sync = configLock.WriterLock())
-                {
-                    SetValue(DebugLoggingKey, value, ref debugLogging);
                 }
             }
         }
@@ -221,7 +189,6 @@ namespace Hspi
         public const string DeviceRefIdTag = "refid";
         public const string DeviceStringValueDefaultField = "valueString";
         public const string DeviceValueDefaultField = "value";
-        private const string DebugLoggingKey = "DebugLogging";
         private const string DeviceRefIdKey = "DeviceRefId";
         private const string FieldKey = "Field";
         private const string FieldStringKey = "FieldString";
@@ -239,7 +206,6 @@ namespace Hspi
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
 
-        private bool debugLogging;
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private InfluxDBLoginInformation influxDBLoginInformation;
     };
