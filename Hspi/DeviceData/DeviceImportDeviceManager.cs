@@ -164,7 +164,9 @@ namespace Hspi.DeviceData
         private readonly CancellationToken cancellationToken;
         private readonly IList<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();
+#pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource combinedToken;
+#pragma warning restore CA2213 // Disposable fields should be disposed
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
         private readonly IReadOnlyDictionary<int, DeviceImportDevice> importDevices;

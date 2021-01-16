@@ -229,7 +229,9 @@ namespace Hspi
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
         private readonly PluginStatusCalculator pluginStatusCalculator;
+#pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource tokenSource;
+#pragma warning restore CA2213 // Disposable fields should be disposed
         private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
     }
 }

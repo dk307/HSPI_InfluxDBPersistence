@@ -91,9 +91,8 @@ namespace Hspi.Utils
             StringBuilder stb = new StringBuilder();
             stb.Append("SELECT ");
             stb.Append(Invariant($"\"{data.Field}\" as \"{deviceName}\""));
-            // We do not filter by time because filtering for time uses time of original entry , not filled ones
-            // it is filtered later.
-            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0}))", subquery);
+            // We do not filter by time because filtering for time uses time of original entry, not filled ones
+            stb.AppendFormat(CultureInfo.InvariantCulture, "FROM (SELECT * FROM ({0})) LIMIT 100000", subquery);
             return stb.ToString();
         }
 
