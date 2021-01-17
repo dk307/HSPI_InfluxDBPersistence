@@ -53,7 +53,7 @@ namespace Hspi.DeviceData
                 .WithLocation(PlugInData.PlugInName)
                 .WithMiscFlags(EMiscFlag.SetDoesNotChangeLastChange, EMiscFlag.StatusOnly)
                 .AsType(EFeatureType.Generic, 0)
-                .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataFroDeviceType(ConnectionStatusDeviceType))
+                .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataForDeviceType(ConnectionStatusDeviceType))
                 .WithDefaultValue(0)
                 .AddButton(OffValue, "Not-working", controlUse: HomeSeer.PluginSdk.Devices.Controls.EControlUse.Off)
                 .AddButton(OnValue, "Working", controlUse: HomeSeer.PluginSdk.Devices.Controls.EControlUse.On)
@@ -72,7 +72,7 @@ namespace Hspi.DeviceData
                                     .AsType(EDeviceType.Generic, 0)
                                     .WithLocation(PlugInData.PlugInName)
                                     .WithMiscFlags(EMiscFlag.SetDoesNotChangeLastChange, EMiscFlag.StatusOnly)
-                                    .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataFroDeviceType(RootDeviceType))
+                                    .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataForDeviceType(RootDeviceType))
                                     .PrepareForHs();
 
             int refId = HS.CreateDevice(newDeviceData);

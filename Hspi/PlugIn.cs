@@ -261,9 +261,9 @@ namespace Hspi
             {
                 deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceImportDeviceManager(HomeSeerSystem,
-                                                                      pluginConfig.DBLoginInformation,
-                                                                      pluginStatusCalculator,
-                                                                      ShutdownCancellationToken);
+                                                                        pluginConfig.DBLoginInformation,
+                                                                        pluginStatusCalculator,
+                                                                        ShutdownCancellationToken);
             }
         }
 

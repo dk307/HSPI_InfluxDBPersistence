@@ -42,7 +42,7 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    string deviceName = HSHelper.GetName(HomeSeerSystem, refId);
+                    string deviceName = HSDeviceHelper.GetName(HomeSeerSystem, refId);
 
                     var queries = InfluxDbQueryBuilder.GetStatsQueries(data,
                                                                   queryDuration.Value,
@@ -232,7 +232,7 @@ namespace Hspi
 
                 if (data != null)
                 {
-                    string deviceName = HSHelper.GetName(HomeSeerSystem, refId);
+                    string deviceName = HSDeviceHelper.GetName(HomeSeerSystem, refId);
 
                     var queries = InfluxDbQueryBuilder.GetHistoryQueries(data, deviceName, maxRecords, queryDuration);
                     var queryData = GetData(queries.Item1);
@@ -529,13 +529,6 @@ namespace Hspi
             }
 
             return (refId, queryDuration);
-        }
-
-        private static int ParseRefId(string refIdString)
-        {
-            return int.Parse(refIdString,
-                                  System.Globalization.NumberStyles.Any,
-                                  CultureInfo.InvariantCulture);
         }
 
         private void AddToDisplayDetails(IList<string> displayTypes, int refId)

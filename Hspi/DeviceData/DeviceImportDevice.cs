@@ -34,7 +34,7 @@ namespace Hspi.DeviceData
             }
         }
 
-        public string Name => HSHelper.GetName(HS, refId);
+        public string Name => HSDeviceHelper.GetName(HS, refId);
 
         public int RefId => refId;
 
@@ -47,7 +47,7 @@ namespace Hspi.DeviceData
                   .AsType(EDeviceType.Generic, 0)
                   .WithLocation(PlugInData.PlugInName)
                   .WithMiscFlags(EMiscFlag.StatusOnly)
-                  .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataFroDeviceType(RootDeviceType))
+                  .WithExtraData(HSDeviceHelper.CreatePlugInExtraDataForDeviceType(RootDeviceType))
                   .PrepareForHs();
 
             int refId = HS.CreateDevice(newDeviceData);
@@ -80,7 +80,7 @@ namespace Hspi.DeviceData
         private static PlugExtraData CreatePlugInExtraData(ImportDeviceData importDeviceData)
         {
             string data = JsonConvert.SerializeObject(importDeviceData, Formatting.Indented);
-            var plugExtra = HSDeviceHelper.CreatePlugInExtraDataFroDeviceType(DeviceType);
+            var plugExtra = HSDeviceHelper.CreatePlugInExtraDataForDeviceType(DeviceType);
             plugExtra.AddNamed(PlugInData.DevicePlugInDataNamedKey, data);
             return plugExtra;
         }

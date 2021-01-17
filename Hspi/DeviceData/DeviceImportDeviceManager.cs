@@ -61,6 +61,7 @@ namespace Hspi.DeviceData
 
             foreach (var refId in refIds)
             {
+                combinedToken.Token.ThrowIfCancellationRequested();
                 try
                 {
                     ERelationship relationship = (ERelationship)HS.GetPropertyByRef(refId, EProperty.Relationship);
@@ -79,7 +80,7 @@ namespace Hspi.DeviceData
                 }
                 catch (Exception ex)
                 {
-                    logger.Warn(Invariant($"{HSHelper.GetName(HS, refId)} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
+                    logger.Warn(Invariant($"{HSDeviceHelper.GetName(HS, refId)} has invalid plugin data load failed with {ex.GetFullMessage()}. Please recreate it."));
                 }
             }
 

@@ -10,18 +10,6 @@ namespace Hspi
             HS = hS;
         }
 
-        public static string GetName(IHsController HS, int refId)
-        {
-            try
-            {
-                return HS.GetNameByRef(refId);
-            }
-            catch
-            {
-                return $"RefId:{refId}";
-            }
-        }
-
         public void Fill(int deviceRefId,
                          out string measurement,
                          out string field,
