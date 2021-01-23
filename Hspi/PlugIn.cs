@@ -61,7 +61,7 @@ namespace Hspi
             try
             {
                 pluginConfig = new PluginConfig(HomeSeerSystem);
-                UpdateDebugLevel();
+                UpdateLoggingInformation();
 
                 logger.Info("Starting Plugin");
                 LogConfiguration();
@@ -139,7 +139,7 @@ namespace Hspi
 
         private void PluginConfigChanged()
         {
-            UpdateDebugLevel();
+            UpdateLoggingInformation();
             RestartProcessing();
         }
 
@@ -294,10 +294,10 @@ namespace Hspi
             await RecordTrackedDevices().ConfigureAwait(false);
         }
 
-        private void UpdateDebugLevel()
+        private void UpdateLoggingInformation()
         {
             this.LogDebug = pluginConfig.DebugLogging;
-            Logger.ConfigureLogging(LogDebug, HomeSeerSystem);
+            Logger.ConfigureLogging(LogDebug, pluginConfig.LogToFile, HomeSeerSystem);
         }
 
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();

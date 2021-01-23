@@ -7,7 +7,7 @@
     {
         private static void Main(string[] args)
         {
-            Logger.ConfigureLogging(false);
+            Logger.ConfigureLogging(false, false);
             logger.Info("Starting...");
 
             try

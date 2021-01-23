@@ -7,11 +7,13 @@ namespace Hspi
     internal partial class PlugIn : HspiBase
     {
         private const string DebugLoggingConfiguration = "debuglogging";
+        private const string LogToFileConfiguration = "logtofile";
 
         public IDictionary<string, object> GetGeneralInformation()
         {
             var configuration = new Dictionary<string, object>();
             configuration[DebugLoggingConfiguration] = pluginConfig.DebugLogging;
+            configuration[LogToFileConfiguration] = pluginConfig.LogToFile;
             return configuration;
         }
 
@@ -20,8 +22,8 @@ namespace Hspi
             var errors = new List<string>();
             try
             {
-                pluginConfig.DebugLogging = configuration.ContainsKey(DebugLoggingConfiguration) &&
-                                            configuration[DebugLoggingConfiguration] == "on";
+                pluginConfig.DebugLogging = CheckBoolValue(DebugLoggingConfiguration);
+                pluginConfig.LogToFile = CheckBoolValue(LogToFileConfiguration);
                 PluginConfigChanged();
             }
             catch (Exception ex)
@@ -29,6 +31,11 @@ namespace Hspi
                 errors.Add(ex.GetFullMessage());
             }
             return errors;
+
+            bool CheckBoolValue(string key)
+            {
+                return configuration.ContainsKey(key) && configuration[key] == "on";
+            }
         }
     }
 }
