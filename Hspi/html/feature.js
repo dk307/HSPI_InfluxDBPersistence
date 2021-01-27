@@ -28,7 +28,7 @@ function setupIFrame(ref, framePage) {
 	
 	var iFrameUrl = '/InfluxDBPersistence/' + framePage + '?' + $.param(params);
 	
-	$('#plugintabhtml')
+	$('#InfluxDBPersistence-md>#plugintabhtml')
 		.html('<iframe id="influxdbpersistenceiframe" src=' + iFrameUrl +' scrolling="no" style="width: 1px;min-width: 100%;border: none; width: 100%; height: 18rem"></iframe>');
 	 		
 	iFrameResize({});
