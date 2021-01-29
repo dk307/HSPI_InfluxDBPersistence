@@ -6,6 +6,7 @@ using Nito.AsyncEx;
 using NullGuard;
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
@@ -70,6 +71,7 @@ namespace Hspi
 
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);
+                HomeSeerSystem.RegisterEventCB(Constants.HSEvent.CONFIG_CHANGE, Id);
 
                 // Feature pages
                 HomeSeerSystem.RegisterFeaturePage(Id, "configuration.html", "Configuration");
@@ -103,20 +105,73 @@ namespace Hspi
         {
             try
             {
-                if ((eventType == Constants.HSEvent.VALUE_CHANGE) && (parameters.Length > 4))
+                switch (eventType)
                 {
-                    int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
-                    await RecordDeviceValue(deviceRefId, TrackedType.Value).ConfigureAwait(false);
-                }
-                else if ((eventType == Constants.HSEvent.STRING_CHANGE) && (parameters.Length > 3))
-                {
-                    int deviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
-                    await RecordDeviceValue(deviceRefId, TrackedType.String).ConfigureAwait(false);
+                    case Constants.HSEvent.VALUE_CHANGE:
+                        if (parameters.Length > 4)
+                        {
+                            int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
+                            await RecordDeviceValue(deviceRefId, TrackedType.Value).ConfigureAwait(false);
+                        }
+                        break;
+
+                    case Constants.HSEvent.STRING_CHANGE:
+                        if (parameters.Length > 3)
+                        {
+                            int deviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
+                            await RecordDeviceValue(deviceRefId, TrackedType.String).ConfigureAwait(false);
+                        }
+                        break;
+
+                    case Constants.HSEvent.CONFIG_CHANGE:
+                        if (parameters.Length >= 6)
+                        {
+                            if (Convert.ToInt32(parameters[1], CultureInfo.InvariantCulture) == 0) // Device Type change
+                            {
+                                if (Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture) == 2) //Delete
+                                {
+                                    int deletedDeviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
+                                    RestartProcessingIfNeeded(deletedDeviceRefId);
+                                }
+                            }
+                        }
+                        break;
                 }
             }
             catch (Exception ex)
             {
                 logger.Warn(Invariant($"Failed to process HSEvent {eventType} with {ex.GetFullMessage()}"));
+            }
+        }
+
+        private void RestartProcessingIfNeeded(int deletedDeviceRefId)
+        {
+            var deletedPersistanceIds = this.pluginConfig.DevicePersistenceData.Values.Where(x => x.DeviceRefId == deletedDeviceRefId);
+
+            if (deletedPersistanceIds.Any())
+            {
+                logger.Info($"History Persisted Device refId {deletedDeviceRefId} deleted.");
+                foreach (var persist in deletedPersistanceIds)
+                {
+                    this.pluginConfig.RemoveDevicePersistenceData(persist.Id);
+                }
+                PluginConfigChanged();
+            }
+            else
+            {
+                DeviceImportDeviceManager deviceRootDeviceManagerCopy;
+                using (var sync = deviceRootDeviceManagerLock.Enter())
+                {
+                    deviceRootDeviceManagerCopy = deviceRootDeviceManager;
+                }
+
+                if (deviceRootDeviceManagerCopy != null)
+                {
+                    if (deviceRootDeviceManagerCopy.HasDevice(deletedDeviceRefId))
+                    {
+                        PluginConfigChanged();
+                    }
+                }
             }
         }
 
@@ -128,7 +183,12 @@ namespace Hspi
                 deviceRootDeviceManagerCopy = deviceRootDeviceManager;
             }
 
-            return await deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ConfigureAwait(false);
+            if (deviceRootDeviceManagerCopy != null)
+            {
+                return await deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ConfigureAwait(false);
+            }
+
+            return false;
         }
 
         private void LogConfiguration()

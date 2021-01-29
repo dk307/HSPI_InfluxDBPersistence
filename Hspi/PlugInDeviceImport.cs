@@ -87,6 +87,7 @@ namespace Hspi
                 {
                     // add
                     device = DeviceImportDevice.CreateNew(HomeSeerSystem, deviceName, importDeviceData);
+                    logger.Info(Invariant($"Created New Import Device {device.Name}"));
                     PluginConfigChanged();
                 }
             }

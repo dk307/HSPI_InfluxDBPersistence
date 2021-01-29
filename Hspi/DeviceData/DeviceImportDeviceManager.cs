@@ -53,6 +53,11 @@ namespace Hspi.DeviceData
             return false;
         }
 
+        public bool HasDevice(int refId)
+        {
+            return importDevices.ContainsKey(refId);
+        }
+
         private Dictionary<int, DeviceImportDevice> GetCurrentDevices()
         {
             var refIds = HS.GetRefsByInterface(PlugInData.PlugInId);
