@@ -30,7 +30,7 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-	<Nullable>enable</Nullable>
+    <Nullable>enable</Nullable>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -46,7 +46,6 @@
     <CodeAnalysisRuleSet>ExtendedCorrectnessRules.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Prefer32Bit>false</Prefer32Bit>
-
     <CodeAnalysisIgnoreGeneratedCode>true</CodeAnalysisIgnoreGeneratedCode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -84,6 +83,7 @@
     <Compile Include="Hspi\Shared\Hspi\Logger.cs" />
     <Compile Include="Hspi\PlugInGeneralConfiguration.cs" />
     <Compile Include="Hspi\Shared\Hspi\DeviceData\HSDeviceHelper.cs" />
+    <Compile Include="Hspi\Shared\Hspi\Utils\MiscHelper.cs" />
     <Compile Include="Hspi\Shared\Hspi\Utils\EnumHelper.cs" />
     <Compile Include="Hspi\Shared\Hspi\Utils\ExceptionHelper.cs" />
     <Compile Include="Hspi\Shared\Hspi\Utils\ObjectSerialize.cs" />
