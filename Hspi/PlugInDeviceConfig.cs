@@ -416,19 +416,17 @@ namespace Hspi
             var errors = new List<string>();
             try
             {
-                var persistanceDataDict2 = ScribanHelper.ConvertToStringObjectDictionary(persistanceDataDict);
-
                 if (!persistanceDataDict.TryGetValue("id", out var value) || string.IsNullOrEmpty(value))
                 {
                     logger.Debug(Invariant($"Adding new persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
-                    persistanceDataDict2["id"] = Guid.NewGuid().ToString();
+                    persistanceDataDict["id"] = Guid.NewGuid().ToString();
                 }
                 else
                 {
                     logger.Debug(Invariant($"Adding existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
                 }
 
-                var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict2);
+                var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict);
 
                 // validate
                 if (string.IsNullOrWhiteSpace(persistantData.Field) && string.IsNullOrWhiteSpace(persistantData.FieldString))

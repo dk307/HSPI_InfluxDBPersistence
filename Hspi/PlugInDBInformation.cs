@@ -25,10 +25,7 @@ namespace Hspi
                 }
                 else
                 {
-                    var dbInformationDBDict2 = ScribanHelper.ConvertToStringObjectDictionary(dbInformationDBDict);
-                    dbInformationDBDict2["dburi"] = uri;
-
-                    var influxDBLoginInformation = ScribanHelper.FromDictionary<InfluxDBLoginInformation>(dbInformationDBDict2);
+                    var influxDBLoginInformation = ScribanHelper.FromDictionary<InfluxDBLoginInformation>(dbInformationDBDict);
 
                     if (string.IsNullOrWhiteSpace(influxDBLoginInformation.DB))
                     {

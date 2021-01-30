@@ -4,8 +4,11 @@ using Nito.AsyncEx;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using static System.FormattableString;
+
+#nullable enable
 
 namespace Hspi
 {
@@ -19,6 +22,8 @@ namespace Hspi
             this.influxDBLoginInformation = LoadDBSettings();
             this.devicePersistenceData = LoadPersistenceSettings();
         }
+
+        [DisallowNull]
 
         public InfluxDBLoginInformation DBLoginInformation
         {

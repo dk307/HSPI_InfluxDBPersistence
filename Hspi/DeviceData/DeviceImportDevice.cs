@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
+#nullable enable
+
 namespace Hspi.DeviceData
 {
     internal sealed class DeviceImportDevice
