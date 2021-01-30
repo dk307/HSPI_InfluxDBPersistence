@@ -6,8 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-#nullable enable
-
 namespace Hspi.Utils
 {
     internal static class InfluxDBHelper
@@ -40,7 +38,7 @@ namespace Hspi.Utils
                 previousValue = rowValue;
             }
 
-            if ((previousDateTime.HasValue) && (previousValue!=null))
+            if ((previousDateTime.HasValue) && (previousValue != null))
             {
                 AddTimespanToHistogram(histogram, utcNow - previousDateTime.Value, previousValue);
             }

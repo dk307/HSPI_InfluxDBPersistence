@@ -1,10 +1,7 @@
 ﻿using Hspi.Utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using static System.FormattableString;
-
-#nullable enable
 
 namespace Hspi
 {

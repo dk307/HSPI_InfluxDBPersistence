@@ -6,8 +6,6 @@ using System.Linq;
 using System.Threading;
 using static System.FormattableString;
 
-#nullable enable
-
 namespace Hspi.DeviceData
 {
     internal sealed class HS3DeviceMigrator
@@ -61,7 +59,7 @@ namespace Hspi.DeviceData
             }
         }
 
-         internal class OldDeviceIdentifier : System.IEquatable<OldDeviceIdentifier>
+        internal class OldDeviceIdentifier : System.IEquatable<OldDeviceIdentifier>
         {
             public OldDeviceIdentifier(string deviceId)
             {

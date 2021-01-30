@@ -2,9 +2,6 @@
 using System;
 using System.Collections.Generic;
 
-#nullable enable
-
-
 namespace Hspi
 {
     internal partial class PlugIn : HspiBase

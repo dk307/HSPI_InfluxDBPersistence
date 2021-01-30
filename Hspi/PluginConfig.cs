@@ -7,8 +7,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using static System.FormattableString;
 
-#nullable enable
-
 namespace Hspi
 {
     /// <summary>

@@ -9,8 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
-#nullable enable
-
 namespace Hspi
 {
     internal sealed class InfluxDBMeasurementsCollector : IDisposable

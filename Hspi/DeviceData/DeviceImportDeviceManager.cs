@@ -3,18 +3,16 @@ using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
 using Hspi.Utils;
 using Nito.AsyncEx;
- using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
-#nullable enable
-
 namespace Hspi.DeviceData
 {
-     internal sealed class DeviceImportDeviceManager : IDisposable
+    internal sealed class DeviceImportDeviceManager : IDisposable
     {
         public DeviceImportDeviceManager(IHsController HS,
                                          InfluxDBLoginInformation dbLoginInformation,
@@ -57,6 +55,7 @@ namespace Hspi.DeviceData
             }
             return false;
         }
+
         private Dictionary<int, DeviceImportDevice> GetCurrentDevices()
         {
             var refIds = HS.GetRefsByInterface(PlugInData.PlugInId);

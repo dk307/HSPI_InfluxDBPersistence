@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-namespace Hspi.DeviceData
+﻿namespace Hspi.DeviceData
 {
     internal sealed record ImportDeviceData
     {

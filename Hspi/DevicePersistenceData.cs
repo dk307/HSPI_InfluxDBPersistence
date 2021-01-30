@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 
-#nullable enable
-
 namespace Hspi
 {
 #pragma warning disable CA1720 // Identifier contains type name

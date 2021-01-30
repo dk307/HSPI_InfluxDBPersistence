@@ -1,6 +1,5 @@
 ﻿using HomeSeer.PluginSdk;
 using System.Collections.Generic;
-#nullable enable
 
 namespace Hspi
 {

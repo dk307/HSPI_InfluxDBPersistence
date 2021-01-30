@@ -1,7 +1,4 @@
-﻿
-#nullable enable
-
-namespace Hspi
+﻿namespace Hspi
 {
     /// <summary>
     /// Class to store static data
