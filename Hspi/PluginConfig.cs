@@ -129,7 +129,7 @@ namespace Hspi
             string deviceIdsConcatString = GetValue(PersistenceIdsKey, string.Empty);
             var persistenceIds = deviceIdsConcatString.Split(PersistenceIdsSeparator);
 
-            var devicePersistenceData = new Dictionary<string, DevicePersistenceData>();
+            var persistData = new Dictionary<string, DevicePersistenceData>();
             foreach (var persistenceId in persistenceIds)
             {
                 string deviceRefIdString = GetValue(DeviceRefIdKey, string.Empty, persistenceId);
@@ -179,10 +179,10 @@ namespace Hspi
 
                 var data = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags,
                                                      maxValidValue, minValidValue, trackedType);
-                this.devicePersistenceData.Add(persistenceId, data);
+                persistData.Add(persistenceId, data);
             }
 
-            return devicePersistenceData;
+            return persistData;
         }
 
         public const string DefaultFieldValueString = "value";

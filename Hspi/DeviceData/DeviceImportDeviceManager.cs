@@ -91,7 +91,7 @@ namespace Hspi.DeviceData
             return currentChildDevices;
         }
 
-        private async Task<ImportDeviceData?> ImportDataForDevice(DeviceImportDevice deviceData)
+        private async ValueTask<ImportDeviceData?> ImportDataForDevice(DeviceImportDevice deviceData)
         {
             //start as task to fetch data
             ImportDeviceData? importDeviceData = null;

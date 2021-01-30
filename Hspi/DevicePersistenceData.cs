@@ -14,7 +14,7 @@ namespace Hspi
 
 #pragma warning restore CA1720 // Identifier contains type name
 
-    public sealed class DevicePersistenceData
+    public sealed record DevicePersistenceData
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
                                      string? field = null, string? fieldString = null,

@@ -55,7 +55,7 @@ namespace Hspi
             return false;
         }
 
-        public async Task<bool> Record(RecordData data)
+        public async ValueTask<bool> Record(RecordData data)
         {
             if (peristenceDataMap == null)
             {
@@ -112,12 +112,7 @@ namespace Hspi
                         }
                     }
 
-                    var queueElement = new QueueElement()
-                    {
-                        datapoint = influxDatapoint,
-                        refId = data.DeviceRefId,
-                    };
-
+                    var queueElement = new QueueElement(influxDatapoint, data.DeviceRefId);
                     await queue.EnqueueAsync(queueElement, tokenSource.Token).ConfigureAwait(false);
                 }
             }
@@ -162,7 +157,7 @@ namespace Hspi
             return !double.IsNaN(deviceValue) && (deviceValue <= maxValidValue) && (deviceValue >= minValidValue);
         }
 
-        private async Task<bool> IsConnectedToServer()
+        private async ValueTask<bool> IsConnectedToServer()
         {
             try
             {
@@ -184,9 +179,9 @@ namespace Hspi
 
                 try
                 {
-                    if (!await influxDBClient.PostPointAsync(loginInformation.DB, queueElement.datapoint).ConfigureAwait(false))
+                    if (!await influxDBClient.PostPointAsync(loginInformation.DB, queueElement.Datapoint).ConfigureAwait(false))
                     {
-                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} for RefId: {queueElement.refId}"));
+                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} for RefId: {queueElement.RefId}"));
                     }
                     else
                     {
@@ -211,16 +206,22 @@ namespace Hspi
                     }
                     else
                     {
-                        logger.Warn(Invariant($"Failed to update {loginInformation?.DB ?? string.Empty} with {ExceptionHelper.GetFullMessage(ex)} for RefId: {queueElement.refId}"));
+                        logger.Warn(Invariant($"Failed to update {loginInformation?.DB ?? string.Empty} with {ExceptionHelper.GetFullMessage(ex)} for RefId: {queueElement.RefId}"));
                     }
                 }
             }
         }
 
-        private struct QueueElement
+        private record QueueElement
         {
-            public InfluxDatapoint<InfluxValueField> datapoint;
-            public int refId;
+            public InfluxDatapoint<InfluxValueField> Datapoint;
+            public int RefId;
+
+            public QueueElement(InfluxDatapoint<InfluxValueField> datapoint, int refId)
+            {
+                this.Datapoint = datapoint;
+                this.RefId = refId;
+            }
         };
 
         private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);

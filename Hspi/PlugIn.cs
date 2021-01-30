@@ -92,7 +92,7 @@ namespace Hspi
             }
         }
 
-        private async Task<InfluxDBMeasurementsCollector?> GetInfluxDBMeasurementsCollector()
+        private async ValueTask<InfluxDBMeasurementsCollector?> GetInfluxDBMeasurementsCollector()
         {
             using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync().ConfigureAwait(false))
             {
@@ -146,6 +146,37 @@ namespace Hspi
             }
         }
 
+        private void RestartProcessingIfNeeded(int deletedDeviceRefId)
+        {
+            var deletedPersistanceIds = this.pluginConfig!.DevicePersistenceData.Values.Where(x => x.DeviceRefId == deletedDeviceRefId);
+
+            if (deletedPersistanceIds.Any())
+            {
+                logger.Info($"History Persisted Device refId {deletedDeviceRefId} deleted.");
+                foreach (var persist in deletedPersistanceIds)
+                {
+                    this.pluginConfig.RemoveDevicePersistenceData(persist.Id);
+                }
+                PluginConfigChanged();
+            }
+            else
+            {
+                DeviceImportDeviceManager? deviceRootDeviceManagerCopy;
+                using (var sync = deviceRootDeviceManagerLock.Enter())
+                {
+                    deviceRootDeviceManagerCopy = deviceRootDeviceManager;
+                }
+
+                if (deviceRootDeviceManagerCopy != null)
+                {
+                    if (deviceRootDeviceManagerCopy.HasDevice(deletedDeviceRefId))
+                    {
+                        PluginConfigChanged();
+                    }
+                }
+            }
+        }
+
         private async Task<bool> ImportDeviceFromDB(int deviceRefId)
         {
             DeviceImportDeviceManager? deviceRootDeviceManagerCopy;
@@ -177,7 +208,7 @@ namespace Hspi
             RestartProcessing();
         }
 
-        private async Task RecordDeviceValue(InfluxDBMeasurementsCollector collector,
+        private async ValueTask RecordDeviceValue(InfluxDBMeasurementsCollector collector,
                                              AbstractHsDevice device)
         {
             if (device != null)
@@ -217,7 +248,7 @@ namespace Hspi
             }
         }
 
-        private async Task RecordDeviceValue(int deviceRefId, TrackedType trackedType)
+        private async ValueTask RecordDeviceValue(int deviceRefId, TrackedType trackedType)
         {
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if ((collector != null) && collector.IsTracked(deviceRefId, trackedType))
@@ -227,7 +258,7 @@ namespace Hspi
             }
         }
 
-        private async Task RecordTrackedDevices()
+        private async ValueTask RecordTrackedDevices()
         {
             var collector = await GetInfluxDBMeasurementsCollector().ConfigureAwait(false);
             if (collector != null)
@@ -255,7 +286,7 @@ namespace Hspi
             }
         }
 
-        private async Task<bool> RecordTrackedDevices(InfluxDBMeasurementsCollector collector, int refId)
+        private async ValueTask<bool> RecordTrackedDevices(InfluxDBMeasurementsCollector collector, int refId)
         {
             var device = HomeSeerSystem.GetDeviceByRef(refId);
             if (device != null)
@@ -276,36 +307,6 @@ namespace Hspi
             Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
         }
 
-        private void RestartProcessingIfNeeded(int deletedDeviceRefId)
-        {
-            var deletedPersistanceIds = this.pluginConfig!.DevicePersistenceData.Values.Where(x => x.DeviceRefId == deletedDeviceRefId);
-
-            if (deletedPersistanceIds.Any())
-            {
-                logger.Info($"History Persisted Device refId {deletedDeviceRefId} deleted.");
-                foreach (var persist in deletedPersistanceIds)
-                {
-                    this.pluginConfig.RemoveDevicePersistenceData(persist.Id);
-                }
-                PluginConfigChanged();
-            }
-            else
-            {
-                DeviceImportDeviceManager? deviceRootDeviceManagerCopy;
-                using (var sync = deviceRootDeviceManagerLock.Enter())
-                {
-                    deviceRootDeviceManagerCopy = deviceRootDeviceManager;
-                }
-
-                if (deviceRootDeviceManagerCopy != null)
-                {
-                    if (deviceRootDeviceManagerCopy.HasDevice(deletedDeviceRefId))
-                    {
-                        PluginConfigChanged();
-                    }
-                }
-            }
-        }
         private void Shutdown()
         {
             using (var sync = influxDBMeasurementsCollectorLock.Enter())
