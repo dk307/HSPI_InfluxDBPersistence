@@ -1,11 +1,11 @@
 ﻿using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
- using System.IO;
+using System.IO;
 
 namespace Hspi.DeviceData
 {
-     internal sealed class InfluxDbStatusDevice
+    internal sealed class InfluxDbStatusDevice
     {
         private InfluxDbStatusDevice(IHsController HS, int refId, int exportStatusFeatureId)
         {
@@ -61,7 +61,6 @@ namespace Hspi.DeviceData
 
             return HS.CreateFeatureForDevice(newFeatureData);
         }
-
 
         private static int CreateRootDevice(IHsController HS)
         {

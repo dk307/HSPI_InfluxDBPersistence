@@ -73,11 +73,11 @@ namespace Hspi.DeviceData
                     //data is stored in feature(child)
                     if (relationship == ERelationship.Feature)
                     {
-                        string? deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
+                        var deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
 
                         if (deviceType == DeviceImportDevice.DeviceType)
                         {
-                            DeviceImportDevice importDevice = new DeviceImportDevice(HS, refId);
+                            var importDevice = new DeviceImportDevice(HS, refId);
                             currentChildDevices.Add(refId, importDevice);
                         }
                     }

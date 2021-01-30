@@ -6,7 +6,7 @@ namespace Hspi
 {
 #pragma warning disable CA1720 // Identifier contains type name
 
-    public enum TrackedType
+    internal enum TrackedType
     {
         Value = 0,
         String = 1,
@@ -14,7 +14,7 @@ namespace Hspi
 
 #pragma warning restore CA1720 // Identifier contains type name
 
-    public sealed record DevicePersistenceData
+    internal sealed record DevicePersistenceData
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
                                      string? field = null, string? fieldString = null,
