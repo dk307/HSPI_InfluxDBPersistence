@@ -46,10 +46,9 @@ namespace Hspi
 
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!disposing)
             {
                 Shutdown();
-                disposedValue = true;
             }
 
             base.Dispose(disposing);
@@ -369,7 +368,6 @@ namespace Hspi
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
         private DeviceImportDeviceManager? deviceRootDeviceManager;
-        private bool disposedValue;
         private InfluxDBMeasurementsCollector? influxDBMeasurementsCollector;
         private PluginConfig? pluginConfig;
         private PluginStatusCalculator? pluginStatusCalculator;
