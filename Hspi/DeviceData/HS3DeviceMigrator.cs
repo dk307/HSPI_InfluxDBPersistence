@@ -1,15 +1,15 @@
 using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
-using NullGuard;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi.DeviceData
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal sealed class HS3DeviceMigrator
     {
         public HS3DeviceMigrator(IHsController HS,
@@ -61,8 +61,7 @@ namespace Hspi.DeviceData
             }
         }
 
-        [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-        internal class OldDeviceIdentifier : System.IEquatable<OldDeviceIdentifier>
+         internal class OldDeviceIdentifier : System.IEquatable<OldDeviceIdentifier>
         {
             public OldDeviceIdentifier(string deviceId)
             {
@@ -77,7 +76,7 @@ namespace Hspi.DeviceData
 
             public static string CreateRootAddress() => "Root";
 
-            public static OldDeviceIdentifier Identify(AbstractHsDevice hsDevice)
+            public static OldDeviceIdentifier? Identify(AbstractHsDevice hsDevice)
             {
                 var childAddress = hsDevice.Address;
 
@@ -91,7 +90,7 @@ namespace Hspi.DeviceData
                 return new OldDeviceIdentifier(parts[1]);
             }
 
-            public bool Equals(OldDeviceIdentifier other)
+            public bool Equals(OldDeviceIdentifier? other)
             {
                 if (other == null)
                 {
@@ -104,7 +103,7 @@ namespace Hspi.DeviceData
                 return Address == other.Address;
             }
 
-            public override bool Equals([AllowNull] object other)
+            public override bool Equals(object? other)
             {
                 if (other == null)
                 {

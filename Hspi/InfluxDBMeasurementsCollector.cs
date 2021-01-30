@@ -1,7 +1,6 @@
 ﻿using AdysTech.InfluxDB.Client.Net;
 using Hspi.Utils;
 using Nito.AsyncEx;
-using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,9 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal sealed class InfluxDBMeasurementsCollector : IDisposable
     {
         public InfluxDBMeasurementsCollector(InfluxDBLoginInformation loginInformation,
@@ -22,7 +22,7 @@ namespace Hspi
             this.loginInformation = loginInformation;
             this.pluginStatusCalculator = pluginStatusCalculator;
             tokenSource = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
-            influxDBClient = new InfluxDBClient(loginInformation.DBUri.ToString(),
+            influxDBClient = new InfluxDBClient(loginInformation.DBUri?.ToString(),
                                                 loginInformation.User,
                                                 loginInformation.Password);
         }
@@ -205,13 +205,13 @@ namespace Hspi
                     bool connected = await IsConnectedToServer().ConfigureAwait(false);
                     if (!connected)
                     {
-                        logger.Warn(Invariant($"{loginInformation?.DBUri.ToString() ?? "DB"} is not connectable. Waiting for {connectFailureDelay.TotalSeconds} seconds before sending messages again"));
+                        logger.Warn(Invariant($"{loginInformation?.DBUri?.ToString() ?? "DB"} is not connectable. Waiting for {connectFailureDelay.TotalSeconds} seconds before sending messages again"));
                         await queue.EnqueueAsync(queueElement, token).ConfigureAwait(false);
                         await Task.Delay(connectFailureDelay, token).ConfigureAwait(false);
                     }
                     else
                     {
-                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} with {ExceptionHelper.GetFullMessage(ex)} for RefId: {queueElement.refId}"));
+                        logger.Warn(Invariant($"Failed to update {loginInformation?.DB ?? string.Empty} with {ExceptionHelper.GetFullMessage(ex)} for RefId: {queueElement.refId}"));
                     }
                 }
             }
@@ -224,14 +224,14 @@ namespace Hspi
         };
 
         private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private static readonly AsyncProducerConsumerQueue<QueueElement> queue = new AsyncProducerConsumerQueue<QueueElement>();
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
         private readonly PluginStatusCalculator pluginStatusCalculator;
 #pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource tokenSource;
 #pragma warning restore CA2213 // Disposable fields should be disposed
-        private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>> peristenceDataMap;
+        private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>>? peristenceDataMap;
     }
 }

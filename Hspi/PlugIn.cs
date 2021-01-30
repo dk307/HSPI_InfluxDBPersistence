@@ -3,16 +3,16 @@ using HomeSeer.PluginSdk.Devices;
 using Hspi.DeviceData;
 using Hspi.Utils;
 using Nito.AsyncEx;
-using NullGuard;
 using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal partial class PlugIn : HspiBase
     {
         public PlugIn()
@@ -20,7 +20,7 @@ namespace Hspi
         {
         }
 
-        public override void HsEvent(Constants.HSEvent eventType, [AllowNull] object[] parameters)
+        public override void HsEvent(Constants.HSEvent eventType, object[]? parameters)
         {
             HSEventImpl(eventType, parameters).Wait(ShutdownCancellationToken);
         }
@@ -41,8 +41,7 @@ namespace Hspi
 
         protected override void BeforeReturnStatus()
         {
-            this.Status = pluginStatusCalculator.PluginStatus;
-            // this.Status = PluginStatus.Fatal(DateTime.Now.ToString());
+            this.Status = pluginStatusCalculator?.PluginStatus ?? PluginStatus.Critical("Unknown Status");
         }
 
         protected override void Dispose(bool disposing)
@@ -93,7 +92,7 @@ namespace Hspi
             }
         }
 
-        private async Task<InfluxDBMeasurementsCollector> GetInfluxDBMeasurementsCollector()
+        private async Task<InfluxDBMeasurementsCollector?> GetInfluxDBMeasurementsCollector()
         {
             using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync().ConfigureAwait(false))
             {
@@ -101,41 +100,44 @@ namespace Hspi
             }
         }
 
-        private async Task HSEventImpl(Constants.HSEvent eventType, object[] parameters)
+        private async Task HSEventImpl(Constants.HSEvent eventType, object[]? parameters)
         {
             try
             {
-                switch (eventType)
+                if (parameters != null)
                 {
-                    case Constants.HSEvent.VALUE_CHANGE:
-                        if (parameters.Length > 4)
-                        {
-                            int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
-                            await RecordDeviceValue(deviceRefId, TrackedType.Value).ConfigureAwait(false);
-                        }
-                        break;
-
-                    case Constants.HSEvent.STRING_CHANGE:
-                        if (parameters.Length > 3)
-                        {
-                            int deviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
-                            await RecordDeviceValue(deviceRefId, TrackedType.String).ConfigureAwait(false);
-                        }
-                        break;
-
-                    case Constants.HSEvent.CONFIG_CHANGE:
-                        if (parameters.Length >= 6)
-                        {
-                            if (Convert.ToInt32(parameters[1], CultureInfo.InvariantCulture) == 0) // Device Type change
+                    switch (eventType)
+                    {
+                        case Constants.HSEvent.VALUE_CHANGE:
+                            if (parameters.Length > 4)
                             {
-                                if (Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture) == 2) //Delete
+                                int deviceRefId = Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture);
+                                await RecordDeviceValue(deviceRefId, TrackedType.Value).ConfigureAwait(false);
+                            }
+                            break;
+
+                        case Constants.HSEvent.STRING_CHANGE:
+                            if (parameters.Length > 3)
+                            {
+                                int deviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
+                                await RecordDeviceValue(deviceRefId, TrackedType.String).ConfigureAwait(false);
+                            }
+                            break;
+
+                        case Constants.HSEvent.CONFIG_CHANGE:
+                            if (parameters.Length >= 6)
+                            {
+                                if (Convert.ToInt32(parameters[1], CultureInfo.InvariantCulture) == 0) // Device Type change
                                 {
-                                    int deletedDeviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
-                                    RestartProcessingIfNeeded(deletedDeviceRefId);
+                                    if (Convert.ToInt32(parameters[4], CultureInfo.InvariantCulture) == 2) //Delete
+                                    {
+                                        int deletedDeviceRefId = Convert.ToInt32(parameters[3], CultureInfo.InvariantCulture);
+                                        RestartProcessingIfNeeded(deletedDeviceRefId);
+                                    }
                                 }
                             }
-                        }
-                        break;
+                            break;
+                    }
                 }
             }
             catch (Exception ex)
@@ -144,40 +146,9 @@ namespace Hspi
             }
         }
 
-        private void RestartProcessingIfNeeded(int deletedDeviceRefId)
-        {
-            var deletedPersistanceIds = this.pluginConfig.DevicePersistenceData.Values.Where(x => x.DeviceRefId == deletedDeviceRefId);
-
-            if (deletedPersistanceIds.Any())
-            {
-                logger.Info($"History Persisted Device refId {deletedDeviceRefId} deleted.");
-                foreach (var persist in deletedPersistanceIds)
-                {
-                    this.pluginConfig.RemoveDevicePersistenceData(persist.Id);
-                }
-                PluginConfigChanged();
-            }
-            else
-            {
-                DeviceImportDeviceManager deviceRootDeviceManagerCopy;
-                using (var sync = deviceRootDeviceManagerLock.Enter())
-                {
-                    deviceRootDeviceManagerCopy = deviceRootDeviceManager;
-                }
-
-                if (deviceRootDeviceManagerCopy != null)
-                {
-                    if (deviceRootDeviceManagerCopy.HasDevice(deletedDeviceRefId))
-                    {
-                        PluginConfigChanged();
-                    }
-                }
-            }
-        }
-
         private async Task<bool> ImportDeviceFromDB(int deviceRefId)
         {
-            DeviceImportDeviceManager deviceRootDeviceManagerCopy;
+            DeviceImportDeviceManager? deviceRootDeviceManagerCopy;
             using (var sync = deviceRootDeviceManagerLock.Enter())
             {
                 deviceRootDeviceManagerCopy = deviceRootDeviceManager;
@@ -193,8 +164,11 @@ namespace Hspi
 
         private void LogConfiguration()
         {
-            var dbConfig = pluginConfig.DBLoginInformation;
-            logger.Info(Invariant($"Url:{dbConfig.DBUri} User:{dbConfig.User} Database:{dbConfig.DB}"));
+            if (pluginConfig != null)
+            {
+                var dbConfig = pluginConfig.DBLoginInformation;
+                logger.Info(Invariant($"Url:{dbConfig.DBUri} User:{dbConfig.User} Database:{dbConfig.DB}"));
+            }
         }
 
         private void PluginConfigChanged()
@@ -302,6 +276,36 @@ namespace Hspi
             Utils.TaskHelper.StartAsyncWithErrorChecking("Device Import", StartDeviceImport, ShutdownCancellationToken);
         }
 
+        private void RestartProcessingIfNeeded(int deletedDeviceRefId)
+        {
+            var deletedPersistanceIds = this.pluginConfig!.DevicePersistenceData.Values.Where(x => x.DeviceRefId == deletedDeviceRefId);
+
+            if (deletedPersistanceIds.Any())
+            {
+                logger.Info($"History Persisted Device refId {deletedDeviceRefId} deleted.");
+                foreach (var persist in deletedPersistanceIds)
+                {
+                    this.pluginConfig.RemoveDevicePersistenceData(persist.Id);
+                }
+                PluginConfigChanged();
+            }
+            else
+            {
+                DeviceImportDeviceManager? deviceRootDeviceManagerCopy;
+                using (var sync = deviceRootDeviceManagerLock.Enter())
+                {
+                    deviceRootDeviceManagerCopy = deviceRootDeviceManager;
+                }
+
+                if (deviceRootDeviceManagerCopy != null)
+                {
+                    if (deviceRootDeviceManagerCopy.HasDevice(deletedDeviceRefId))
+                    {
+                        PluginConfigChanged();
+                    }
+                }
+            }
+        }
         private void Shutdown()
         {
             using (var sync = influxDBMeasurementsCollectorLock.Enter())
@@ -321,8 +325,8 @@ namespace Hspi
             {
                 deviceRootDeviceManager?.Dispose();
                 deviceRootDeviceManager = new DeviceImportDeviceManager(HomeSeerSystem,
-                                                                        pluginConfig.DBLoginInformation,
-                                                                        pluginStatusCalculator,
+                                                                        pluginConfig!.DBLoginInformation,
+                                                                        pluginStatusCalculator!,
                                                                         ShutdownCancellationToken);
             }
         }
@@ -332,22 +336,22 @@ namespace Hspi
             using (var sync = await influxDBMeasurementsCollectorLock.EnterAsync(ShutdownCancellationToken))
             {
                 bool recreate = (influxDBMeasurementsCollector == null) ||
-                                (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig.DBLoginInformation));
+                                (!influxDBMeasurementsCollector.LoginInformation.Equals(pluginConfig!.DBLoginInformation));
 
                 if (recreate)
                 {
-                    if (pluginConfig.DBLoginInformation.IsValid)
+                    if (pluginConfig!.DBLoginInformation.IsValid)
                     {
                         influxDBMeasurementsCollector?.Dispose();
-                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig.DBLoginInformation,
-                                                                                          this.pluginStatusCalculator,
+                        influxDBMeasurementsCollector = new InfluxDBMeasurementsCollector(pluginConfig!.DBLoginInformation,
+                                                                                          this.pluginStatusCalculator!,
                                                                                           ShutdownCancellationToken);
                         influxDBMeasurementsCollector.Start(pluginConfig.DevicePersistenceData.Values);
                     }
                 }
                 else
                 {
-                    influxDBMeasurementsCollector.UpdatePeristenceData(pluginConfig.DevicePersistenceData.Values);
+                    influxDBMeasurementsCollector?.UpdatePeristenceData(pluginConfig!.DevicePersistenceData.Values);
                 }
             }
 
@@ -356,17 +360,17 @@ namespace Hspi
 
         private void UpdateLoggingInformation()
         {
-            this.LogDebug = pluginConfig.DebugLogging;
-            Logger.ConfigureLogging(LogDebug, pluginConfig.LogToFile, HomeSeerSystem);
+            this.LogDebug = pluginConfig!.DebugLogging;
+            Logger.ConfigureLogging(LogDebug, pluginConfig!.LogToFile, HomeSeerSystem);
         }
 
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private readonly static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncMonitor deviceRootDeviceManagerLock = new AsyncMonitor();
         private readonly AsyncMonitor influxDBMeasurementsCollectorLock = new AsyncMonitor();
-        private DeviceImportDeviceManager deviceRootDeviceManager;
+        private DeviceImportDeviceManager? deviceRootDeviceManager;
         private bool disposedValue;
-        private InfluxDBMeasurementsCollector influxDBMeasurementsCollector;
-        private PluginConfig pluginConfig;
-        private PluginStatusCalculator pluginStatusCalculator;
+        private InfluxDBMeasurementsCollector? influxDBMeasurementsCollector;
+        private PluginConfig? pluginConfig;
+        private PluginStatusCalculator? pluginStatusCalculator;
     }
 }

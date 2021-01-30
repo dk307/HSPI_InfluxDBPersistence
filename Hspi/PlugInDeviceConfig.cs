@@ -2,7 +2,6 @@
 using HomeSeer.PluginSdk.Devices;
 using Hspi.DeviceData;
 using Hspi.Utils;
-using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,6 +9,8 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using static System.FormattableString;
+
+#nullable enable
 
 namespace Hspi
 {
@@ -37,7 +38,7 @@ namespace Hspi
                     groupInterval = TimeSpan.Parse(grouping, CultureInfo.InvariantCulture);
                 }
 
-                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+                var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
 
                 if (data != null)
@@ -103,7 +104,7 @@ namespace Hspi
                     groupInterval = TimeSpan.Parse(grouping, CultureInfo.InvariantCulture);
                 }
 
-                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+                var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
 
                 if (data != null)
@@ -127,7 +128,7 @@ namespace Hspi
                             {
                                 if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) == 0)
                                 {
-                                    var timePoint = (DateTime)pair.Value;
+                                    var timePoint = (DateTime)pair.Value!; // let it crash if this is null
                                     DateTimeOffset timeForPoint = new DateTimeOffset(timePoint);
                                     jsMilliseconds = timeForPoint.ToLocalTime().ToUnixTimeMilliseconds();
                                 }
@@ -172,8 +173,12 @@ namespace Hspi
             {
                 (int refId, TimeSpan? queryDuration) = ParseDataCallValues(refIdString, duration);
 
-                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+                var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
+                if (queryDuration == null)
+                {
+                    throw new ArgumentException("Invalid Duration", nameof(duration));
+                }
 
                 if (data != null)
                 {
@@ -227,7 +232,7 @@ namespace Hspi
                     maxRecords = int.Parse(maxCount, CultureInfo.InvariantCulture);
                 }
 
-                var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+                var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
 
                 if (data != null)
@@ -262,7 +267,7 @@ namespace Hspi
 
                 logger.Debug(Invariant($"Deleting persitence for Ref Id:{refId}"));
 
-                var dataKeyPairs = pluginConfig.DevicePersistenceData.Where(x => x.Value.DeviceRefId == refId);
+                var dataKeyPairs = pluginConfig!.DevicePersistenceData.Where(x => x.Value.DeviceRefId == refId);
 
                 foreach (var pair in dataKeyPairs)
                 {
@@ -278,7 +283,7 @@ namespace Hspi
             return errors;
         }
 
-        public IList<string> GetAllowedDisplays([AllowNull] string refIdString)
+        public IList<string> GetAllowedDisplays(string? refIdString)
         {
             var displays = new List<string>();
 
@@ -296,7 +301,7 @@ namespace Hspi
         {
             var list = new List<IDictionary<string, object>>();
 
-            foreach (var pair in this.pluginConfig.DevicePersistenceData)
+            foreach (var pair in this.pluginConfig!.DevicePersistenceData)
             {
                 var data = ScribanHelper.ToDictionary(pair.Value);
                 list.Add(data);
@@ -358,10 +363,10 @@ namespace Hspi
             return CreateDeviceConfigPage(device, device.Interface == Id ? "deviceimport.html" : "feature.html");
         }
 
-        public IDictionary<string, object> GetPersistanceData([AllowNull] string refIdString)
+        public IDictionary<string, object> GetPersistanceData(string? refIdString)
         {
             int refId = ParseRefId(refIdString);
-            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+            var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
 
             if (data != null)
@@ -394,7 +399,7 @@ namespace Hspi
 
                 if (deviceInterface == PlugInData.PlugInId)
                 {
-                    string deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HomeSeerSystem, deviceRef);
+                    string? deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HomeSeerSystem, deviceRef);
                     return DeviceImportDevice.DeviceType == deviceType ||
                            DeviceImportDevice.RootDeviceType == deviceType;
                 }
@@ -436,7 +441,7 @@ namespace Hspi
                 if (errors.Count == 0)
                 {
                     // save
-                    pluginConfig.AddDevicePersistenceData(persistantData);
+                    pluginConfig!.AddDevicePersistenceData(persistantData);
                     PluginConfigChanged();
                 }
             }
@@ -471,7 +476,7 @@ namespace Hspi
                     {
                         object column = row[columnName];
                         string value = string.Empty;
-                        string sortValue = null;
+                        string? sortValue = null;
 
                         if (string.CompareOrdinal(columnName, InfluxDBHelper.TimeColumn) == 0)
                         {
@@ -481,7 +486,7 @@ namespace Hspi
                         }
                         else
                         {
-                            value = InfluxDBHelper.GetSerieValue(culture, column);
+                            value = InfluxDBHelper.GetSerieValue(culture, column) ?? string.Empty;
                         }
 
                         if (sortValue != null)
@@ -533,7 +538,7 @@ namespace Hspi
 
         private void AddToDisplayDetails(IList<string> displayTypes, int refId)
         {
-            var dataKeyPair = pluginConfig.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
+            var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
             var data = dataKeyPair.Value;
 
             if (data != null)
@@ -571,7 +576,7 @@ namespace Hspi
 
         private IList<IDictionary<string, object>> GetData(string query)
         {
-            var loginInformation = pluginConfig.DBLoginInformation;
+            var loginInformation = pluginConfig!.DBLoginInformation;
             return InfluxDBHelper.ExecuteInfluxDBQuery(query, loginInformation).ResultForSync();
         }
     }

@@ -1,11 +1,12 @@
 ﻿using AdysTech.InfluxDB.Client.Net;
-using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+#nullable enable
 
 namespace Hspi.Utils
 {
@@ -21,7 +22,7 @@ namespace Hspi.Utils
 
             // data is ascending
             DateTime? previousDateTime = null;
-            string previousValue = null;
+            string? previousValue = null;
             foreach (var row in queryData)
             {
                 var dateTime = (DateTime)row[InfluxDBHelper.TimeColumn];
@@ -29,7 +30,7 @@ namespace Hspi.Utils
 
                 if (dateTime >= lowerClip)
                 {
-                    if (previousDateTime != null)
+                    if ((previousDateTime != null) && (previousValue != null))
                     {
                         AddTimespanToHistogram(histogram, dateTime - previousDateTime.Value, previousValue);
                     }
@@ -39,31 +40,41 @@ namespace Hspi.Utils
                 previousValue = rowValue;
             }
 
-            if (previousDateTime.HasValue)
+            if ((previousDateTime.HasValue) && (previousValue!=null))
             {
                 AddTimespanToHistogram(histogram, utcNow - previousDateTime.Value, previousValue);
             }
 
             return histogram;
+
+            static void AddTimespanToHistogram(IDictionary<string, TimeSpan> value,
+                                         TimeSpan timeSpan,
+                                         string previousValue)
+            {
+                TimeSpan existingValue = new TimeSpan();
+                _ = value.TryGetValue(previousValue, out existingValue);
+                value[previousValue] = existingValue.Add(timeSpan);
+            }
         }
 
         public static async Task<IList<IDictionary<string, object>>> ExecuteInfluxDBQuery(string query, InfluxDBLoginInformation loginInformation)
         {
-            using (var influxDbClient = new InfluxDBClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password))
+            var accumatedList = new List<IDictionary<string, object>>();
+            if (loginInformation.DBUri != null)
             {
-                var series = await influxDbClient.QueryMultiSeriesAsync(loginInformation.DB, query, precision: TimePrecision.Seconds).ConfigureAwait(false);
+                using var influxDbClient = new InfluxDBClient(loginInformation.DBUri.ToString(), loginInformation.User, loginInformation.Password);
 
-                var accumatedList = new List<IDictionary<string, object>>();
+                var series = await influxDbClient.QueryMultiSeriesAsync(loginInformation.DB, query, precision: TimePrecision.Seconds).ConfigureAwait(false);
 
                 foreach (var serie in series)
                 {
                     accumatedList.AddRange(serie.Entries.Select(x => (IDictionary<string, object>)x));
                 }
-                return accumatedList;
             }
+            return accumatedList;
         }
 
-        public static string GetSerieValue(CultureInfo culture, [AllowNull]object column)
+        public static string? GetSerieValue(CultureInfo culture, object? column)
         {
             switch (column)
             {
@@ -128,9 +139,14 @@ namespace Hspi.Utils
                 default:
                     return Convert.ToString(column, culture);
             }
+
+            static string RoundDoubleValue(CultureInfo culture, double floatValue)
+            {
+                return Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
+            }
         }
 
-        public static async Task<object> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
+        public static async Task<object?> GetSingleValueForQuery(string query, InfluxDBLoginInformation loginInformation)
         {
             var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
             if (queryData.Count > 0)
@@ -152,20 +168,6 @@ namespace Hspi.Utils
 
             return null;
         }
-
-        private static void AddTimespanToHistogram(IDictionary<string, TimeSpan> value,
-                                                                           TimeSpan timeSpan,
-                                           string previousValue)
-        {
-            TimeSpan existingValue = new TimeSpan();
-            _ = value.TryGetValue(previousValue, out existingValue);
-            value[previousValue] = existingValue.Add(timeSpan);
-        }
-        private static string RoundDoubleValue(CultureInfo culture, double floatValue)
-        {
-            return Math.Round(floatValue, 3, MidpointRounding.AwayFromZero).ToString("G", culture);
-        }
-
 
         public const string TimeColumn = "Time";
     }

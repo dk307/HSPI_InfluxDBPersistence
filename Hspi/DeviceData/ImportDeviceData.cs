@@ -1,11 +1,10 @@
-﻿using NullGuard;
+﻿#nullable enable
 
 namespace Hspi.DeviceData
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class ImportDeviceData
+    internal sealed record ImportDeviceData
     {
-        public ImportDeviceData(string id, string sql, in long intervalSeconds, [AllowNull] string unit)
+        public ImportDeviceData(string id, string sql, in long intervalSeconds, string? unit)
         {
             Id = id;
             Sql = sql;
@@ -17,7 +16,7 @@ namespace Hspi.DeviceData
 
         public long IntervalSeconds { get; }
         public string Sql { get; }
-        public string Unit { get; }
+        public string? Unit { get; }
 
 #pragma warning disable CA1822 // Mark members as static
         public int Version => 1;

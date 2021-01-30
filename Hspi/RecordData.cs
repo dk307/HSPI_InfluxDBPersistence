@@ -2,7 +2,7 @@
 
 namespace Hspi
 {
-    internal readonly struct RecordData
+    internal sealed record RecordData
     {
         public RecordData(int deviceRefId, in double deviceValue, string deviceString,
                           string name, string location1, string location2, in DateTime timeStamp)

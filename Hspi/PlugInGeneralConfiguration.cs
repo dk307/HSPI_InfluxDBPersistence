@@ -2,6 +2,9 @@
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
+
 namespace Hspi
 {
     internal partial class PlugIn : HspiBase
@@ -12,8 +15,8 @@ namespace Hspi
         public IDictionary<string, object> GetGeneralInformation()
         {
             var configuration = new Dictionary<string, object>();
-            configuration[DebugLoggingConfiguration] = pluginConfig.DebugLogging;
-            configuration[LogToFileConfiguration] = pluginConfig.LogToFile;
+            configuration[DebugLoggingConfiguration] = pluginConfig!.DebugLogging;
+            configuration[LogToFileConfiguration] = pluginConfig!.LogToFile;
             return configuration;
         }
 
@@ -22,8 +25,8 @@ namespace Hspi
             var errors = new List<string>();
             try
             {
-                pluginConfig.DebugLogging = CheckBoolValue(DebugLoggingConfiguration);
-                pluginConfig.LogToFile = CheckBoolValue(LogToFileConfiguration);
+                pluginConfig!.DebugLogging = CheckBoolValue(DebugLoggingConfiguration);
+                pluginConfig!.LogToFile = CheckBoolValue(LogToFileConfiguration);
                 PluginConfigChanged();
             }
             catch (Exception ex)

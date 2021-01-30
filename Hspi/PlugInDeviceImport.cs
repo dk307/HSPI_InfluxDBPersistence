@@ -1,12 +1,12 @@
 ﻿using HomeSeer.PluginSdk.Devices;
 using Hspi.DeviceData;
 using Hspi.Utils;
-using NullGuard;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using static System.FormattableString;
+
+#nullable enable
 
 namespace Hspi
 {
@@ -14,7 +14,7 @@ namespace Hspi
     {
         public override bool SupportsConfigDevice => true;
 
-        public IDictionary<string, object> GetDeviceImportData([AllowNull] string refIdString)
+        public IDictionary<string, object> GetDeviceImportData(string? refIdString)
         {
             int refId = ParseRefId(refIdString);
 
@@ -72,7 +72,7 @@ namespace Hspi
 
         public IDictionary<string, object> AddDeviceImportData(IDictionary<string, string> deviceImportDataDict)
         {
-            DeviceImportDevice device = null;
+            DeviceImportDevice? device = null;
             var errors = new List<string>();
             try
             {
@@ -95,9 +95,12 @@ namespace Hspi
             {
                 errors.Add(ex.GetFullMessage());
             }
-             
+
             var data = new Dictionary<string, object>();
-            data.Add("refId", device?.RefId);
+            if (device != null)
+            {
+                data.Add("refId", device.RefId);
+            }
             data.Add("error", errors);
 
             return data;

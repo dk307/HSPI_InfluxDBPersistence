@@ -4,13 +4,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi
 {
     internal partial class PlugIn : HspiBase
     {
         public IDictionary<string, object> GetDBInformation()
         {
-            return ScribanHelper.ToDictionary(pluginConfig.DBLoginInformation);
+            return ScribanHelper.ToDictionary(pluginConfig!.DBLoginInformation);
         }
 
         public IList<string> SaveDBInformation(IDictionary<string, string> dbInformationDBDict)
@@ -39,7 +41,7 @@ namespace Hspi
                     if (errors.Count == 0)
                     {
                         // save
-                        pluginConfig.DBLoginInformation = influxDBLoginInformation;
+                        pluginConfig!.DBLoginInformation = influxDBLoginInformation;
                         PluginConfigChanged();
                     }
                 }

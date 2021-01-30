@@ -1,5 +1,6 @@
 ﻿using HomeSeer.PluginSdk;
 using System.Collections.Generic;
+#nullable enable
 
 namespace Hspi
 {
@@ -11,9 +12,9 @@ namespace Hspi
         }
 
         public void Fill(int deviceRefId,
-                         out string measurement,
-                         out string field,
-                         out string fieldString,
+                         out string? measurement,
+                         out string? field,
+                         out string? fieldString,
                          out double? maxValidValue,
                          out double? minValidValue)
         {
@@ -67,7 +68,7 @@ namespace Hspi
             }
         }
 
-        private static string FindTypeString(IEnumerable<string> descriptionStrings)
+        private static string? FindTypeString(IEnumerable<string> descriptionStrings)
         {
             foreach (var descriptionString in descriptionStrings)
             {

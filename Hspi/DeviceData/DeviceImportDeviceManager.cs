@@ -3,18 +3,18 @@ using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
 using Hspi.Utils;
 using Nito.AsyncEx;
-using NullGuard;
-using System;
+ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi.DeviceData
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class DeviceImportDeviceManager : IDisposable
+     internal sealed class DeviceImportDeviceManager : IDisposable
     {
         public DeviceImportDeviceManager(IHsController HS,
                                          InfluxDBLoginInformation dbLoginInformation,
@@ -43,6 +43,11 @@ namespace Hspi.DeviceData
             }
         }
 
+        public bool HasDevice(int refId)
+        {
+            return importDevices.ContainsKey(refId);
+        }
+
         public async Task<bool> ImportDataForDevice(int refId)
         {
             if (importDevices.TryGetValue(refId, out var data))
@@ -52,12 +57,6 @@ namespace Hspi.DeviceData
             }
             return false;
         }
-
-        public bool HasDevice(int refId)
-        {
-            return importDevices.ContainsKey(refId);
-        }
-
         private Dictionary<int, DeviceImportDevice> GetCurrentDevices()
         {
             var refIds = HS.GetRefsByInterface(PlugInData.PlugInId);
@@ -74,7 +73,7 @@ namespace Hspi.DeviceData
                     //data is stored in feature(child)
                     if (relationship == ERelationship.Feature)
                     {
-                        string deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
+                        string? deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
 
                         if (deviceType == DeviceImportDevice.DeviceType)
                         {
@@ -92,10 +91,10 @@ namespace Hspi.DeviceData
             return currentChildDevices;
         }
 
-        private async Task<ImportDeviceData> ImportDataForDevice(DeviceImportDevice deviceData)
+        private async Task<ImportDeviceData?> ImportDataForDevice(DeviceImportDevice deviceData)
         {
             //start as task to fetch data
-            ImportDeviceData importDeviceData = null;
+            ImportDeviceData? importDeviceData = null;
             double? deviceValue = null;
             try
             {
@@ -166,7 +165,7 @@ namespace Hspi.DeviceData
             }
         }
 
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private readonly static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly CancellationToken cancellationToken;
         private readonly IList<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();

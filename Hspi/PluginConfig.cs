@@ -1,12 +1,13 @@
 ﻿using HomeSeer.PluginSdk;
 using Hspi.Utils;
 using Nito.AsyncEx;
-using NullGuard;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using static System.FormattableString;
+
+#nullable enable
 
 namespace Hspi
 {
@@ -17,8 +18,8 @@ namespace Hspi
     {
         public PluginConfig(IHsController HS) : base(HS)
         {
-            LoadDBSettings();
-            LoadPersistenceSettings();
+            this.influxDBLoginInformation = LoadDBSettings();
+            this.devicePersistenceData = LoadPersistenceSettings();
         }
 
         public InfluxDBLoginInformation DBLoginInformation
@@ -60,7 +61,7 @@ namespace Hspi
             }
         }
 
-        public static string CheckEmptyOrWhitespace([AllowNull] string value)
+        public static string? CheckEmptyOrWhitespace(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
@@ -108,14 +109,14 @@ namespace Hspi
             ClearSection(id);
         }
 
-        private void LoadDBSettings()
+        private InfluxDBLoginInformation LoadDBSettings()
         {
             // read db uri
             string influxDBUriString = GetValue(InfluxDBUriKey, string.Empty);
 
             Uri.TryCreate(influxDBUriString, UriKind.Absolute, out Uri influxDBUri);
 
-            this.influxDBLoginInformation = new InfluxDBLoginInformation(
+            return new InfluxDBLoginInformation(
                 influxDBUri,
                 CheckEmptyOrWhitespace(GetValue(InfluxDBUsernameKey, string.Empty)),
                 CheckEmptyOrWhitespace(DecryptString(GetValue(InfluxDBPasswordKey, string.Empty))),
@@ -123,12 +124,12 @@ namespace Hspi
              );
         }
 
-        private void LoadPersistenceSettings()
+        private Dictionary<string, DevicePersistenceData> LoadPersistenceSettings()
         {
             string deviceIdsConcatString = GetValue(PersistenceIdsKey, string.Empty);
             var persistenceIds = deviceIdsConcatString.Split(PersistenceIdsSeparator);
 
-            devicePersistenceData = new Dictionary<string, DevicePersistenceData>();
+            var devicePersistenceData = new Dictionary<string, DevicePersistenceData>();
             foreach (var persistenceId in persistenceIds)
             {
                 string deviceRefIdString = GetValue(DeviceRefIdKey, string.Empty, persistenceId);
@@ -147,7 +148,7 @@ namespace Hspi
 
                 var tagString = GetValue(TagsKey, string.Empty, persistenceId);
 
-                Dictionary<string, string> tags = null;
+                Dictionary<string, string>? tags = null;
                 try
                 {
                     tags = ObjectSerialize.DeSerializeToObject(tagString) as Dictionary<string, string>;
@@ -180,6 +181,8 @@ namespace Hspi
                                                      maxValidValue, minValidValue, trackedType);
                 this.devicePersistenceData.Add(persistenceId, data);
             }
+
+            return devicePersistenceData;
         }
 
         public const string DefaultFieldValueString = "value";
@@ -203,7 +206,8 @@ namespace Hspi
         private const char PersistenceIdsSeparator = ',';
         private const string TagsKey = "Tags";
         private const string TrackedTypeKey = "TrackedTyp";
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
+        private readonly static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
 
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;

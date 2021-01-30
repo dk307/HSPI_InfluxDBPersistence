@@ -1,14 +1,12 @@
 ﻿using HomeSeer.PluginSdk;
 using Hspi.DeviceData;
 using Nito.AsyncEx;
-using NullGuard;
-using System.Threading;
+ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hspi
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class PluginStatusCalculator
+     internal sealed class PluginStatusCalculator
     {
         public PluginStatusCalculator(IHsController hs)
         {

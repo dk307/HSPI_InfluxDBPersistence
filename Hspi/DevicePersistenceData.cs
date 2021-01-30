@@ -1,25 +1,26 @@
-﻿using NullGuard;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+
+#nullable enable
 
 namespace Hspi
 {
+#pragma warning disable CA1720 // Identifier contains type name
 
     public enum TrackedType
     {
         Value = 0,
-#pragma warning disable CA1720 // Identifier contains type name
         String = 1,
-#pragma warning restore CA1720 // Identifier contains type name
     }
 
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
+#pragma warning restore CA1720 // Identifier contains type name
+
     public sealed class DevicePersistenceData
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
-                                     [AllowNull]string field = null, [AllowNull]string fieldString = null,
-                                     [AllowNull]IReadOnlyDictionary<string, string> tags = null,
-                                     [AllowNull]double? maxValidValue = null, [AllowNull]double? minValidValue = null,
-                                     [AllowNull]TrackedType? trackedType = null)
+                                     string? field = null, string? fieldString = null,
+                                     IReadOnlyDictionary<string, string>? tags = null,
+                                     double? maxValidValue = null, double? minValidValue = null,
+                                     TrackedType? trackedType = null)
         {
             Id = id;
             DeviceRefId = deviceRefId;
@@ -33,13 +34,13 @@ namespace Hspi
         }
 
         public int DeviceRefId { get; }
+        public string? Field { get; }
+        public string? FieldString { get; }
         public string Id { get; }
-        public string Measurement { get; }
-        public string Field { get; }
-        public string FieldString { get; }
-        public IReadOnlyDictionary<string, string> Tags { get; }
         public double? MaxValidValue { get; }
+        public string Measurement { get; }
         public double? MinValidValue { get; }
+        public IReadOnlyDictionary<string, string>? Tags { get; }
         public TrackedType TrackedType { get; }
     }
 }

@@ -1,13 +1,11 @@
 ﻿using HomeSeer.PluginSdk;
 using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
-using NullGuard;
-using System.IO;
+ using System.IO;
 
 namespace Hspi.DeviceData
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
-    internal sealed class InfluxDbStatusDevice
+     internal sealed class InfluxDbStatusDevice
     {
         private InfluxDbStatusDevice(IHsController HS, int refId, int exportStatusFeatureId)
         {
@@ -90,7 +88,7 @@ namespace Hspi.DeviceData
                 ERelationship relationship = (ERelationship)HS.GetPropertyByRef(refId, EProperty.Relationship);
                 if (relationship == ERelationship.Device)
                 {
-                    string deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
+                    var deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
                     if (deviceType == RootDeviceType)
                     {
                         rootDeviceId = refId;
@@ -98,7 +96,7 @@ namespace Hspi.DeviceData
                 }
                 else if (relationship == ERelationship.Feature)
                 {
-                    string deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
+                    var deviceType = HSDeviceHelper.GetDeviceTypeFromPlugInData(HS, refId);
                     if (deviceType == ConnectionStatusDeviceType)
                     {
                         connectionStatusFeatureId = refId;

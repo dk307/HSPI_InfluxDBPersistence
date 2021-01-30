@@ -2,13 +2,14 @@
 using HomeSeer.PluginSdk.Devices;
 using HomeSeer.PluginSdk.Devices.Identification;
 using Newtonsoft.Json;
-using NullGuard;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+
+#nullable enable
 
 namespace Hspi.DeviceData
 {
-    [NullGuard(ValidationFlags.Arguments | ValidationFlags.NonPublic)]
     internal sealed class DeviceImportDevice
     {
         public DeviceImportDevice(IHsController HS, int refId)
@@ -20,7 +21,8 @@ namespace Hspi.DeviceData
         public static string RootDeviceType => "root-import";
         public static string DeviceType => "import";
 
-        public ImportDeviceData Data
+        [DisallowNull]
+        public ImportDeviceData? Data
         {
             get
             {
@@ -30,6 +32,10 @@ namespace Hspi.DeviceData
 
             set
             {
+                if (value == null)
+                {
+                    throw new System.ArgumentNullException(nameof(Data));
+                }
                 UpdateImportDevice(HS, refId, value);
             }
         }
@@ -89,13 +95,16 @@ namespace Hspi.DeviceData
                                                int refId,
                                                ImportDeviceData importDeviceData)
         {
+            string unit = importDeviceData.Unit ?? string.Empty;
+
             foreach (var statusGraphic in HS.GetStatusGraphicsByRef(refId))
             {
                 statusGraphic.HasAdditionalData = true;
 
                 if (statusGraphic.IsRange)
                 {
-                    statusGraphic.TargetRange.Suffix = " " + HsFeature.GetAdditionalDataToken(0);
+                    statusGraphic.TargetRange.Suffix =
+                        string.IsNullOrWhiteSpace(unit) ? string.Empty : " " + HsFeature.GetAdditionalDataToken(0);
                 }
 
                 HS.AddStatusGraphicToFeature(refId, statusGraphic);
@@ -104,7 +113,7 @@ namespace Hspi.DeviceData
             PlugExtraData plugExtra = CreatePlugInExtraData(importDeviceData);
 
             var changes = new Dictionary<EProperty, object>();
-            changes.Add(EProperty.AdditionalStatusData, new List<string>() { importDeviceData.Unit });
+            changes.Add(EProperty.AdditionalStatusData, new List<string>() { unit });
             changes.Add(EProperty.PlugExtraData, plugExtra);
 
             HS.UpdateFeatureByRef(refId, changes);

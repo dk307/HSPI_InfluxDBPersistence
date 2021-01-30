@@ -1,5 +1,4 @@
-﻿using NullGuard;
-using System.Reflection;
+﻿ using System.Reflection;
 using System.Resources;
 using System.Runtime.InteropServices;
 
@@ -21,8 +20,7 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 
 [assembly: ComVisible(false)]
-[assembly: NullGuard(ValidationFlags.None)]
-
+ 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 
 [assembly: Guid("C70C39A2-F787-40F9-83EB-431E15128E9D")]
