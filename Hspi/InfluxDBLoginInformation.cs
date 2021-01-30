@@ -1,4 +1,5 @@
-﻿namespace Hspi
+﻿#nullable enable
+namespace Hspi
 {
     internal sealed record InfluxDBLoginInformation
     {

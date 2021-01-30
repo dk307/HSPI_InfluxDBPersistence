@@ -9,6 +9,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi
 {
     internal partial class PlugIn : HspiBase

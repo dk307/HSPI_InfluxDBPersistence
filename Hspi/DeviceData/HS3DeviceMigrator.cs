@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi.DeviceData
 {
     internal sealed class HS3DeviceMigrator
