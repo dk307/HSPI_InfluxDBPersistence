@@ -105,9 +105,12 @@ namespace Hspi
                 var dataKeyPair = pluginConfig!.DevicePersistenceData.FirstOrDefault(x => x.Value.DeviceRefId == refId);
                 var data = dataKeyPair.Value;
 
+                stb.AppendLine("[");
                 if (data != null)
                 {
-                    var chartQuery = InfluxDbQueryBuilder.GetChartQuery(data, "value", queryDuration.Value,
+                    string columnName = "Value";
+
+                    var chartQuery = InfluxDbQueryBuilder.GetChartQuery(data, columnName, queryDuration.Value,
                                                           pluginConfig.DBLoginInformation,
                                                           groupInterval,
                                                           -TimeZoneInfo.Local.BaseUtcOffset).ResultForSync();
@@ -116,48 +119,24 @@ namespace Hspi
 
                     if (queryData.Count > 0)
                     {
-                        var nonTimeColumns = queryData.First().Keys.Where(x => (0 != string.CompareOrdinal(x, InfluxDBHelper.TimeColumn)));
-
-                        var dataStrings = new Dictionary<string, StringBuilder>();
+                        var dataStrings = new Dictionary<string, string>();
                         foreach (var row in queryData)
                         {
-                            long jsMilliseconds = 0;
-                            foreach (var pair in row)
+                            if (row.TryGetValue(InfluxDBHelper.TimeColumn, out var timeValue) &&
+                                row.TryGetValue(columnName, out var columnNameValue) &&
+                                (timeValue != null) && (columnNameValue != null))
                             {
-                                if (string.CompareOrdinal(pair.Key, InfluxDBHelper.TimeColumn) == 0)
-                                {
-                                    var timePoint = (DateTime)pair.Value!; // let it crash if this is null
-                                    DateTimeOffset timeForPoint = new DateTimeOffset(timePoint);
-                                    jsMilliseconds = timeForPoint.ToLocalTime().ToUnixTimeMilliseconds();
-                                }
-                                else
-                                {
-                                    if (pair.Value != null)
-                                    {
-                                        if (!dataStrings.TryGetValue(pair.Key, out StringBuilder stringBuilder))
-                                        {
-                                            stringBuilder = new StringBuilder();
-                                            dataStrings.Add(pair.Key, stringBuilder);
-                                        }
-                                        stringBuilder.AppendLine(Invariant($"{{ date: new Date({jsMilliseconds}),value: {InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, pair.Value)}}},"));
-                                    }
-                                }
-                            }
-                        }
+                                var timePoint = (DateTime)timeValue;
+                                DateTimeOffset timeForPoint = new DateTimeOffset(timePoint);
+                                var jsMilliseconds = timeForPoint.ToLocalTime().ToUnixTimeMilliseconds();
 
-                        stb.AppendLine("[");
-                        if (dataStrings.Count > 0)
-                        {
-                            foreach (var nonTimeColumn in nonTimeColumns)
-                            {
-                                stb.AppendLine("[");
-                                stb.Append(dataStrings[nonTimeColumn].ToString());
-                                stb.AppendLine("],");
+                                string line = Invariant($"{{ date: new Date({jsMilliseconds}),value: {InfluxDBHelper.GetSerieValue(CultureInfo.InvariantCulture, columnNameValue)}}},");
+                                stb.AppendLine(line);
                             }
                         }
-                        stb.AppendLine("]");
                     }
                 }
+                stb.AppendLine("]");
             }
             catch (Exception ex)
             {
