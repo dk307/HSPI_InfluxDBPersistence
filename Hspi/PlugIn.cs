@@ -218,6 +218,16 @@ namespace Hspi
                 {
                     double deviceValue = device.Value;
                     string deviceString = device.Status;
+
+                    if (string.IsNullOrWhiteSpace(deviceString))
+                    {
+                        var graphic = HomeSeerSystem.GetStatusGraphicForValue(deviceRefId, deviceValue);
+                        if (graphic != null)
+                        {
+                            deviceString = graphic.Label;
+                        }
+                    }
+
                     if (string.IsNullOrWhiteSpace(deviceString))
                     {
                         var status = HomeSeerSystem.GetStatusControlForValue(deviceRefId, deviceValue);
@@ -226,6 +236,7 @@ namespace Hspi
                             deviceString = status.Label;
                         }
                     }
+
                     logger.Debug(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
 
                     DateTime lastChange = device.LastChange;
