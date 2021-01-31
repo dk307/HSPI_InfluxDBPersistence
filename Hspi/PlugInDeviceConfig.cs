@@ -146,11 +146,14 @@ namespace Hspi
                         }
 
                         stb.AppendLine("[");
-                        foreach (var nonTimeColumn in nonTimeColumns)
+                        if (dataStrings.Count > 0)
                         {
-                            stb.AppendLine("[");
-                            stb.Append(dataStrings[nonTimeColumn].ToString());
-                            stb.AppendLine("],");
+                            foreach (var nonTimeColumn in nonTimeColumns)
+                            {
+                                stb.AppendLine("[");
+                                stb.Append(dataStrings[nonTimeColumn].ToString());
+                                stb.AppendLine("],");
+                            }
                         }
                         stb.AppendLine("]");
                     }

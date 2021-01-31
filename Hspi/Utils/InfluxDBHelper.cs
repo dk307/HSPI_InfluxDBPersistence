@@ -163,7 +163,11 @@ namespace Hspi.Utils
             var queryData = await ExecuteInfluxDBQuery(query, loginInformation).ConfigureAwait(false);
             if (queryData.Count > 0)
             {
-                return (DateTime)queryData[0][TimeColumn];
+                var value = (DateTime)queryData[0][TimeColumn];
+                if (value <= DateTimeOffset.FromUnixTimeSeconds(0).DateTime)
+                {
+                    return null;
+                }
             }
 
             return null;
