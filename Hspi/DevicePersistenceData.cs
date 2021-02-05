@@ -33,14 +33,14 @@ namespace Hspi
             TrackedType = trackedType ?? TrackedType.Value;
         }
 
-        public int DeviceRefId { get; }
-        public string? Field { get; }
-        public string? FieldString { get; }
-        public string Id { get; }
-        public double? MaxValidValue { get; }
-        public string Measurement { get; }
-        public double? MinValidValue { get; }
-        public IReadOnlyDictionary<string, string>? Tags { get; }
-        public TrackedType TrackedType { get; }
+        public readonly int DeviceRefId;
+        public readonly string? Field;
+        public readonly string? FieldString;
+        public readonly string Id;
+        public readonly double? MaxValidValue;
+        public readonly string Measurement;
+        public readonly double? MinValidValue;
+        public readonly IReadOnlyDictionary<string, string>? Tags;
+        public readonly TrackedType TrackedType;
     }
 }

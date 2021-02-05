@@ -1,5 +1,7 @@
 ﻿using System;
 
+#nullable enable
+
 namespace Hspi
 {
     internal sealed record RecordData

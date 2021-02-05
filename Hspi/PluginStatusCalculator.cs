@@ -4,6 +4,8 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Hspi
 {
     internal sealed class PluginStatusCalculator

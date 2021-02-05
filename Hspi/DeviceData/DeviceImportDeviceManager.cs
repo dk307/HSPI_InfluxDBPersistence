@@ -8,7 +8,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Immutable;
 using static System.FormattableString;
+
+#nullable enable
 
 namespace Hspi.DeviceData
 {
@@ -27,7 +30,7 @@ namespace Hspi.DeviceData
 
             MigrateDevices();
 
-            importDevices = GetCurrentDevices();
+            importDevices = GetCurrentDevices().ToImmutableDictionary();
             StartDeviceFetchFromDB();
         }
 
@@ -166,14 +169,14 @@ namespace Hspi.DeviceData
 
         private readonly static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly CancellationToken cancellationToken;
-        private readonly IList<Task> collectionTasks = new List<Task>();
+        private readonly List<Task> collectionTasks = new List<Task>();
         private readonly AsyncLock collectionTasksLock = new AsyncLock();
 #pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource combinedToken;
 #pragma warning restore CA2213 // Disposable fields should be disposed
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
-        private readonly IReadOnlyDictionary<int, DeviceImportDevice> importDevices;
+        private readonly ImmutableDictionary<int, DeviceImportDevice> importDevices;
         private readonly PluginStatusCalculator pluginStatusCalculator;
         private bool disposedValue;
     };

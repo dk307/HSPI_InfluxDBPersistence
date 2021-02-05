@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi
 {
     internal partial class PlugIn : HspiBase

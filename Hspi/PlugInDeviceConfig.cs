@@ -10,6 +10,8 @@ using System.Net;
 using System.Text;
 using static System.FormattableString;
 
+#nullable enable
+
 namespace Hspi
 {
     internal partial class PlugIn : HspiBase

@@ -3,11 +3,14 @@ using Hspi.Utils;
 using Nito.AsyncEx;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.FormattableString;
+
+#nullable enable
 
 namespace Hspi
 {
@@ -15,6 +18,7 @@ namespace Hspi
     {
         public InfluxDBMeasurementsCollector(InfluxDBLoginInformation loginInformation,
                                              PluginStatusCalculator pluginStatusCalculator,
+                                             IEnumerable<DevicePersistenceData> persistenceData,
                                              CancellationToken shutdownToken)
         {
             this.loginInformation = loginInformation;
@@ -23,30 +27,32 @@ namespace Hspi
             influxDBClient = new InfluxDBClient(loginInformation.DBUri?.ToString(),
                                                 loginInformation.User,
                                                 loginInformation.Password);
+
+            this.peristenceDataMap = GetPeristenceData(persistenceData);
+            Utils.TaskHelper.StartAsyncWithErrorChecking("DB Send Points", SendPoints, tokenSource.Token);
         }
 
         public InfluxDBLoginInformation LoginInformation => loginInformation;
 
+        public IEnumerable<DevicePersistenceData> PersistantValues => peristenceDataMap.Values.SelectMany(x => x);
+
         public void Dispose()
         {
-            influxDBClient?.Dispose();
             tokenSource.Cancel();
+            influxDBClient?.Dispose();
         }
 
         public bool IsTracked(int deviceRefId, TrackedType? trackedType)
         {
-            if (peristenceDataMap != null)
+            if (peristenceDataMap.TryGetValue(deviceRefId, out var devicePersistenceDatas))
             {
-                if (peristenceDataMap.TryGetValue(deviceRefId, out var devicePersistenceDatas))
+                if (!trackedType.HasValue)
                 {
-                    if (!trackedType.HasValue)
-                    {
-                        return devicePersistenceDatas.Count > 0;
-                    }
-                    else
-                    {
-                        return devicePersistenceDatas.Any(x => x.TrackedType == trackedType.Value);
-                    }
+                    return devicePersistenceDatas.Count > 0;
+                }
+                else
+                {
+                    return devicePersistenceDatas.Any(x => x.TrackedType == trackedType.Value);
                 }
             }
 
@@ -55,11 +61,6 @@ namespace Hspi
 
         public async ValueTask<bool> Record(RecordData data)
         {
-            if (peristenceDataMap == null)
-            {
-                throw new ArgumentException("Collection not started");
-            }
-
             if (peristenceDataMap.TryGetValue(data.DeviceRefId, out var peristenceData))
             {
                 foreach (var value in peristenceData)
@@ -118,13 +119,15 @@ namespace Hspi
             return false;
         }
 
-        public void Start(IEnumerable<DevicePersistenceData> persistenceData)
+        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
         {
-            UpdatePeristenceData(persistenceData);
-            Utils.TaskHelper.StartAsyncWithErrorChecking("DB Send Points", SendPoints, tokenSource.Token);
+            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
+            {
+                dict.Add(key, value);
+            }
         }
 
-        public void UpdatePeristenceData(IEnumerable<DevicePersistenceData> persistenceData)
+        private static ImmutableDictionary<int, ImmutableList<DevicePersistenceData>> GetPeristenceData(IEnumerable<DevicePersistenceData> persistenceData)
         {
             var map = new Dictionary<int, List<DevicePersistenceData>>();
 
@@ -137,15 +140,8 @@ namespace Hspi
                 map[data.DeviceRefId].Add(data);
             }
 
-            peristenceDataMap = map.ToDictionary(x => x.Key, x => x.Value as IReadOnlyList<DevicePersistenceData>);
-        }
-
-        private static void AddIfNotEmpty(IDictionary<string, string> dict, string key, string value)
-        {
-            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
-            {
-                dict.Add(key, value);
-            }
+            return map.ToDictionary(x => x.Key, x => x.Value.ToImmutableList())
+                                   .ToImmutableDictionary();
         }
 
         private static bool IsValidRange(DevicePersistenceData value, double deviceValue)
@@ -177,9 +173,9 @@ namespace Hspi
 
                 try
                 {
-                    if (!await influxDBClient.PostPointAsync(loginInformation.DB, queueElement.Datapoint).ConfigureAwait(false))
+                    if (!await influxDBClient.PostPointAsync(LoginInformation.DB, queueElement.Datapoint).ConfigureAwait(false))
                     {
-                        logger.Warn(Invariant($"Failed to update {loginInformation.DB} for RefId: {queueElement.RefId}"));
+                        logger.Warn(Invariant($"Failed to update {LoginInformation.DB} for RefId: {queueElement.RefId}"));
                     }
                     else
                     {
@@ -221,16 +217,15 @@ namespace Hspi
                 this.RefId = refId;
             }
         };
-
         private static readonly TimeSpan connectFailureDelay = TimeSpan.FromSeconds(30);
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private static readonly AsyncProducerConsumerQueue<QueueElement> queue = new AsyncProducerConsumerQueue<QueueElement>();
         private readonly InfluxDBClient influxDBClient;
         private readonly InfluxDBLoginInformation loginInformation;
+        private readonly ImmutableDictionary<int, ImmutableList<DevicePersistenceData>> peristenceDataMap;
         private readonly PluginStatusCalculator pluginStatusCalculator;
 #pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly CancellationTokenSource tokenSource;
 #pragma warning restore CA2213 // Disposable fields should be disposed
-        private volatile IReadOnlyDictionary<int, IReadOnlyList<DevicePersistenceData>>? peristenceDataMap;
     }
 }
