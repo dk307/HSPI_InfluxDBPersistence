@@ -165,7 +165,7 @@ namespace Hspi
 
         private async Task<bool> ImportDeviceFromDB(int deviceRefId)
         {
-            var deviceRootDeviceManagerCopy = deviceRootDeviceManager; 
+            var deviceRootDeviceManagerCopy = deviceRootDeviceManager;
             if (deviceRootDeviceManagerCopy != null)
             {
                 return await deviceRootDeviceManagerCopy.ImportDataForDevice(deviceRefId).ConfigureAwait(false);
@@ -190,53 +190,53 @@ namespace Hspi
         }
 
         private async ValueTask RecordDeviceValue(InfluxDBMeasurementsCollector collector,
-                                                  AbstractHsDevice device)
+                                                  int deviceRefId)
         {
-            if (device != null)
+            bool validValue = (bool)(HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.InvalidValue) ?? false);
+            if (!validValue)
             {
-                int deviceRefId = device.Ref;
-                bool notValid = device.IsValueInvalid;
-                if (!notValid)
+                // get required values
+                double deviceValue = (double)HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.Value);
+                string? deviceString = (string?)HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.Status);
+                DateTime lastChange = (DateTime)HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.LastChange);
+                string name = (string?)HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.Name) ?? string.Empty;
+                string location = (string?)HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.Location) ?? string.Empty;
+                string location2 = (string?)HomeSeerSystem.GetPropertyByRef(deviceRefId, EProperty.Location2) ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(deviceString))
                 {
-                    double deviceValue = device.Value;
-                    string deviceString = device.Status;
-
-                    if (string.IsNullOrWhiteSpace(deviceString))
+                    var graphic = HomeSeerSystem.GetStatusGraphicForValue(deviceRefId, deviceValue);
+                    if (graphic != null)
                     {
-                        var graphic = HomeSeerSystem.GetStatusGraphicForValue(deviceRefId, deviceValue);
-                        if (graphic != null)
-                        {
-                            deviceString = graphic.Label;
-                        }
+                        deviceString = graphic.Label;
                     }
-
-                    if (string.IsNullOrWhiteSpace(deviceString))
-                    {
-                        var status = HomeSeerSystem.GetStatusControlForValue(deviceRefId, deviceValue);
-                        if (status != null)
-                        {
-                            deviceString = status.Label;
-                        }
-                    }
-
-                    logger.Debug(Invariant($"Recording Device Ref Id: {deviceRefId} with [{deviceValue}] & [{deviceString}]"));
-
-                    DateTime lastChange = device.LastChange;
-
-                    RecordData recordData = new RecordData(deviceRefId,
-                                                           deviceValue,
-                                                           deviceString,
-                                                           device.Name,
-                                                           device.Location,
-                                                           device.Location2,
-                                                           lastChange);
-
-                    await collector.Record(recordData).ConfigureAwait(false);
                 }
-                else
+
+                if (string.IsNullOrWhiteSpace(deviceString))
                 {
-                    logger.Warn(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
+                    var status = HomeSeerSystem.GetStatusControlForValue(deviceRefId, deviceValue);
+                    if (status != null)
+                    {
+                        deviceString = status.Label;
+                    }
                 }
+                deviceString ??= string.Empty;
+
+                logger.Debug(Invariant($"Recording Device Ref Id: {deviceRefId}, Name: [{name}] with [{deviceValue}] & [{deviceString}]"));
+
+                RecordData recordData = new RecordData(deviceRefId,
+                                                       deviceValue,
+                                                       deviceString,
+                                                       name,
+                                                       location,
+                                                       location2,
+                                                       lastChange);
+
+                await collector.Record(recordData).ConfigureAwait(false);
+            }
+            else
+            {
+                logger.Warn(Invariant($"Not recording Device Ref Id: {deviceRefId} as it has invalid value."));
             }
         }
 
@@ -245,8 +245,7 @@ namespace Hspi
             var collector = influxDBMeasurementsCollector;
             if ((collector != null) && collector.IsTracked(deviceRefId, trackedType))
             {
-                var device = HomeSeerSystem.GetDeviceByRef(deviceRefId);
-                await RecordDeviceValue(collector, device).ConfigureAwait(false);
+                await RecordDeviceValue(collector, deviceRefId).ConfigureAwait(false);
             }
         }
 
@@ -280,14 +279,10 @@ namespace Hspi
 
         private async ValueTask<bool> RecordTrackedDevices(InfluxDBMeasurementsCollector collector, int refId)
         {
-            var device = HomeSeerSystem.GetDeviceByRef(refId);
-            if (device != null)
+            if (collector.IsTracked(refId, null))
             {
-                if (collector.IsTracked(refId, null))
-                {
-                    await RecordDeviceValue(collector, device).ConfigureAwait(false);
-                    return true;
-                }
+                await RecordDeviceValue(collector, refId).ConfigureAwait(false);
+                return true;
             }
 
             return false;
@@ -350,7 +345,7 @@ namespace Hspi
                                                                                           data.Values,
                                                                                           ShutdownCancellationToken);
                     }
-                } 
+                }
             }
 
             await RecordTrackedDevices().ConfigureAwait(false);
