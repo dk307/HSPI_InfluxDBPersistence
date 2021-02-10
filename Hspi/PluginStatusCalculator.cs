@@ -1,6 +1,8 @@
 ﻿using HomeSeer.PluginSdk;
 using Hspi.DeviceData;
 using Nito.AsyncEx;
+using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,51 +12,51 @@ namespace Hspi
 {
     internal sealed class PluginStatusCalculator
     {
-        public PluginStatusCalculator(IHsController hs)
+        public PluginStatusCalculator(IHsController hs, TimeSpan erroredDelay, CancellationToken token)
         {
             statusDevice = InfluxDbStatusDevice.CreateOrGet(hs);
-        }
 
-        public PluginStatus PluginStatus
-        {
-            get
-            {
-                if (exportWorkingStatus.HasValue && !exportWorkingStatus.Value)
-                {
-                    return PluginStatus.Warning("Exporting to InfluxDB is failing");
-                }
+            this.hs = hs;
+            this.erroredDelay = erroredDelay;
+            this.token = token;
+            stopwatch.Start();
 
-                return PluginStatus.Ok();
-            }
-        }
-
-        public async Task ExportErrored(CancellationToken cancellationToken)
-        {
-            using (var lockInterval = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
-            {
-                UpdateExportworkingStatus(false);
-            }
+            Utils.TaskHelper.StartAsyncWithErrorChecking("Device Status", UpdateWorkingState, token);
         }
 
         public async Task ExportWorked(CancellationToken cancellationToken)
         {
-            using (var lockInterval = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
+            using (var _ = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
             {
-                UpdateExportworkingStatus(true);
+                stopwatch.Restart();
             }
         }
 
-        private void UpdateExportworkingStatus(bool connected)
+        private async Task UpdateWorkingState()
         {
-            if (!exportWorkingStatus.HasValue || (exportWorkingStatus.Value != connected))
+            bool? currentState = null;
+            while (!token.IsCancellationRequested)
             {
-                exportWorkingStatus = connected;
-                statusDevice.UpdateExportConnectionStatus(connected);
+                await Task.Delay(30000, token).ConfigureAwait(false);
+
+                using (var _ = await instanceLock.LockAsync(token).ConfigureAwait(false))
+                {
+                    bool newState = stopwatch.Elapsed > erroredDelay;
+
+                    if (newState != currentState)
+                    {
+                        statusDevice.UpdateExportConnectionStatus(!newState);
+                        currentState = newState;
+                    }
+                }
             }
         }
 
+        private readonly Stopwatch stopwatch = new Stopwatch();
         private readonly AsyncLock instanceLock = new AsyncLock();
         private readonly InfluxDbStatusDevice statusDevice;
-        private bool? exportWorkingStatus;
+        private readonly IHsController hs;
+        private readonly TimeSpan erroredDelay;
+        private readonly CancellationToken token;
     }
 }

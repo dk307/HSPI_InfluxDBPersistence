@@ -21,6 +21,8 @@ namespace Hspi
         {
             this.influxDBLoginInformation = LoadDBSettings();
             this.devicePersistenceData = LoadPersistenceSettings();
+            int value = GetValue<int>(SendPointsNotWorkingTimeoutKey, (int)TimeSpan.FromMinutes(15).TotalSeconds);
+            this.sendPointsNotWorkingTimeout = TimeSpan.FromSeconds(value);
         }
 
         [DisallowNull]
@@ -64,6 +66,25 @@ namespace Hspi
             }
         }
 
+        public TimeSpan SendPointsNotWorkingTimeout
+        {
+            get
+            {
+                using (var sync = configLock.ReaderLock())
+                {
+                    return sendPointsNotWorkingTimeout;
+                }
+            }
+
+            set
+            {
+                using (var sync = configLock.WriterLock())
+                {
+                    sendPointsNotWorkingTimeout = value;
+                    SetValue(SendPointsNotWorkingTimeoutKey, (int)sendPointsNotWorkingTimeout.TotalSeconds); 
+                }
+            }
+        }
         public static string? CheckEmptyOrWhitespace(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value;
@@ -207,6 +228,7 @@ namespace Hspi
         private const string MinValidValueKey = "MinValidValue";
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';
+        private const string SendPointsNotWorkingTimeoutKey = "SendPointsNotWorkingTimeout";
         private const string TagsKey = "Tags";
         private const string TrackedTypeKey = "TrackedTyp";
 
@@ -215,5 +237,6 @@ namespace Hspi
 
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;
         private InfluxDBLoginInformation influxDBLoginInformation;
+        private TimeSpan sendPointsNotWorkingTimeout;
     };
 }

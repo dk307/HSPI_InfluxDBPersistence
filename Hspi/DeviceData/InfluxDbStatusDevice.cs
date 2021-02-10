@@ -36,9 +36,9 @@ namespace Hspi.DeviceData
             return device;
         }
 
-        public void UpdateExportConnectionStatus(bool connectionStatus)
+        public void UpdateExportConnectionStatus(bool working)
         {
-            HSDeviceHelper.UpdateDeviceValue(HS, exportStatusFeatureId, connectionStatus ? OnValue : OffValue);
+            HSDeviceHelper.UpdateDeviceValue(HS, exportStatusFeatureId, working ? OnValue : OffValue);
         }
 
         private static int CreateExportStatusFeature(IHsController HS, int parentDeviceId)

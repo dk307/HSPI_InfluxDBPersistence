@@ -41,7 +41,7 @@ namespace Hspi
 
         protected override void BeforeReturnStatus()
         {
-            this.Status = pluginStatusCalculator?.PluginStatus ?? PluginStatus.Critical("Unknown Status");
+            this.Status = PluginStatus.Ok();
         }
 
         protected override void Dispose(bool disposing)
@@ -65,7 +65,9 @@ namespace Hspi
                 logger.Info("Starting Plugin");
                 LogConfiguration();
 
-                pluginStatusCalculator = new PluginStatusCalculator(HomeSeerSystem);
+                pluginStatusCalculator = new PluginStatusCalculator(HomeSeerSystem, 
+                                                                    pluginConfig.SendPointsNotWorkingTimeout, 
+                                                                    ShutdownCancellationToken);
 
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.VALUE_CHANGE, Id);
                 HomeSeerSystem.RegisterEventCB(Constants.HSEvent.STRING_CHANGE, Id);

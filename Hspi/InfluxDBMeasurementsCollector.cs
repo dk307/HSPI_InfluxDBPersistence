@@ -189,8 +189,6 @@ namespace Hspi
                         throw;
                     }
 
-                    await pluginStatusCalculator.ExportErrored(token).ConfigureAwait(false);
-
                     bool connected = await IsConnectedToServer().ConfigureAwait(false);
                     if (!connected)
                     {
