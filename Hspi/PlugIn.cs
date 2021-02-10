@@ -333,7 +333,7 @@ namespace Hspi
                 if (!recreate && (influxDBMeasurementsCollector != null))
                 {
                     var existingData = influxDBMeasurementsCollector.PersistantValues;
-                    recreate = data.Count == existingData.Count() &&
+                    recreate = data.Count != existingData.Count() ||
                                existingData.All(x => data.TryGetValue(x.Id, out var value) && value == x);
                 }
 

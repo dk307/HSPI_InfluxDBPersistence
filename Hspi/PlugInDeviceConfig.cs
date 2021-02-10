@@ -279,13 +279,13 @@ namespace Hspi
             return displays;
         }
 
-        public IList<IDictionary<string, object>> GetAllPersistantData()
+        public IList<IDictionary<string, string>> GetAllPersistantData()
         {
-            var list = new List<IDictionary<string, object>>();
+            var list = new List<IDictionary<string, string>>();
 
             foreach (var pair in this.pluginConfig!.DevicePersistenceData)
             {
-                var data = ScribanHelper.ToDictionary(pair.Value);
+                var data = ScribanHelper.ToDictionaryS(pair.Value);
                 list.Add(data);
             }
 
@@ -365,7 +365,6 @@ namespace Hspi
                                             measurement ?? string.Empty,
                                             field,
                                             fieldString,
-                                            null,
                                             maxValidValue,
                                             minValidValue,
                                             null);
@@ -407,7 +406,7 @@ namespace Hspi
                 }
                 else
                 {
-                    logger.Debug(Invariant($"Adding existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
+                    logger.Debug(Invariant($"Updating existing persitence for Ref Id:{persistanceDataDict["devicerefid"]}"));
                 }
 
                 var persistantData = ScribanHelper.FromDictionary<DevicePersistenceData>(persistanceDataDict);

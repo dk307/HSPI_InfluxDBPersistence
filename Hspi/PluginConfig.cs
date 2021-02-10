@@ -107,8 +107,7 @@ namespace Hspi
                 SetValue(MeasurementKey, device.Measurement, device.Id);
                 SetValue(FieldKey, device.Field ?? string.Empty, device.Id);
                 SetValue(FieldStringKey, device.FieldString ?? string.Empty, device.Id);
-                SetValue(TagsKey, device.Tags != null ? ObjectSerialize.SerializeToString(device.Tags) : null, device.Id);
-                SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
+                 SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
                 SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
                 SetValue(MinValidValueKey, device.MinValidValue, device.Id);
                 SetValue(TrackedTypeKey, device.TrackedType, device.Id);
@@ -201,7 +200,7 @@ namespace Hspi
                     trackedType = trackedTypeValue;
                 }
 
-                var data = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, tags,
+                var data = new DevicePersistenceData(persistenceId, deviceRefId, measurement, field, fieldString, 
                                                      maxValidValue, minValidValue, trackedType);
                 persistData.Add(persistenceId, data);
             }

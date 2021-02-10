@@ -18,7 +18,6 @@ namespace Hspi
     {
         public DevicePersistenceData(string id, int deviceRefId, string measurement,
                                      string? field = null, string? fieldString = null,
-                                     IReadOnlyDictionary<string, string>? tags = null,
                                      double? maxValidValue = null, double? minValidValue = null,
                                      TrackedType? trackedType = null)
         {
@@ -27,7 +26,6 @@ namespace Hspi
             Measurement = measurement;
             Field = field;
             FieldString = fieldString;
-            Tags = tags;
             MaxValidValue = maxValidValue;
             MinValidValue = minValidValue;
             TrackedType = trackedType ?? TrackedType.Value;
@@ -40,7 +38,6 @@ namespace Hspi
         public readonly double? MaxValidValue;
         public readonly string Measurement;
         public readonly double? MinValidValue;
-        public readonly IReadOnlyDictionary<string, string>? Tags;
         public readonly TrackedType TrackedType;
     }
 }
