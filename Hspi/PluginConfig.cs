@@ -31,10 +31,8 @@ namespace Hspi
         {
             get
             {
-                using (var sync = configLock.ReaderLock())
-                {
-                    return influxDBLoginInformation;
-                }
+                using var sync = configLock.ReaderLock();
+                return influxDBLoginInformation;
             }
 
             set
@@ -44,14 +42,12 @@ namespace Hspi
                     throw new ArgumentException("DB Information is not valid");
                 }
 
-                using (var sync = configLock.WriterLock())
-                {
-                    influxDBLoginInformation = value;
-                    SetValue(InfluxDBUriKey, value.DBUri);
-                    SetValue(InfluxDBUsernameKey, value.User);
-                    SetValue(InfluxDBPasswordKey, EncryptString(value.Password));
-                    SetValue(InfluxDBDBKey, value.DB);
-                }
+                using var sync = configLock.WriterLock();
+                influxDBLoginInformation = value;
+                SetValue(InfluxDBUriKey, value.DBUri);
+                SetValue(InfluxDBUsernameKey, value.User);
+                SetValue(InfluxDBPasswordKey, EncryptString(value.Password));
+                SetValue(InfluxDBDBKey, value.DB);
             }
         }
 
@@ -59,10 +55,8 @@ namespace Hspi
         {
             get
             {
-                using (var sync = configLock.ReaderLock())
-                {
-                    return devicePersistenceData.ToImmutableDictionary();
-                }
+                using var sync = configLock.ReaderLock();
+                return devicePersistenceData.ToImmutableDictionary();
             }
         }
 
@@ -70,19 +64,15 @@ namespace Hspi
         {
             get
             {
-                using (var sync = configLock.ReaderLock())
-                {
-                    return sendPointsNotWorkingTimeout;
-                }
+                using var sync = configLock.ReaderLock();
+                return sendPointsNotWorkingTimeout;
             }
 
             set
             {
-                using (var sync = configLock.WriterLock())
-                {
-                    sendPointsNotWorkingTimeout = value;
-                    SetValue(SendPointsNotWorkingTimeoutKey, (int)sendPointsNotWorkingTimeout.TotalSeconds); 
-                }
+                using var sync = configLock.WriterLock();
+                sendPointsNotWorkingTimeout = value;
+                SetValue(SendPointsNotWorkingTimeoutKey, (int)sendPointsNotWorkingTimeout.TotalSeconds);
             }
         }
         public static string? CheckEmptyOrWhitespace(string? value)
@@ -97,21 +87,21 @@ namespace Hspi
                 throw new ArgumentException("device id is empty");
             }
 
-            using (var sync = configLock.WriterLock())
+            using var sync = configLock.WriterLock();
+            var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData)
             {
-                var newdevicePersistenceData = new Dictionary<string, DevicePersistenceData>(devicePersistenceData);
-                newdevicePersistenceData[device.Id] = device;
-                devicePersistenceData = newdevicePersistenceData;
+                [device.Id] = device
+            };
+            devicePersistenceData = newdevicePersistenceData;
 
-                SetValue(DeviceRefIdKey, device.DeviceRefId, device.Id);
-                SetValue(MeasurementKey, device.Measurement, device.Id);
-                SetValue(FieldKey, device.Field ?? string.Empty, device.Id);
-                SetValue(FieldStringKey, device.FieldString ?? string.Empty, device.Id);
-                 SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
-                SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
-                SetValue(MinValidValueKey, device.MinValidValue, device.Id);
-                SetValue(TrackedTypeKey, device.TrackedType, device.Id);
-            }
+            SetValue(DeviceRefIdKey, device.DeviceRefId, device.Id);
+            SetValue(MeasurementKey, device.Measurement, device.Id);
+            SetValue(FieldKey, device.Field ?? string.Empty, device.Id);
+            SetValue(FieldStringKey, device.FieldString ?? string.Empty, device.Id);
+            SetValue(PersistenceIdsKey, devicePersistenceData.Keys.Aggregate((x, y) => x + PersistenceIdsSeparator + y));
+            SetValue(MaxValidValueKey, device.MaxValidValue, device.Id);
+            SetValue(MinValidValueKey, device.MinValidValue, device.Id);
+            SetValue(TrackedTypeKey, device.TrackedType, device.Id);
         }
 
         public void RemoveDevicePersistenceData(string id)
@@ -169,18 +159,7 @@ namespace Hspi
                 string minValidValueString = GetValue(MinValidValueKey, string.Empty, persistenceId);
                 string trackedTypeString = GetValue(TrackedTypeKey, string.Empty, persistenceId);
 
-                var tagString = GetValue(TagsKey, string.Empty, persistenceId);
-
-                Dictionary<string, string>? tags = null;
-                try
-                {
-                    tags = ObjectSerialize.DeSerializeToObject(tagString) as Dictionary<string, string>;
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn(Invariant($"Failed to load tags for {deviceRefIdString} with {ex.GetFullMessage()}"));
-                }
-
+ 
                 double? maxValidValue = null;
                 double? minValidValue = null;
                 TrackedType? trackedType = null;
@@ -228,10 +207,8 @@ namespace Hspi
         private const string PersistenceIdsKey = "PersistenceIds";
         private const char PersistenceIdsSeparator = ',';
         private const string SendPointsNotWorkingTimeoutKey = "SendPointsNotWorkingTimeout";
-        private const string TagsKey = "Tags";
         private const string TrackedTypeKey = "TrackedTyp";
 
-        private readonly static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AsyncReaderWriterLock configLock = new AsyncReaderWriterLock();
 
         private Dictionary<string, DevicePersistenceData> devicePersistenceData;

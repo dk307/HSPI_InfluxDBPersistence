@@ -57,8 +57,10 @@ namespace Hspi
                 if (errors.Count == 0)
                 {
                     // save
-                    var deviceData = new DeviceData.DeviceImportDevice(HomeSeerSystem, refId);
-                    deviceData.Data = importDeviceData;
+                    var deviceData = new DeviceData.DeviceImportDevice(HomeSeerSystem, refId)
+                    {
+                        Data = importDeviceData
+                    };
 
                     PluginConfigChanged();
                 }

@@ -17,7 +17,6 @@ namespace Hspi.DeviceData
         public long IntervalSeconds { get; }
         public string Sql { get; }
         public string? Unit { get; }
-
 #pragma warning disable CA1822 // Mark members as static
         public int Version => 1;
 #pragma warning restore CA1822 // Mark members as static

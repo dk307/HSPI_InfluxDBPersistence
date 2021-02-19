@@ -77,7 +77,7 @@ namespace Hspi.Utils
                                                                          TimeSpan? groupInterval,
                                                                          TimeSpan groupByOffset)
         {
-            groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
+            groupInterval ??= GetDefaultInfluxDBGroupInterval(queryDuration);
 
             string query = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {(queryDuration).TotalSeconds}s order by time asc");
             var time = await InfluxDBHelper.GetTimeValueForQuery(query, loginInformation).ConfigureAwait(false);
@@ -101,7 +101,7 @@ namespace Hspi.Utils
                                              TimeSpan? groupInterval,
                                              TimeSpan groupByOffset)
         {
-            groupInterval = groupInterval ?? GetDefaultInfluxDBGroupInterval(queryDuration);
+            groupInterval ??= GetDefaultInfluxDBGroupInterval(queryDuration);
 
             string lastValueQuery = Invariant($"SELECT last(*) from \"{data.Measurement}\" WHERE \"{PluginConfig.DeviceRefIdTag}\" = '{data.DeviceRefId}' and time < now() - {(queryDuration).TotalSeconds}s order by time asc");
             var lastEntry = await InfluxDBHelper.GetTimeValueForQuery(lastValueQuery, loginInformation).ConfigureAwait(false);
@@ -124,19 +124,18 @@ namespace Hspi.Utils
 
         private static TimeSpan GetDefaultInfluxDBGroupInterval(TimeSpan duration)
         {
-            switch (duration)
+            return duration switch
             {
-                case TimeSpan _ when duration <= TimeSpan.FromHours(1): return TimeSpan.FromSeconds(1);
-                case TimeSpan _ when duration <= TimeSpan.FromHours(6): return TimeSpan.FromSeconds(10);
-                case TimeSpan _ when duration <= TimeSpan.FromHours(12): return TimeSpan.FromSeconds(30);
-                case TimeSpan _ when duration <= TimeSpan.FromHours(24): return TimeSpan.FromMinutes(1);
-                case TimeSpan _ when duration <= TimeSpan.FromDays(7): return TimeSpan.FromMinutes(5);
-                case TimeSpan _ when duration <= TimeSpan.FromDays(30): return TimeSpan.FromMinutes(60);
-                case TimeSpan _ when duration <= TimeSpan.FromDays(60): return TimeSpan.FromHours(6);
-                case TimeSpan _ when duration <= TimeSpan.FromDays(180): return TimeSpan.FromHours(12);
-                default:
-                    return TimeSpan.FromHours(24);
-            }
+                TimeSpan _ when duration <= TimeSpan.FromHours(1) => TimeSpan.FromSeconds(1),
+                TimeSpan _ when duration <= TimeSpan.FromHours(6) => TimeSpan.FromSeconds(10),
+                TimeSpan _ when duration <= TimeSpan.FromHours(12) => TimeSpan.FromSeconds(30),
+                TimeSpan _ when duration <= TimeSpan.FromHours(24) => TimeSpan.FromMinutes(1),
+                TimeSpan _ when duration <= TimeSpan.FromDays(7) => TimeSpan.FromMinutes(5),
+                TimeSpan _ when duration <= TimeSpan.FromDays(30) => TimeSpan.FromMinutes(60),
+                TimeSpan _ when duration <= TimeSpan.FromDays(60) => TimeSpan.FromHours(6),
+                TimeSpan _ when duration <= TimeSpan.FromDays(180) => TimeSpan.FromHours(12),
+                _ => TimeSpan.FromHours(24),
+            };
         }
     }
 }

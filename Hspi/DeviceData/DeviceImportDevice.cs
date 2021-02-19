@@ -71,8 +71,10 @@ namespace Hspi.DeviceData
 
             int featureId = HS.CreateFeatureForDevice(newFeatureData);
 
-            var deviceData = new DeviceImportDevice(HS, featureId);
-            deviceData.Data = data;
+            var deviceData = new DeviceImportDevice(HS, featureId)
+            {
+                Data = data
+            };
             deviceData.Update(null);
 
             return deviceData;
@@ -112,9 +114,11 @@ namespace Hspi.DeviceData
 
             PlugExtraData plugExtra = CreatePlugInExtraData(importDeviceData);
 
-            var changes = new Dictionary<EProperty, object>();
-            changes.Add(EProperty.AdditionalStatusData, new List<string>() { unit });
-            changes.Add(EProperty.PlugExtraData, plugExtra);
+            var changes = new Dictionary<EProperty, object>
+            {
+                { EProperty.AdditionalStatusData, new List<string>() { unit } },
+                { EProperty.PlugExtraData, plugExtra }
+            };
 
             HS.UpdateFeatureByRef(refId, changes);
         }

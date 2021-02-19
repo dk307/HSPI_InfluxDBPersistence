@@ -16,7 +16,6 @@ namespace Hspi
         {
             statusDevice = InfluxDbStatusDevice.CreateOrGet(hs);
 
-            this.hs = hs;
             this.erroredDelay = erroredDelay;
             this.token = token;
             stopwatch.Start();
@@ -26,10 +25,8 @@ namespace Hspi
 
         public async Task ExportWorked(CancellationToken cancellationToken)
         {
-            using (var _ = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false))
-            {
-                stopwatch.Restart();
-            }
+            using var _ = await instanceLock.LockAsync(cancellationToken).ConfigureAwait(false);
+            stopwatch.Restart();
         }
 
         private async Task UpdateWorkingState()
@@ -39,15 +36,13 @@ namespace Hspi
             {
                 await Task.Delay(30000, token).ConfigureAwait(false);
 
-                using (var _ = await instanceLock.LockAsync(token).ConfigureAwait(false))
-                {
-                    bool newState = stopwatch.Elapsed > erroredDelay;
+                using var _ = await instanceLock.LockAsync(token).ConfigureAwait(false);
+                bool newState = stopwatch.Elapsed > erroredDelay;
 
-                    if (newState != currentState)
-                    {
-                        statusDevice.UpdateExportConnectionStatus(!newState);
-                        currentState = newState;
-                    }
+                if (newState != currentState)
+                {
+                    statusDevice.UpdateExportConnectionStatus(!newState);
+                    currentState = newState;
                 }
             }
         }
@@ -55,7 +50,6 @@ namespace Hspi
         private readonly Stopwatch stopwatch = new Stopwatch();
         private readonly AsyncLock instanceLock = new AsyncLock();
         private readonly InfluxDbStatusDevice statusDevice;
-        private readonly IHsController hs;
         private readonly TimeSpan erroredDelay;
         private readonly CancellationToken token;
     }

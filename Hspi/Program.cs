@@ -14,10 +14,8 @@ namespace Hspi
 
             try
             {
-                using (var plugin = new HSPI_InfluxDBPersistence.HSPI())
-                {
-                    plugin.Connect(args);
-                }
+                using var plugin = new HSPI_InfluxDBPersistence.HSPI();
+                plugin.Connect(args);
             }
             finally
             {

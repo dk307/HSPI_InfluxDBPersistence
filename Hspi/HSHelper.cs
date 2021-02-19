@@ -19,7 +19,6 @@ namespace Hspi
                          out double? maxValidValue,
                          out double? minValidValue)
         {
-            measurement = null;
             maxValidValue = null;
             minValidValue = null;
             field = null;
@@ -81,16 +80,16 @@ namespace Hspi
 #pragma warning disable CA1308 // Normalize strings to uppercase
                         return typeString.ToLowerInvariant();
 #pragma warning restore CA1308 // Normalize strings to uppercase
-                    }
+                     }
                 }
             }
 
             return null;
         }
 
-        private static string[] measurementTypes = { "TEMPERATURE", "HUMIDITY", "WATTS", "KWH", "BATTERY",
-                                                     "PRESSURE", "AMPERES", "CO2", "PM25", "VOLTS", "LUMINANCE",
-                                                     "LOCK", "WINDOW", "DOOR", "LIGHT", "SWITCH" };
+        private static readonly string[] measurementTypes = { "TEMPERATURE", "HUMIDITY", "WATTS", "KWH", "BATTERY",
+                                                             "PRESSURE", "AMPERES", "CO2", "PM25", "VOLTS", "LUMINANCE",
+                                                             "LOCK", "WINDOW", "DOOR", "LIGHT", "SWITCH" };
 
         private readonly IHsController HS;
     }

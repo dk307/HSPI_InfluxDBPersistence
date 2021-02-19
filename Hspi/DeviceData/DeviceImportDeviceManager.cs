@@ -19,12 +19,10 @@ namespace Hspi.DeviceData
     {
         public DeviceImportDeviceManager(IHsController HS,
                                          InfluxDBLoginInformation dbLoginInformation,
-                                         PluginStatusCalculator pluginStatusCalculator,
                                          CancellationToken cancellationToken)
         {
             this.HS = HS;
             this.dbLoginInformation = dbLoginInformation;
-            this.pluginStatusCalculator = pluginStatusCalculator;
             this.cancellationToken = cancellationToken;
             this.combinedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -155,15 +153,13 @@ namespace Hspi.DeviceData
 
         private void StartDeviceFetchFromDB()
         {
-            using (var sync = collectionTasksLock.Lock())
+            using var sync = collectionTasksLock.Lock();
+            foreach (var childDeviceKeyValuePair in importDevices)
             {
-                foreach (var childDeviceKeyValuePair in importDevices)
-                {
-                    DeviceImportDevice deviceData = childDeviceKeyValuePair.Value;
+                DeviceImportDevice deviceData = childDeviceKeyValuePair.Value;
 
-                    this.combinedToken.Token.ThrowIfCancellationRequested();
-                    collectionTasks.Add(ImportDataForDeviceInLoop(deviceData));
-                }
+                this.combinedToken.Token.ThrowIfCancellationRequested();
+                collectionTasks.Add(ImportDataForDeviceInLoop(deviceData));
             }
         }
 
@@ -177,7 +173,6 @@ namespace Hspi.DeviceData
         private readonly InfluxDBLoginInformation dbLoginInformation;
         private readonly IHsController HS;
         private readonly ImmutableDictionary<int, DeviceImportDevice> importDevices;
-        private readonly PluginStatusCalculator pluginStatusCalculator;
         private bool disposedValue;
     };
 }

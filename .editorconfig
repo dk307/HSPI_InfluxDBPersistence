@@ -1,9 +1,3 @@
 ﻿[*.cs]
-
-# CA1707: Remove the underscores from assembly name HSPI_InfluxDBPersistence.
-dotnet_diagnostic.CA1707.severity = silent
-
-
-# CA1031: Modify 'HandleAction' to catch a more specific allowed exception type, or rethrow the exception.
-dotnet_diagnostic.CA1031.severity = none
+ 
 

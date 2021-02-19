@@ -56,7 +56,6 @@ namespace Hspi
 
         protected override void Initialize()
         {
-            string result = string.Empty;
             try
             {
                 pluginConfig = new PluginConfig(HomeSeerSystem);
@@ -87,7 +86,7 @@ namespace Hspi
             }
             catch (Exception ex)
             {
-                result = Invariant($"Failed to initialize PlugIn with {ex.GetFullMessage()}");
+                string result = Invariant($"Failed to initialize PlugIn with {ex.GetFullMessage()}");
                 logger.Error(result);
                 throw;
             }
@@ -311,14 +310,11 @@ namespace Hspi
 
         private async Task StartDeviceImport()
         {
-            using (var sync = await deviceRootDeviceManagerLock.LockAsync(ShutdownCancellationToken))
-            {
-                deviceRootDeviceManager?.Dispose();
-                deviceRootDeviceManager = new DeviceImportDeviceManager(HomeSeerSystem,
-                                                                        pluginConfig!.DBLoginInformation,
-                                                                        pluginStatusCalculator!,
-                                                                        ShutdownCancellationToken);
-            }
+            using var sync = await deviceRootDeviceManagerLock.LockAsync(ShutdownCancellationToken);
+            deviceRootDeviceManager?.Dispose();
+            deviceRootDeviceManager = new DeviceImportDeviceManager(HomeSeerSystem,
+                                                                    pluginConfig!.DBLoginInformation,
+                                                                    ShutdownCancellationToken);
         }
 
         private async Task StartInfluxDBMeasurementsCollector()

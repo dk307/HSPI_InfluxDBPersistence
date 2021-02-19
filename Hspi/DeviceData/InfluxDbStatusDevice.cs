@@ -7,10 +7,9 @@ namespace Hspi.DeviceData
 {
     internal sealed class InfluxDbStatusDevice
     {
-        private InfluxDbStatusDevice(IHsController HS, int refId, int exportStatusFeatureId)
+        private InfluxDbStatusDevice(IHsController HS, int exportStatusFeatureId)
         {
             this.HS = HS;
-            this.rootRefId = refId;
             this.exportStatusFeatureId = exportStatusFeatureId;
         }
 
@@ -19,7 +18,7 @@ namespace Hspi.DeviceData
 
         public static InfluxDbStatusDevice CreateOrGet(IHsController HS)
         {
-            var refIds = HS.GetRefsByInterface(PlugInData.PlugInId);
+            _ = HS.GetRefsByInterface(PlugInData.PlugInId);
             var (rootDeviceId, exportStatusFeatureId) = FindDevice(HS);
 
             if (!rootDeviceId.HasValue)
@@ -32,7 +31,7 @@ namespace Hspi.DeviceData
                 exportStatusFeatureId = CreateExportStatusFeature(HS, rootDeviceId.Value);
             }
 
-            var device = new InfluxDbStatusDevice(HS, rootDeviceId.Value, exportStatusFeatureId.Value);
+            var device = new InfluxDbStatusDevice(HS,  exportStatusFeatureId.Value);
             return device;
         }
 
@@ -110,6 +109,5 @@ namespace Hspi.DeviceData
         private const int OnValue = 1;
         private readonly int exportStatusFeatureId;
         private readonly IHsController HS;
-        private readonly int rootRefId;
     };
 }

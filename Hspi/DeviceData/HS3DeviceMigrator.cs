@@ -35,8 +35,6 @@ namespace Hspi.DeviceData
                         ((device.Interface == PlugInData.PlugInId) ||
                         ((device.Interface == PlugInData.Hs3PlugInName))))
                     {
-                        string address = device.Address;
-
                         var childDeviceData = OldDeviceIdentifier.Identify(device);
                         if (childDeviceData != null)
                         {
@@ -46,8 +44,10 @@ namespace Hspi.DeviceData
                                 // only children has data
                                 if (device.Relationship == ERelationship.Feature)
                                 {
-                                    var deviceData = new DeviceImportDevice(HS, device.Ref);
-                                    deviceData.Data = importDeviceData;
+                                    _ = new DeviceImportDevice(HS, device.Ref)
+                                    {
+                                        Data = importDeviceData
+                                    };
                                     oldPlugInConfig.RemoveImportDeviceData(importDeviceData.Id);
                                 }
                             }

@@ -13,9 +13,11 @@ namespace Hspi
 
         public IDictionary<string, object> GetGeneralInformation()
         {
-            var configuration = new Dictionary<string, object>();
-            configuration[DebugLoggingConfiguration] = pluginConfig!.DebugLogging;
-            configuration[LogToFileConfiguration] = pluginConfig!.LogToFile;
+            var configuration = new Dictionary<string, object>
+            {
+                [DebugLoggingConfiguration] = pluginConfig!.DebugLogging,
+                [LogToFileConfiguration] = pluginConfig!.LogToFile
+            };
             return configuration;
         }
 
