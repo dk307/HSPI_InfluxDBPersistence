@@ -209,7 +209,7 @@ namespace Hspi
                     var graphic = HomeSeerSystem.GetStatusGraphicForValue(deviceRefId, deviceValue);
                     if (graphic != null)
                     {
-                        deviceString = graphic.Label;
+                         graphic.TryGetLabelForValue(out deviceString, deviceValue) ;
                     }
                 }
 
@@ -218,9 +218,12 @@ namespace Hspi
                     var status = HomeSeerSystem.GetStatusControlForValue(deviceRefId, deviceValue);
                     if (status != null)
                     {
-                        deviceString = status.Label;
+                        status.TryGetLabelForValue(out deviceString, deviceValue);
+                   
                     }
                 }
+                 
+
                 deviceString ??= string.Empty;
 
                 logger.Debug(Invariant($"Recording Device Ref Id: {deviceRefId}, Name: [{name}] with [{deviceValue}] & [{deviceString}]"));
