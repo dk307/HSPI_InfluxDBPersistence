@@ -168,6 +168,7 @@ namespace Hspi.Utils
                 {
                     return null;
                 }
+                return value;
             }
 
             return null;
