@@ -1,0 +1,3 @@
+[submodule "Hspi/Shared"]
+	path = Hspi/Shared
+	url = https://github.com/dk307/HS4PlugInHelper.git

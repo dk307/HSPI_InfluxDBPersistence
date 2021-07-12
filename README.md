@@ -1,8 +1,6 @@
-Homeseer InfluxDB Persistence PlugIn
+Homeseer InfluxDB Persistence PlugIn for HD4
 =====================================
 HomeSeer plugin to save and import data from InfluxDB.  
-
-Needs dot.net  4.7.2.
 
 Compatibility
 ------------
@@ -17,9 +15,7 @@ Functionality
 * Can import values from InfluxDB periodically based on query.
 
 Installation
-------------
-Make sure that dotNet 4.7.2 is installed on machine. [Link](https://support.microsoft.com/en-us/help/4054531/microsoft-net-framework-4-7-2-web-installer-for-windows)
-
+-------------
 Place the compiled [executable](https://ci.appveyor.com/project/dk307/HSPI-InfluxDBPersistence/build/artifacts?branch=master) and [config file](https://ci.appveyor.com/project/dk307/HSPI-InfluxDBPersistence/build/artifacts?branch=master) in the HomeSeer installation directory. Restart HomeSeer. HomeSeer will recognize the plugin and will add plugin in disable state to its Plugins. Go to HomeSeer -> PlugIns -> Manage and enable this plugin. 
 
 DB Setting

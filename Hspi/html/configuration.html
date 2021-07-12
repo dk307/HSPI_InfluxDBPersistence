@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--This maintains the scale of the page based on the scale of the screen-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--This liquid tag loads all of the necessary css files for HomeSeer-->
+    {{includefile '/bootstrap/css/page_common.css'}}
+    <title>InfluxDB database configuration</title>
+	
+    <link href="/css/hs.css" rel="stylesheet">
+</head>
+
+	{{	
+	validation=[]
+	data={}
+	
+	if queries["save"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'UpdateGeneralConfiguration' [data]
+		redirect=validation.empty?
+	else
+		persistanceData=plugin_function 'InfluxDBPersistence' 'GetGeneralInformation' []
+		data=persistanceData
+	end
+	}}
+	
+<body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
+{{includefile 'header.html'}}
+{{includefile 'navbar.html'}}
+
+
+<div class="container card mb-3"> 		
+	<nav class="navbar">  
+		<div class="navbar-brand">InfluxDB Configuration</div>
+	</nav>
+
+	<form class="md-form ml-3" action="/InfluxDBPersistence/configuration.html" method="GET">			
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+		{{else if queries["save"]}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-success alert-dismissible fade show" role="alert">
+					Saved
+				</div>
+			</div>
+		{{end}}
+	
+		<div class="row mt-1 mb-1 no-gutters">	
+			<span class="hs-toggle-control"> 
+				<span class="form-check form-check-inline hs-toggle-checkbox"> 
+					<input type="checkbox" class="form-check-input checkitem" id="debuglogging" name="debuglogging"  {{if data["debuglogging"]}}checked{{end}}> 
+					<label class="form-check-label hs-toggle-checkbox-label" for="debuglogging">Debug Logging Enabled</label> 
+				</span> 
+			</span>	
+		</div>	
+		
+		<div class="row mt-1 mb-1 no-gutters">	
+			<span class="hs-toggle-control"> 
+				<span class="form-check form-check-inline hs-toggle-checkbox"> 
+					<input type="checkbox" class="form-check-input checkitem" id="logtofile" name="logtofile"  {{if data["logtofile"]}}checked{{end}}> 
+					<label class="form-check-label hs-toggle-checkbox-label" for="logtofile">Log to File</label> 
+				</span> 
+			</span>	
+		</div>	
+
+		<div class="row mt-1 mb-1">
+			<div class="col-md d-flex justify-content-end">
+				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
+			</div>
+		</div>		
+	
+	</form> 
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+
+{{includefile 'bootstrap/js/page_common.js'}}
+</body>
+</html>

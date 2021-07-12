@@ -1,0 +1,6 @@
+﻿HSPI_InfluxDBPersistence.exe,.,0
+HSPI_InfluxDBPersistence.exe.config,.,0
+.,[DELALL],\html\InfluxDBPersistence
+html.zip,[UNZIP],.\html\InfluxDBPersistence
+
+ 

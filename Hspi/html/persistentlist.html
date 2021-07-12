@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--This maintains the scale of the page based on the scale of the screen-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--This liquid tag loads all of the necessary css files for HomeSeer-->
+    {{includefile '/bootstrap/css/page_common.css'}}
+    <title>InfluxDB Persistence</title>
+	
+    <link href="/css/hs.css" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="/InfluxDBPersistence/datatables.min.css"/>
+</head>
+
+<body class="body homeseer-skin" aria-busy="true">
+<!--These liquid tags add the HomeSeer header and navbar to the top of the page when appropriate-->
+{{includefile 'header.html'}}
+{{includefile 'navbar.html'}}
+<!--Primary container for the page content
+    The .container class ensures the page content is fit and centered to the screen-->
+	
+	{{
+		validation=[]
+		if queries["action"]=="delete"		 
+			validation=plugin_function 'InfluxDBPersistence' 'DeletePersistanceData' [queries["refId"]]
+		end
+	}}
+	
+	
+<div class="container card mb-3">
+
+	<nav class="navbar">  
+		<div class="navbar-brand">InfluxDB Persistence List</div>
+	</nav>
+
+
+	{{tableData=plugin_function 'InfluxDBPersistence' 'GetAllPersistantData' [] }}
+ 
+	<table id="dt-persistence" class="table table-sm mb-0" cellspacing="0" width="100%">
+		<thead>
+			<tr>
+				<th data-priority="1">Device</th>
+				<th data-priority="3">Measurement</th>
+				<th>Field</th>
+				<th>FieldString</th>
+				<th>Range</th>
+				<th>Tracked</th>
+				<th data-priority="2"></th>
+			</tr>
+		</thead>	
+		
+		<tbody>	
+		
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+			<BR>
+		{{end}}
+
+		{{i=0}}
+		{{for row in tableData}}
+			<tr>
+				{{refId=row["devicerefid"] | string.strip}}
+				{{deviceDetails=plugin_function 'InfluxDBPersistence' 'GetDeviceDetails' [refId] 
+					deviceLink=""
+					if deviceDetails['ref'] && deviceDetails['feature']
+						deviceLink="ref=" + deviceDetails['ref'] + "&feature=" + deviceDetails['feature']
+					else if deviceDetails['ref']
+						deviceLink="ref=" + deviceDetails['ref']
+					end
+				}}
+				
+				<td><a id="{{i}}" href="/devices.html?{{deviceLink}}&subpage=devprop">{{device_name_full refId  | html.escape}}</a></td>	
+				<td>{{row["measurement"] | html.escape}}</td>	
+				<td>{{row["field"] | html.escape}}</td>	
+				<td>{{row["fieldstring"] | html.escape}}</td>
+				<td>{{row["minvalidvalue"]}} - {{row["maxvalidvalue"] | html.escape}}</td>
+				<td>{{row["trackedtype"] | html.escape}}</td>
+				<td>
+					<a data-mdb-toggle="tooltip" title="Delete InfluxDb persistence for device" href="#">
+					  <i class="fas fa-trash-alt fa-point deletePersistance" refId="{{refId}}" tableLocation="{{i-1}}"></i>
+					</a>
+				</td>	
+			</tr>
+			{{i=i+1}}			
+		{{end}}		
+		</tbody>
+	</table>	
+		 
+</div>
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+{{includefile 'bootstrap/js/page_common.js'}}
+<script type="text/javascript" src="/InfluxDBPersistence/datatables.min.js"></script>
+<script>
+
+function setUpPersistanceTable() {
+  $('#dt-persistence').dataTable({
+	'order': [],
+	'paging': false,
+	responsive: true,
+	columnDefs: [
+		{ orderable: false, targets: 6 },	
+	],
+  });
+  
+  // the following may break in future
+  $('#dt-persistence_wrapper').find('label').each(function () {
+    $(this).parent().append($(this).children());
+  });
+  $('#dt-persistence_wrapper .dataTables_filter').find('input').each(function () {
+    const $this = $(this);
+    $this.attr("placeholder", "Search");
+    $this.removeClass('form-control-sm');
+  });
+  $('#dt-persistence_wrapper .dataTables_length').addClass('d-flex flex-row');
+  $('#dt-persistence_wrapper .dataTables_filter').addClass('md-form').addClass('my-0');
+  $('#dt-persistence_wrapper select').removeClass('custom-select custom-select-sm form-control form-control-sm');
+  $('#dt-persistence_wrapper select').addClass('mdb-select');
+  $('#dt-persistence_wrapper .mdb-select').materialSelect();
+  $('#dt-persistence_wrapper .dataTables_filter').find('label').remove();
+}
+
+$(document).ready(function () {
+	setUpPersistanceTable();
+});	
+
+$('.deletePersistance').on('click',function(e){
+    e.preventDefault();
+	 
+    swal.fire({
+			title: 'Warning!',
+			text: 'Are you sure?',
+			position: 'top',
+			focusConfirm: false,
+			reverseButtons: true,
+			showCancelButton: true,
+			cancelButtonText: 'No',
+			confirmButtonText: 'Yes',
+    }).then((result) => {
+        if (result.isConfirmed) {
+			var location = "/InfluxDBPersistence/persistentlist.html?action=delete&refId=" + $(this).attr('refId') + "#" + $(this).attr('tableLocation');
+			window.location.replace(location);  
+		}
+    }); 
+}); 
+</script>
+
+</body>
+</html>
