@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--This maintains the scale of the page based on the scale of the screen-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--This liquid tag loads all of the necessary css files for HomeSeer-->
+    {{includefile '/bootstrap/css/page_common.css'}}
+    <title>InfluxDB Persistence</title>
+	
+    <link href="/css/hs.css" rel="stylesheet">
+</head>
+
+	{{	
+	deviceRefId=queries['devicerefid'] ?? ""
+	id=queries['id'] ?? ""
+	
+	validation=[]
+	data={}
+	
+	if queries["save"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'SavePersistanceData' [queries]
+		redirect=validation.empty?
+	else if queries["delete"]
+		data=queries
+		validation=plugin_function 'InfluxDBPersistence' 'DeletePersistanceData' [deviceRefId]
+		redirect=validation.empty?
+	else
+		persistanceData=plugin_function 'InfluxDBPersistence' 'GetPersistanceData'[deviceRefId]
+		data=persistanceData
+		redirect=false
+	end
+	
+	returnUrl=""
+
+	deviceDetails=plugin_function 'InfluxDBPersistence' 'GetDeviceDetails' [deviceRefId] 
+					
+	deviceLink=""
+	if deviceDetails['ref'] && deviceDetails['feature']
+		returnUrl="refId=" + deviceDetails['ref'] + "&feature=" + deviceDetails['feature']
+	else if deviceDetails['ref']
+		returnUrl="refId=" + deviceDetails['ref']
+	end
+	}}
+	
+<body class="body homeseer-skin ml-0 mr-0" aria-busy="true">	
+{{if !redirect}}
+<div class="container-fluid custom-scrollbar"> 
+	<p class="h4 text-left ml-0">{{device_name_full deviceRefId | html.escape}}</p>
+	
+	<form class="md-form" action="/InfluxDBPersistence/addeditpersistence.html" method="GET">		
+		<input type="hidden" id="devicerefid" name="devicerefid" value="{{data["devicerefid"]}}"> 
+		<input type="hidden" id="id" name="id" value="{{data["id"]}}"> 
+		
+		
+		{{if !validation.empty?}}
+			<div class="row mt-1 mb-1">
+				<div class="md-form col-md alert alert-danger" role="alert">
+					{{ for item in validation}}	
+						{{ item }}<BR>
+					{{end}}
+				</div>
+			</div>
+		{{end}}
+	
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="measurement" class="form-control" name="measurement" value="{{data['measurement']| html.escape}}" required>
+				<label for="measurement">Measurement</label>
+			</div>
+		</div>
+		
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="field" class="form-control" name="field" value="{{data['field'] | html.escape}}">
+				<label for="measurement">Field For Numeric Value</label>
+			</div>
+		</div>
+		
+							
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="fieldstring" class="form-control" name="fieldstring" value="{{data['fieldstring'] | html.escape}}">
+				<label for="measurement">Field For String Value</label>
+			</div>
+		</div>
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="maxvalidvalue" class="form-control" name="maxvalidvalue" value="{{data['maxvalidvalue'] | html.escape}}">
+				<label for="measurement">Max Valid Numeric Value</label>
+			</div>
+		</div>	
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	 
+				<input type="text" id="minvalidvalue" class="form-control" name="minvalidvalue" value="{{data['minvalidvalue'] | html.escape}}">
+				<label for="measurement">Min Valid Numeric Value</label>
+			</div>
+		</div>	
+
+		<div class="row mt-1 mb-1">
+			<div class="md-form col-md">	
+				<select id="trackedtype" class="md-form mdb-select colorful-select" name="trackedtype">				 
+					<option value="Value" {{if data['trackedtype']=="Value";}}selected{{end}}>Numeric Value</option>	
+					<option value="String" {{if data['trackedtype']=="String";}}selected{{end}}>String Value</option>					 		
+				</select> 	
+				<label class="mdb-main-label" for="trackedtype" style="left:0px">Persist on Change of</label>
+			</div>
+		</div>
+			
+		<div class="row mt-1 mb-1">		
+			{{if data["id"]!=""}}
+				<div class="col d-flex justify-content-start">
+					<button class="btn btn-danger waves-effect waves-light" id="delete_button">Delete</button>
+				</div>
+			{{end}}
+			
+			<div class="col-md d-flex justify-content-end">
+				<button type="button" class="btn btn-cancel waves-effect waves-light" onclick="window.location.replace('/InfluxDBPersistence/feature.html?{{returnUrl}}');">Cancel</button>
+				<button class="btn btn-default waves-effect waves-light" name="save" type="submit">Save</button>
+			</div>
+		</div>		
+		
+	</form> 
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+
+{{includefile 'bootstrap/js/page_common.js'}}
+<script type="text/javascript" src="/InfluxDBPersistence/iframeResizer.contentWindow.min.js"></script>
+<script type="text/javascript">
+$('#delete_button').on('click',function(e){
+    e.preventDefault();
+    var form = $(this).parents('form');
+	
+    swal.fire({
+			title: 'Warning!',
+			text: 'Are you sure?',
+			position: 'top',
+			focusConfirm: false,
+			reverseButtons: true,
+			showCancelButton: true,
+			cancelButtonText: 'No',
+			confirmButtonText: 'Yes',
+    }).then((result) => {
+        if (result.isConfirmed) {
+			form.append('<input type="hidden" name="delete" value="" /> '); 
+			form.submit();
+		}
+    }); 
+}); 
+</script>
+
+
+{{else}}
+
+{{includefile 'bootstrap/js/page_common.js'}}
+<script type="text/javascript">
+window.location.replace("/InfluxDBPersistence/feature.html?{{returnUrl}}");
+</script>
+
+{{end}}
+</body>
+</html>
