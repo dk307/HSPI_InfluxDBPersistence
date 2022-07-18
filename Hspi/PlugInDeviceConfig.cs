@@ -18,6 +18,8 @@ namespace Hspi
     {
         public override bool SupportsConfigDeviceAll => true;
 
+        public override bool SupportsConfigFeature => true;
+
         public string BuildAverageStatsData(string refIdString, string duration, string grouping)
         {
             StringBuilder stb = new StringBuilder();
@@ -339,9 +341,11 @@ namespace Hspi
             return data;
         }
 
-        public override string GetJuiDeviceConfigPage(int deviceRef)
+        public override string GetJuiDeviceConfigPage(int deviceOrFeatureRef)
         {
-            var device = HomeSeerSystem.GetDeviceByRef(deviceRef);
+            HomeSeerSystem.IsRefDevice(deviceOrFeatureRef);
+            
+            var device = HomeSeerSystem.GetDeviceByRef(deviceOrFeatureRef);
             return CreateDeviceConfigPage(device, device.Interface == Id ? "deviceimport.html" : "feature.html");
         }
 
@@ -544,7 +548,7 @@ namespace Hspi
             stb.Append($"<script src=\"{CreatePlugInUrl("iframeSizer.min.js")}\"></script>");
             stb.Append($"<script src=\"{CreatePlugInUrl("feature.js")}\"></script>");
             stb.Append($"<script>setupIFrame({device.Ref}, '{iFrameName}');</script>");
-            var page = PageFactory.CreateGenericPage(Id, "Device").WithLabel("id_influxdbpersistance", stb.ToString());
+            var page = PageFactory.CreateGenericPage(Id, "InfluxDb Device").WithLabel("id_influxdbpersistance", stb.ToString());
             return page.Page.ToJsonString();
         }
 
